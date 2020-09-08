@@ -1,0 +1,54 @@
+{
+  "name": "@fresha/noname-json-api",
+  "version": "0.1.0",
+  "description": "JSON:API request &amp; response helpers.",
+  "author": {
+    "name": "Andriy Mykulyak",
+    "email": "mykulyak@gmail.com"
+  },
+  "homepage": "https://github.com/surgeventures/noname/tree/master/packages/noname-json-api#readme",
+  "license": "MIT",
+  "main": "src/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/surgeventures/noname.git"
+  },
+  "scripts": {
+    "prebuild": "rimraf ./dist",
+    "build": "babel ./src -d ./dist --ignore ./src/**/*.test.js",
+    "prepublish": "npm run build",
+    "lint": "eslint --ext .js src/",
+    "lint:fix": "eslint --ext .js src/ --fix",
+    "pretest": "npm run lint",
+    "test": "mocha --require @babel/register ./src/**/*.test.js"
+  },
+  "bugs": {
+    "url": "https://github.com/surgeventures/noname/issues"
+  },
+  "dependencies": {
+    "core-js": "3.5.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.7.4",
+    "@babel/core": "^7.7.5",
+    "@babel/node": "^7.7.4",
+    "@babel/plugin-proposal-class-properties": "^7.7.4",
+    "@babel/preset-env": "^7.7.6",
+    "@babel/register": "^7.7.4",
+    "babel-eslint": "^10.1.0",
+    "chai": "^4.2.0",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-prettier": "^3.1.2",
+    "mocha": "^6.2.2",
+    "prettier": "1.19.1",
+    "rimraf": "^3.0.2",
+    "sinon": "^7.5.0"
+  }
+}

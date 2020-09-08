@@ -1,0 +1,23 @@
+{
+  "name": "@fresha/noname",
+  "version": "0.1.0",
+  "description": "POC of a API / data layer for Fresha SPA",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/surgeventures/noname.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/surgeventures/noname/issues"
+  },
+  "homepage": "https://github.com/surgeventures/noname#readme",
+  "dependencies": {
+    "lerna": "^3.22.1"
+  }
+}
