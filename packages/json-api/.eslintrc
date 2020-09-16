@@ -2,17 +2,44 @@
   "env": {
     "browser": true,
     "node": true,
-    "mocha": true
+    "jest": true
   },
   "extends": [
     "airbnb-base",
-    "plugin:prettier/recommended"
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking",
+    "plugin:prettier/recommended",
+    "prettier/@typescript-eslint"
   ],
-  "parser": "babel-eslint",
-  "plugins": [
-    "prettier"
-  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "legacyDecorators": true
+    },
+    "project": "./tsconfig.json"
+  },
+  "plugins": ["@typescript-eslint", "prettier"],
   "rules": {
-    "prettier/prettier": "error"
+    "prettier/prettier": "error",
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "mjs": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+    ],
+    "@typescript-eslint/no-explicit-any": 0,
+    "@typescript-eslint/no-use-before-define": ["error", { "functions": false }]
+  },
+  "settings": {
+    "import/resolver": {
+      // see https://github.com/benmosher/eslint-plugin-import/issues/1396#issuecomment-511007063
+      "node": {},
+      "typescript": {}
+    }
   }
 }

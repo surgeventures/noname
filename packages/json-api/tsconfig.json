@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "es6",
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "lib": [
+      "es6"
+    ],
+    "noImplicitThis": true,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "sourceMap": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "noEmitOnError": true,
+    "noEmit": true
+  },
+  "exclude": [
+    "node_modules/**/*"
+  ],
+  "include": [
+    "src/**/*.ts"
+  ]
+}

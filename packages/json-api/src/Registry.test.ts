@@ -1,9 +1,7 @@
-import { expect } from "chai";
-
 import Registry from "./Registry";
 
 describe("Registry.define", () => {
-  let registry;
+  let registry: Registry;
 
   beforeEach(() => {
     registry = new Registry();
@@ -12,12 +10,12 @@ describe("Registry.define", () => {
   it("should be able to define a new resource", () => {
     const resource = registry.define("test", {});
     // eslint-disable-next-line no-unused-expressions
-    expect(resource).to.not.be.null;
+    expect(resource).not.toBeNull();
   });
 });
 
 describe("Registry.format", () => {
-  let registry;
+  let registry: Registry;
 
   beforeEach(() => {
     registry = new Registry();
@@ -28,7 +26,7 @@ describe("Registry.format", () => {
   });
 
   it("should format documents", () => {
-    expect(registry.format("existing", { id: 1, attr: "A" })).to.deep.equal({
+    expect(registry.format("existing", { id: 1, attr: "A" })).toEqual({
       data: {
         type: "existing",
         id: "1",
@@ -42,14 +40,14 @@ describe("Registry.format", () => {
   it("throws an error when given unknown resource type", () => {
     expect(() => {
       registry.format("unknown", {});
-    }).to.throw();
+    }).toThrow();
   });
 });
 
 describe("Registry.parse", () => {
-  let registry;
+  let registry: Registry;
 
-  before(() => {
+  beforeEach(() => {
     registry = new Registry({ keyTransform: "kebab" });
 
     registry.define("survey-resource-type", {
@@ -89,7 +87,7 @@ describe("Registry.parse", () => {
           }
         }
       })
-    ).to.deep.equal({
+    ).toEqual({
       id: "12",
       title: "First survey",
       startDate: "2020-01-01",
@@ -117,7 +115,7 @@ describe("Registry.parse", () => {
           }
         ]
       })
-    ).to.deep.equal([
+    ).toEqual([
       { id: "12", title: "First" },
       { id: "34", title: "Second" }
     ]);
@@ -136,7 +134,7 @@ describe("Registry.parse", () => {
           }
         }
       })
-    ).to.deep.equal({
+    ).toEqual({
       id: "12",
       children: null
     });
@@ -158,7 +156,7 @@ describe("Registry.parse", () => {
           }
         }
       })
-    ).to.deep.equal({
+    ).toEqual({
       id: "12",
       children: "123"
     });
@@ -186,7 +184,7 @@ describe("Registry.parse", () => {
           }
         ]
       })
-    ).to.deep.equal({
+    ).toEqual({
       id: "12",
       children: { id: "123" }
     });
@@ -218,7 +216,7 @@ describe("Registry.parse", () => {
           }
         }
       })
-    ).to.deep.equal({
+    ).toEqual({
       id: "12",
       children: ["123", "125", "127"]
     });
@@ -264,7 +262,7 @@ describe("Registry.parse", () => {
           }
         ]
       })
-    ).to.deep.equal({
+    ).toEqual({
       id: "12",
       children: [{ id: "123" }, { id: "125" }, { id: "127" }]
     });
@@ -318,7 +316,7 @@ describe("Registry.parse", () => {
           }
         ]
       })
-    ).to.deep.equal({
+    ).toEqual({
       id: "12",
       children: { id: "123", parent: "12", children: "456" }
     });

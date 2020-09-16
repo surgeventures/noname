@@ -1,10 +1,9 @@
-import { expect } from "chai";
-
 import Registry from "./Registry";
+import { Resource } from "./types";
 
 describe("Resource", () => {
-  let registry;
-  let author;
+  let registry: Registry;
+  let author: Resource;
 
   beforeEach(() => {
     registry = new Registry();
@@ -13,14 +12,14 @@ describe("Resource", () => {
 
   describe("id formatting", () => {
     it("properly formats resource ID", () => {
-      expect(author.id(12)).to.deep.equal({
+      expect(author.id(12)).toEqual({
         type: "author",
         id: "12"
       });
     });
 
     it("does not include undefined IDs", () => {
-      expect(author.resource({})).to.deep.equal({
+      expect(author.resource({})).toEqual({
         type: "author",
         attributes: {}
       });
@@ -31,7 +30,7 @@ describe("Resource", () => {
         id: {
           attr: "code",
           format(value) {
-            return value;
+            return value as string;
           },
           parse(resourceObj) {
             return resourceObj.id;
@@ -42,7 +41,7 @@ describe("Resource", () => {
 
       expect(
         registry.format("country", { code: "PL", name: "Poland" })
-      ).to.deep.equal({
+      ).toEqual({
         data: {
           type: "country",
           id: "PL",
@@ -62,7 +61,7 @@ describe("Resource", () => {
             }
           }
         })
-      ).to.deep.equal({
+      ).toEqual({
         code: "UA",
         name: "Ukraine"
       });
@@ -74,7 +73,9 @@ describe("Resource", () => {
       const custom = registry.define("custom", {
         attributes: {
           age: { formatter: Number },
-          skipIfNegative: { formatter: x => (x < 0 ? undefined : x) }
+          skipIfNegative: {
+            formatter: x => (typeof x === "number" && x < 0 ? undefined : x)
+          }
         }
       });
 
@@ -84,7 +85,7 @@ describe("Resource", () => {
           age: "282",
           skipIfNegative: 10
         })
-      ).to.deep.equal({
+      ).toEqual({
         type: "custom",
         id: "89",
         attributes: {
@@ -99,7 +100,7 @@ describe("Resource", () => {
           age: "282",
           skipIfNegative: -10
         })
-      ).to.deep.equal({
+      ).toEqual({
         type: "custom",
         id: "89",
         attributes: {
@@ -123,7 +124,7 @@ describe("Resource", () => {
           phoneNumber: "736 272 273",
           mobilePhone: "894 999 333"
         })
-      ).to.deep.equal({
+      ).toEqual({
         type: "custom",
         id: "12",
         attributes: {
@@ -134,9 +135,9 @@ describe("Resource", () => {
   });
 
   describe("resource formatting", () => {
-    let article;
-    let createArticle;
-    let comment;
+    let article: Resource;
+    let createArticle: Resource;
+    let comment: Resource;
 
     beforeEach(() => {
       registry.define("author", {
@@ -172,7 +173,7 @@ describe("Resource", () => {
           title: "New article",
           content: "Article content ..."
         })
-      ).to.deep.equal({
+      ).toEqual({
         type: "create-article",
         attributes: {
           title: "New article",
@@ -189,7 +190,7 @@ describe("Resource", () => {
           article: null,
           author: 1245
         })
-      ).to.deep.equal({
+      ).toEqual({
         type: "comment",
         id: "99",
         attributes: {
@@ -208,7 +209,7 @@ describe("Resource", () => {
           content: "task",
           article: 12
         })
-      ).to.deep.equal({
+      ).toEqual({
         type: "comment",
         id: "99",
         attributes: {
@@ -231,7 +232,7 @@ describe("Resource", () => {
           id: 12,
           comments: []
         })
-      ).to.deep.equal({
+      ).toEqual({
         data: {
           type: "article",
           id: "12",
@@ -250,7 +251,7 @@ describe("Resource", () => {
           id: 12,
           comments: [1, 5, 9]
         })
-      ).to.deep.equal({
+      ).toEqual({
         data: {
           type: "article",
           id: "12",
@@ -272,7 +273,7 @@ describe("Resource", () => {
 });
 
 describe("Resource.parse", () => {
-  let registry;
+  let registry: Registry;
 
   const testData = {
     data: {
@@ -314,14 +315,14 @@ describe("Resource.parse", () => {
   });
 
   it("does not include resource type by default", () => {
-    expect(registry.parse(testData)).to.deep.equal({
+    expect(registry.parse(testData)).toEqual({
       id: "1",
       children: [{ id: "11", parent: "1" }]
     });
   });
 
   it("sets the resource type in the field specified", () => {
-    expect(registry.parse(testData, { typeAttr: "type_" })).to.deep.equal({
+    expect(registry.parse(testData, { typeAttr: "type_" })).toEqual({
       type_: "parent-type",
       id: "1",
       children: [{ type_: "child-type", id: "11", parent: "1" }]
@@ -359,7 +360,7 @@ describe("Resource.resource", () => {
           { id: 2, title: "second" }
         ]
       })
-    ).to.deep.equal({
+    ).toEqual({
       data: {
         type: "author",
         id: "1",
@@ -414,7 +415,7 @@ describe("Resource.document", () => {
         fullContent: "Lorem ipsum ... no i tak dalej",
         commentList: [1, 5, 9]
       })
-    ).to.deep.equal({
+    ).toEqual({
       data: {
         type: "article",
         id: "12",
