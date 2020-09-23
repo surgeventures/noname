@@ -15,30 +15,29 @@ export type RegistryCreateOptions = {
 };
 
 export default class RegistryImpl implements Registry {
-  private options?: RegistryCreateOptions;
+  private readonly options?: RegistryCreateOptions;
 
-  private resources: MapObject<Resource>;
+  private readonly resources: MapObject<Resource>;
 
-  public keyTransformFunc: TransformFunc;
+  public readonly keyTransformFunc: TransformFunc;
 
-  public keyParseFunc: TransformFunc;
+  public readonly keyParseFunc: TransformFunc;
 
   constructor(options?: RegistryCreateOptions) {
     this.options = options;
     this.resources = {};
 
     this.keyTransformFunc =
-      this.options && this.options.keyTransform === "kebab"
-        ? kebabCaseDeep
-        : identity;
+      this.options?.keyTransform === "kebab" ? kebabCaseDeep : identity;
     this.keyParseFunc =
-      this.options && this.options.keyTransform === "kebab"
-        ? camelCaseDeep
-        : identity;
+      this.options?.keyTransform === "kebab" ? camelCaseDeep : identity;
   }
 
   define(type: string, spec: ResourceSpec): Resource {
     const resource = new ResourceImpl(this, type, spec);
+    if (type in this.resources) {
+      throw new Error(`Resource ${type} is already defined`);
+    }
     this.resources[type] = resource;
     return resource;
   }
@@ -74,9 +73,10 @@ export default class RegistryImpl implements Registry {
     )
       ? document.included.reduce((accum: IncludesMap, res) => {
           const resource = parseResource(res);
-          // eslint-disable-next-line no-param-reassign
-          accum[`${res.type}:${resource.id as string}`] = resource;
-          return accum;
+          return {
+            ...accum,
+            [`${res.type}:${resource.id as string}`]: resource
+          };
         }, {})
       : undefined;
 

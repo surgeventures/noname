@@ -17,9 +17,7 @@ const transformKeysDeep = (
   if (obj instanceof Object) {
     return Object.entries(obj).reduce((accum: JSONObject, [key, value]) => {
       const newKey = keyFn(key);
-      // eslint-disable-next-line no-param-reassign
-      accum[newKey] = transformKeysDeep(value, keyFn);
-      return accum;
+      return { ...accum, [newKey]: transformKeysDeep(value, keyFn) };
     }, {});
   }
   return obj;

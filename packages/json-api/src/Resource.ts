@@ -58,98 +58,97 @@ type ResourceRelationshipMapper = (
 
 type ResourceRelationshipHelpers = Array<[string, ResourceRelationshipMapper]>;
 
+function normalizeAttributes(
+  specs?: ResourceAttributesSpec
+): ResourceAttributeHelpers {
+  if (Array.isArray(specs)) {
+    return specs.map(spec => {
+      if (typeof spec === "string") {
+        return [spec, defaultAttributeMapper];
+      }
+      return spec;
+    });
+  }
+  if (specs != null) {
+    return Object.entries(specs).map(([key, value]) => [
+      key,
+      { ...defaultAttributeMapper, ...value }
+    ]);
+  }
+  return [];
+}
+
+// a runtime equivalent of `value implements Resource`
+function isResource(value: any): value is Resource {
+  return "document" in value && "resource" in value && "parse" in value;
+}
+
+function normalizeRelationships(
+  registry: Registry,
+  relationshipSpecs?: ResourceRelationshipsSpec
+): ResourceRelationshipHelpers | null {
+  if (relationshipSpecs != null) {
+    return Object.entries(relationshipSpecs).map(([key, value]) => {
+      const getter = (data: JSONObject, dataKey: string) => {
+        let relatedResourceClass: Resource | null;
+        if (typeof value === "string") {
+          relatedResourceClass = registry.find(value);
+        } else if (isResource(value)) {
+          relatedResourceClass = value;
+        } else {
+          relatedResourceClass = registry.find(
+            (value as { type: string }).type
+          );
+        }
+
+        if (relatedResourceClass == null) {
+          throw new Error(`Cannot find ${dataKey} resource`);
+        }
+
+        // eslint-disable-next-line no-underscore-dangle
+        const formatRelationship = (value as { _embed?: boolean })._embed
+          ? (r: JSONObject) => (relatedResourceClass as Resource).resource(r)
+          : (r: JSONObject) => (relatedResourceClass as Resource).link(r);
+
+        const raw = data[dataKey];
+        if (Array.isArray(raw)) {
+          return {
+            data: raw.map(formatRelationship)
+          };
+        }
+        if (raw != null) {
+          return {
+            data: formatRelationship(raw as JSONObject)
+          };
+        }
+        return {
+          data: null
+        };
+      };
+
+      return [key, getter as ResourceRelationshipMapper];
+    });
+  }
+  return null;
+}
+
 export default class ResourceImpl implements Resource {
-  private registry: Registry;
+  private readonly registry: Registry;
 
-  private type: string;
+  private readonly type: string;
 
-  private idSpec: ResourceIdMapper;
+  private readonly idSpec: ResourceIdMapper;
 
-  private attributes: ResourceAttributeHelpers;
+  private readonly attributes: ResourceAttributeHelpers;
 
-  private relationships: ResourceRelationshipHelpers | null;
+  private readonly relationships: ResourceRelationshipHelpers | null;
 
   constructor(registry: Registry, type: string, spec: ResourceSpec) {
     this.registry = registry;
     this.type = type;
     this.idSpec = { ...defaultIdMapper, ...spec.id };
-    this.attributes = this.normalizeAttributes(spec.attributes);
-    this.relationships = this.normalizeRelationships(
-      registry,
-      spec.relationships
-    );
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  private normalizeAttributes(
-    specs?: ResourceAttributesSpec
-  ): ResourceAttributeHelpers {
-    if (Array.isArray(specs)) {
-      return specs.map(spec => {
-        if (typeof spec === "string") {
-          return [spec, defaultAttributeMapper];
-        }
-        return spec;
-      });
-    }
-    if (specs != null) {
-      return Object.entries(specs).map(([key, value]) => [
-        key,
-        { ...defaultAttributeMapper, ...value }
-      ]);
-    }
-    return [];
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  private normalizeRelationships(
-    registry: Registry,
-    relationshipSpecs?: ResourceRelationshipsSpec
-  ): ResourceRelationshipHelpers | null {
-    if (relationshipSpecs != null) {
-      return Object.entries(relationshipSpecs).map(([key, value]) => {
-        // eslint-disable-next-line no-shadow
-        const getter = (data: JSONObject, key: string) => {
-          let relatedResourceClass: Resource | null;
-          if (typeof value === "string") {
-            relatedResourceClass = registry.find(value);
-          } else if (value instanceof ResourceImpl) {
-            relatedResourceClass = value;
-          } else {
-            relatedResourceClass = registry.find(
-              (value as { type: string }).type
-            );
-          }
-
-          if (relatedResourceClass == null) {
-            throw new Error(`Cannot find ${key} resource`);
-          }
-
-          // eslint-disable-next-line no-underscore-dangle
-          const formatRelationship = (value as { _embed?: boolean })._embed
-            ? (r: JSONObject) => (relatedResourceClass as Resource).resource(r)
-            : (r: JSONObject) => (relatedResourceClass as Resource).link(r);
-
-          const raw = data[key];
-          if (Array.isArray(raw)) {
-            return {
-              data: raw.map(formatRelationship)
-            };
-          }
-          if (raw != null) {
-            return {
-              data: formatRelationship(raw as JSONObject)
-            };
-          }
-          return {
-            data: null
-          };
-        };
-
-        return [key, getter as ResourceRelationshipMapper];
-      });
-    }
-    return null;
+    this.attributes = normalizeAttributes(spec.attributes);
+    this.relationships = normalizeRelationships(registry, spec.relationships);
   }
 
   id(value: JSONValue): { type: string; id: string | null | undefined } {
@@ -179,11 +178,7 @@ export default class ResourceImpl implements Resource {
     result.attributes = this.registry.keyTransformFunc(
       this.attributes.reduce((accum: MapObject<any>, [key, desc]) => {
         const value = desc.formatter(desc.getter(data, key));
-        if (value !== undefined) {
-          // eslint-disable-next-line no-param-reassign
-          accum[key] = value;
-        }
-        return accum;
+        return value !== undefined ? { ...accum, [key]: value } : accum;
       }, {})
     );
 
@@ -193,8 +188,7 @@ export default class ResourceImpl implements Resource {
           const value = desc(data, key);
           if (value !== undefined) {
             const resultKey = this.registry.keyTransformFunc(key) as string;
-            // eslint-disable-next-line no-param-reassign
-            accum[resultKey] = value;
+            return { ...accum, [resultKey]: value };
           }
           return accum;
         }, {})

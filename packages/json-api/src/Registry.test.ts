@@ -9,7 +9,6 @@ describe("Registry.define", () => {
 
   it("should be able to define a new resource", () => {
     const resource = registry.define("test", {});
-    // eslint-disable-next-line no-unused-expressions
     expect(resource).not.toBeNull();
   });
 });

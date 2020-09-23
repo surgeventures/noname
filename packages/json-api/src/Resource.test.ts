@@ -7,10 +7,13 @@ describe("Resource", () => {
 
   beforeEach(() => {
     registry = new Registry();
-    author = registry.define("author", {});
   });
 
   describe("id formatting", () => {
+    beforeEach(() => {
+      author = registry.define("author", {});
+    });
+
     it("properly formats resource ID", () => {
       expect(author.id(12)).toEqual({
         type: "author",
@@ -332,7 +335,6 @@ describe("Resource.parse", () => {
 
 describe("Resource.resource", () => {
   it("handles embedding resources", () => {
-    // eslint-disable-next-line no-shadow
     const registry = new Registry({
       keyTransform: "kebab"
     });
