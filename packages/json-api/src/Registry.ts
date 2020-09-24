@@ -41,10 +41,8 @@ export default class RegistryImpl implements Registry {
     this.options = options;
     this.resources = {};
 
-    this.keyTransformFunc =
-      this.options?.keyTransform === "kebab" ? kebabCaseDeep : identity;
-    this.keyParseFunc =
-      this.options?.keyTransform === "kebab" ? camelCaseDeep : identity;
+    this.keyTransformFunc = keyTransformMapping[this.options.keyTransform];
+    this.keyParseFunc = keyParseMapping[this.options.keyTransform];
   }
 
   define(type: string, spec: ResourceSpec): Resource {
