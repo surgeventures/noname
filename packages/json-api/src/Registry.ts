@@ -37,7 +37,7 @@ export default class RegistryImpl implements Registry {
 
   public readonly keyParseFunc: TransformFunc;
 
-  constructor(options?: RegistryCreateOptions) {
+  constructor(options: RegistryCreateOptions = { keyTransform: KEY_TRANSFORMS.DEFAULT}) {
     this.options = options;
     this.resources = {};
 
