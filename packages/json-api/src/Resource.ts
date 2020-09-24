@@ -33,16 +33,16 @@ type ResourceAttributeHelpers = Array<[string, ResourceAttributeMapper]>;
 const defaultIdMapper: ResourceIdMapper = {
   attr: "id",
   format(value) {
-    if (value === null) {
-      return null;
-    }
-    if (value === undefined) {
-      return undefined;
+    if (value == null) {
+      return value;
     }
     return String(value);
   },
   parse(resourceObj) {
-    return resourceObj.id != null ? String(resourceObj.id) : null;
+    if (resourceObj.id != null) {
+      return String(resourceObj.id);
+    }
+    return null;
   }
 };
 
