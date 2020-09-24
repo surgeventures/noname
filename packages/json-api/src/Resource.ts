@@ -83,52 +83,51 @@ function isResource(value: any): value is Resource {
   return "document" in value && "resource" in value && "parse" in value;
 }
 
-const getterInitializer = (registry: Registry) => (value: unknown) => (data: JSONObject, dataKey: string): ResourceRelationshipMapper => {
-  let relatedResourceClass: Resource | null;
-  if (typeof value === "string") {
-    relatedResourceClass = registry.find(value);
-  } else if (isResource(value)) {
-    relatedResourceClass = value;
-  } else {
-    relatedResourceClass = registry.find(
-      (value as { type: string }).type
-    );
-  }
-
-  if (relatedResourceClass == null) {
-    throw new Error(`Cannot find ${dataKey} resource`);
-  }
-
-  // eslint-disable-next-line no-underscore-dangle
-  const formatRelationship = (value as { _embed?: boolean })._embed
-    ? (r: JSONObject) => (relatedResourceClass as Resource).resource(r)
-    : (r: JSONObject) => (relatedResourceClass as Resource).link(r);
-
-  const raw = data[dataKey];
-  if (Array.isArray(raw)) {
-    return {
-      data: raw.map(formatRelationship)
-    };
-  }
-  if (raw != null) {
-    return {
-      data: formatRelationship(raw as JSONObject)
-    };
-  }
-  return {
-    data: null
-  };
-};
-
 function normalizeRelationships(
   registry: Registry,
   relationshipSpecs?: ResourceRelationshipsSpec
 ): ResourceRelationshipHelpers | null {
   if (relationshipSpecs != null) {
-    const getterFromValue = getterInitializer(registry);
-    return Object.entries(relationshipSpecs).map(([key, value]) => ([
-      key, getterFromValue(value)
-    ]));
+    return Object.entries(relationshipSpecs).map(([key, value]) => {
+      const getter = (data: JSONObject, dataKey: string) => {
+        let relatedResourceClass: Resource | null;
+        if (typeof value === "string") {
+          relatedResourceClass = registry.find(value);
+        } else if (isResource(value)) {
+          relatedResourceClass = value;
+        } else {
+          relatedResourceClass = registry.find(
+            (value as { type: string }).type
+          );
+        }
+
+        if (relatedResourceClass == null) {
+          throw new Error(`Cannot find ${dataKey} resource`);
+        }
+
+        // eslint-disable-next-line no-underscore-dangle
+        const formatRelationship = (value as { _embed?: boolean })._embed
+          ? (r: JSONObject) => (relatedResourceClass as Resource).resource(r)
+          : (r: JSONObject) => (relatedResourceClass as Resource).link(r);
+
+        const raw = data[dataKey];
+        if (Array.isArray(raw)) {
+          return {
+            data: raw.map(formatRelationship)
+          };
+        }
+        if (raw != null) {
+          return {
+            data: formatRelationship(raw as JSONObject)
+          };
+        }
+        return {
+          data: null
+        };
+      };
+
+      return [key, getter as ResourceRelationshipMapper];
+    });
   }
   return null;
 }
