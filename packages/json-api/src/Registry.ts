@@ -11,23 +11,23 @@ import { identity, kebabCaseDeep, camelCaseDeep, TransformFunc } from "./utils";
 import ResourceImpl from "./Resource";
 import DuplicateResourceError from "./DuplicateResourceError";
 
-export enum KEY_TRANSFORMS {
-  KEBAB = "kebab",
-  DEFAULT = "default"
+export enum KeyTransforms {
+  Kebab = "kebab",
+  Default = "default"
 }
 
 type RegistryCreateOptions = {
-  keyTransform: KEY_TRANSFORMS;
+  keyTransform: KeyTransforms;
 };
 
 const keyTransformMapping = {
-  [KEY_TRANSFORMS.KEBAB]: kebabCaseDeep,
-  [KEY_TRANSFORMS.DEFAULT]: identity
+  [KeyTransforms.Kebab]: kebabCaseDeep,
+  [KeyTransforms.Default]: identity
 };
 
 const keyParseMapping = {
-  [KEY_TRANSFORMS.KEBAB]: camelCaseDeep,
-  [KEY_TRANSFORMS.DEFAULT]: identity
+  [KeyTransforms.Kebab]: camelCaseDeep,
+  [KeyTransforms.Default]: identity
 };
 
 export default class RegistryImpl implements Registry {
@@ -40,7 +40,7 @@ export default class RegistryImpl implements Registry {
   public readonly keyParseFunc: TransformFunc;
 
   constructor(
-    options: RegistryCreateOptions = { keyTransform: KEY_TRANSFORMS.DEFAULT }
+    options: RegistryCreateOptions = { keyTransform: KeyTransforms.Default }
   ) {
     this.options = options;
     this.resources = {};

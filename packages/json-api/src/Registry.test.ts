@@ -1,4 +1,4 @@
-import Registry, { KEY_TRANSFORMS } from "./Registry";
+import Registry, { KeyTransforms } from "./Registry";
 
 describe("Registry.define", () => {
   let registry: Registry;
@@ -47,7 +47,7 @@ describe("Registry.parse", () => {
   let registry: Registry;
 
   beforeEach(() => {
-    registry = new Registry({ keyTransform: KEY_TRANSFORMS.KEBAB });
+    registry = new Registry({ keyTransform: KeyTransforms.Kebab });
 
     registry.define("survey-resource-type", {
       attributes: ["title", "startDate", "endDate"]
