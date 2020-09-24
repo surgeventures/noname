@@ -10,9 +10,23 @@ import {
 import { identity, kebabCaseDeep, camelCaseDeep, TransformFunc } from "./utils";
 import ResourceImpl from "./Resource";
 
-export type RegistryCreateOptions = {
-  keyTransform?: "kebab";
+enum KEY_TRANSFORMS {
+  KEBAB = "kebab",
+  DEFAULT = "default",
+}
+type RegistryCreateOptions = {
+  keyTransform: KEY_TRANSFORMS;
 };
+
+const keyTransformMapping = {
+  [KEY_TRANSFORMS.KEBAB]: kebabCaseDeep,
+  [KEY_TRANSFORMS.DEFAULT]: identity,
+}
+
+const keyParseMapping = {
+  [KEY_TRANSFORMS.KEBAB]: camelCaseDeep,
+  [KEY_TRANSFORMS.DEFAULT]: identity,
+}
 
 export default class RegistryImpl implements Registry {
   private readonly options?: RegistryCreateOptions;
