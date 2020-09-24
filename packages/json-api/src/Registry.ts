@@ -9,6 +9,7 @@ import {
 } from "./types";
 import { identity, kebabCaseDeep, camelCaseDeep, TransformFunc } from "./utils";
 import ResourceImpl from "./Resource";
+import DuplicateResourceError from "./DuplicateResourceError";
 
 export enum KEY_TRANSFORMS {
   KEBAB = "kebab",
@@ -51,7 +52,7 @@ export default class RegistryImpl implements Registry {
   define(type: string, spec: ResourceSpec): Resource {
     const resource = new ResourceImpl(this, type, spec);
     if (type in this.resources) {
-      throw new Error(`Resource ${type} is already defined`);
+      throw new DuplicateResourceError(type);
     }
     this.resources[type] = resource;
     return resource;
