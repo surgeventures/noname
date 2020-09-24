@@ -1,4 +1,4 @@
-import Registry from "./Registry";
+import Registry, { KEY_TRANSFORMS } from "./Registry";
 import { Resource } from "./types";
 
 describe("Resource", () => {
@@ -336,7 +336,7 @@ describe("Resource.parse", () => {
 describe("Resource.resource", () => {
   it("handles embedding resources", () => {
     const registry = new Registry({
-      keyTransform: "kebab"
+      keyTransform: KEY_TRANSFORMS.KEBAB
     });
 
     const author3 = registry.define("author", {
@@ -385,7 +385,7 @@ describe("Resource.resource", () => {
 describe("Resource.document", () => {
   it("handles transform=kebab option properly", () => {
     const registry = new Registry({
-      keyTransform: "kebab"
+      keyTransform: KEY_TRANSFORMS.KEBAB
     });
 
     registry.define("author", {
