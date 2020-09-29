@@ -1,0 +1,12 @@
+node_modules/
+docs/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+lib/
+es/
+.publish
+dist/
+min
+coverage/
+.idea/
