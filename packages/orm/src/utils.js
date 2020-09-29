@@ -5,13 +5,6 @@ import { FILTER, EXCLUDE } from './constants';
  * @module utils
  */
 
-function warnDeprecated(msg) {
-    const logger = typeof console.warn === 'function'
-        ? console.warn.bind(console)
-        : console.log.bind(console);
-    return logger(msg);
-}
-
 function capitalize(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -205,5 +198,4 @@ export {
     getBatchToken,
     clauseFiltersByAttribute,
     clauseReducesResultSetSize,
-    warnDeprecated,
 };

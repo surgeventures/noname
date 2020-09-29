@@ -1,7 +1,6 @@
 import mapValues from 'lodash/mapValues';
 import {
     normalizeEntity,
-    warnDeprecated,
 } from './utils';
 
 import {
@@ -319,54 +318,6 @@ const QuerySet = class QuerySet {
         });
 
         this._evaluated = false;
-    }
-
-    // DEPRECATED AND REMOVED METHODS
-
-    /**
-     * @deprecated
-     * Use {@link QuerySet#toModelArray} or predicate functions that
-     * instantiate Models from refs, e.g. `new Model(ref)`.
-     */
-    get withModels() {
-        throw new Error(
-            '`QuerySet.prototype.withModels` has been removed. ' +
-            'Use `.toModelArray()` or predicate functions that ' +
-            'instantiate Models from refs, e.g. `new Model(ref)`.'
-        );
-    }
-
-    /**
-     * @deprecated Query building operates on refs only now.
-     */
-    get withRefs() {
-        warnDeprecated(
-            '`QuerySet.prototype.withRefs` has been deprecated. ' +
-            'Query building operates on refs only now.'
-        );
-        return undefined;
-    }
-
-    /**
-     * @deprecated
-     * Call {@link QuerySet#toModelArray} or {@link QuerySet#toRefArray} first to map.
-     */
-    map() {
-        throw new Error(
-            '`QuerySet.prototype.map` has been removed. ' +
-            'Call `.toModelArray()` or `.toRefArray()` first to map.'
-        );
-    }
-
-    /**
-     * @deprecated
-     * Call {@link QuerySet#toModelArray} or {@link QuerySet#toRefArray} first to iterate.
-     */
-    forEach() {
-        throw new Error(
-            '`QuerySet.prototype.forEach` has been removed. ' +
-            'Call `.toModelArray()` or `.toRefArray()` first to iterate.'
-        );
     }
 };
 

@@ -8,16 +8,10 @@ import {
 } from './fields';
 
 import {
-    createReducer,
-    createSelector,
-} from './redux';
-
-import {
     m2mName,
     attachQuerySetMethods,
     m2mToFieldName,
     m2mFromFieldName,
-    warnDeprecated,
 } from './utils';
 
 const ORM_DEFAULTS = {
@@ -253,79 +247,6 @@ export class ORM {
             orm: this,
         })).run();
     }
-
-    // DEPRECATED AND REMOVED METHODS
-
-    /**
-     * @deprecated Use {@link ORM#mutableSession} instead.
-     */
-    withMutations(state) {
-        warnDeprecated(
-            '`ORM.prototype.withMutations` has been deprecated. ' +
-            'Use `ORM.prototype.mutableSession` instead.'
-        );
-        return this.mutableSession(state);
-    }
-
-    /**
-     * @deprecated Use {@link ORM#session} instead.
-     */
-    from(state) {
-        warnDeprecated(
-            '`ORM.prototype.from` has been deprecated. ' +
-            'Use `ORM.prototype.session` instead.'
-        );
-        return this.session(state);
-    }
-
-    /**
-     * @deprecated Access {@link Session#state} instead.
-     */
-    reducer() {
-        warnDeprecated(
-            '`ORM.prototype.reducer` has been deprecated. Access ' +
-            'the `Session.prototype.state` property instead.'
-        );
-        return createReducer(this);
-    }
-
-    /**
-     * @deprecated Use `import { createSelector } from "redux-orm"` instead.
-     */
-    createSelector(...args) {
-        warnDeprecated(
-            '`ORM.prototype.createSelector` has been deprecated. ' +
-            'Import `createSelector` from Redux-ORM instead.'
-        );
-        return createSelector(this, ...args);
-    }
-
-    /**
-     * @deprecated Use {@link ORM#getEmptyState} instead.
-     */
-    getDefaultState() {
-        warnDeprecated(
-            '`ORM.prototype.getDefaultState` has been deprecated. Use ' +
-            '`ORM.prototype.getEmptyState` instead.'
-        );
-        return this.getEmptyState();
-    }
-
-    /**
-     * @deprecated Define a Model class instead.
-     */
-    define() {
-        throw new Error(
-            '`ORM.prototype.define` has been removed. Please define a Model class.'
-        );
-    }
-}
-
-export function DeprecatedSchema() {
-    throw new Error(
-        'Schema has been renamed to ORM. Please import ORM instead of Schema ' +
-        'from Redux-ORM.'
-    );
 }
 
 export default ORM;

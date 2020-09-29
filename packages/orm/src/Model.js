@@ -13,7 +13,6 @@ import {
     normalizeEntity,
     arrayDiffActions,
     objectShallowEquals,
-    warnDeprecated,
     m2mName,
 } from './utils';
 
@@ -209,14 +208,6 @@ const Model = class Model {
      * @private
      */
     static _getTableOpts() {
-        if (typeof this.backend === 'function') {
-            warnDeprecated('`Model.backend` has been deprecated. Please rename to `.options`.');
-            return this.backend();
-        }
-        if (this.backend) {
-            warnDeprecated('`Model.backend` has been deprecated. Please rename to `.options`.');
-            return this.backend;
-        }
         if (typeof this.options === 'function') {
             return this.options();
         }
@@ -702,32 +693,6 @@ const Model = class Model {
                 }
             }
         }
-    }
-
-    // DEPRECATED AND REMOVED METHODS
-
-    /**
-     * Returns a boolean indicating if an entity
-     * with the id `id` exists in the state.
-     *
-     * @param  {*}  id - a value corresponding to the id attribute of the {@link Model} class.
-     * @return {Boolean} a boolean indicating if entity with `id` exists in the state
-     * @deprecated Please use {@link Model.idExists} instead.
-     */
-    static hasId(id) {
-        console.warn('`Model.hasId` has been deprecated. Please use `Model.idExists` instead.');
-        return this.idExists(id);
-    }
-
-    /**
-     * @deprecated See the 0.9 migration guide on the GitHub repo.
-     * @throws {Error} Due to deprecation.
-     */
-    getNextState() {
-        throw new Error(
-            '`Model.prototype.getNextState` has been removed. See the 0.9 ' +
-            'migration guide on the GitHub repo.'
-        );
     }
 };
 

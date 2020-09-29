@@ -1,7 +1,7 @@
 import { getBatchToken } from 'immutable-ops';
 
 import { SUCCESS, UPDATE, DELETE } from './constants';
-import { warnDeprecated, clauseFiltersByAttribute } from './utils';
+import { clauseFiltersByAttribute } from './utils';
 
 const Session = class Session {
     /**
@@ -157,32 +157,6 @@ const Session = class Session {
              */
             this.markFullTableScanned(table);
         }
-    }
-
-    // DEPRECATED AND REMOVED METHODS
-
-    /**
-     * @deprecated Access {@link Session#state} instead.
-     */
-    getNextState() {
-        warnDeprecated(
-            '`Session.prototype.getNextState` has been deprecated. Access ' +
-            'the `Session.prototype.state` property instead.'
-        );
-        return this.state;
-    }
-
-    /**
-     * @deprecated
-     * The Redux integration API is now decoupled from ORM and Session.<br>
-     * See the 0.9 migration guide in the GitHub repo.
-     */
-    reduce() {
-        throw new Error(
-            '`Session.prototype.reduce` has been removed. The Redux integration API ' +
-            'is now decoupled from ORM and Session - see the 0.9 migration guide ' +
-            'in the GitHub repo.'
-        );
     }
 };
 

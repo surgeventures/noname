@@ -1,5 +1,5 @@
 import {
-    arrayDiffActions, warnDeprecated, m2mName, m2mFromFieldName, m2mToFieldName, reverseFieldName, normalizeEntity, objectShallowEquals, clauseFiltersByAttribute, attachQuerySetMethods
+    arrayDiffActions, m2mName, m2mFromFieldName, m2mToFieldName, reverseFieldName, normalizeEntity, objectShallowEquals, clauseFiltersByAttribute, attachQuerySetMethods
 } from '../../utils';
 import { FILTER } from '../../constants';
 import { Model, QuerySet, ORM } from '../../index';
@@ -39,45 +39,6 @@ describe('Utils', () => {
 
             const actions = arrayDiffActions(source, target);
             expect(actions).toBe(null);
-        });
-    });
-
-    describe('warnDeprecated', () => {
-        let consoleWarn;
-        let consoleLog;
-        beforeEach(() => {
-            consoleWarn = {
-                timesRun: 0,
-                lastMessage: null,
-            };
-            consoleLog = {
-                timesRun: 0,
-                lastMessage: null,
-            };
-            console.warn = undefined;
-            console.log = undefined;
-        });
-
-        it('calls console.warn if possible', () => {
-            console.warn = (msg) => {
-                consoleWarn.timesRun++;
-                consoleWarn.lastMessage = msg;
-            };
-            expect(consoleWarn.timesRun).toBe(0);
-            warnDeprecated('test consoleWarn');
-            expect(consoleWarn.timesRun).toBe(1);
-            expect(consoleWarn.lastMessage).toBe('test consoleWarn');
-        });
-
-        it('calls console.log if console.warn is not callable', () => {
-            console.log = (msg) => {
-                consoleLog.timesRun++;
-                consoleLog.lastMessage = msg;
-            };
-            expect(consoleLog.timesRun).toBe(0);
-            warnDeprecated('test consoleLog');
-            expect(consoleLog.timesRun).toBe(1);
-            expect(consoleLog.lastMessage).toBe('test consoleLog');
         });
     });
 
