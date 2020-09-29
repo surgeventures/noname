@@ -1,5 +1,5 @@
 {
-  "name": "redux-orm",
+  "name": "@fresha/noname-orm",
   "version": "0.12.4",
   "description": "Simple ORM to manage and query your state trees",
   "main": "lib/index.js",
@@ -30,7 +30,7 @@
   "author": "Tommi Kaikkonen <tommi.kaikkonen@aalto.fi>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tommikaikkonen/redux-orm.git"
+    "url": "git+https://github.com/surgeventures/noname.git"
   },
   "license": "MIT",
   "devDependencies": {
