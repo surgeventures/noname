@@ -320,7 +320,8 @@ describe("Resource.parse", () => {
   it("does not include resource type by default", () => {
     expect(registry.parse(testData)).toEqual({
       id: "1",
-      children: [{ id: "11", parent: "1" }]
+      children: [{ id: "11", parent: "1" }],
+      included: { "child-type:11": { id: "11", parent: "1" } }
     });
   });
 
@@ -328,7 +329,10 @@ describe("Resource.parse", () => {
     expect(registry.parse(testData, { typeAttr: "type_" })).toEqual({
       type_: "parent-type",
       id: "1",
-      children: [{ type_: "child-type", id: "11", parent: "1" }]
+      children: [{ type_: "child-type", id: "11", parent: "1" }],
+      included: {
+        "child-type:11": { id: "11", parent: "1", type_: "child-type" }
+      }
     });
   });
 });

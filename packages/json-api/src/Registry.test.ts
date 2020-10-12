@@ -185,7 +185,8 @@ describe("Registry.parse", () => {
       })
     ).toEqual({
       id: "12",
-      children: { id: "123" }
+      children: { id: "123" },
+      included: { "children:123": { id: "123" } }
     });
   });
 
@@ -263,7 +264,12 @@ describe("Registry.parse", () => {
       })
     ).toEqual({
       id: "12",
-      children: [{ id: "123" }, { id: "125" }, { id: "127" }]
+      children: [{ id: "123" }, { id: "125" }, { id: "127" }],
+      included: {
+        "children:123": { id: "123" },
+        "children:125": { id: "125" },
+        "children:127": { id: "127" }
+      }
     });
   });
 
@@ -317,7 +323,11 @@ describe("Registry.parse", () => {
       })
     ).toEqual({
       id: "12",
-      children: { id: "123", parent: "12", children: "456" }
+      children: { id: "123", parent: "12", children: "456" },
+      included: {
+        "children:123": { children: "456", id: "123", parent: "12" },
+        "grandchildren:456": { id: "456", parent: "123" }
+      }
     });
   });
 });
