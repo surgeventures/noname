@@ -71,6 +71,12 @@ describe("Registry.parse", () => {
         parent: "children"
       }
     });
+
+    registry.define("terminals", {
+      relationships: {
+        parent: "terminals"
+      }
+    });
   });
 
   it("should parse single resource with attributes", () => {
@@ -187,6 +193,50 @@ describe("Registry.parse", () => {
       id: "12",
       children: { id: "123" },
       included: { "children:123": { id: "123" } }
+    });
+  });
+
+  it("parses single relationship with additional included", () => {
+    expect(
+      registry.parse({
+        data: {
+          type: "parent",
+          id: "12",
+          relationships: {
+            children: {
+              data: {
+                type: "children",
+                id: "123"
+              }
+            }
+          }
+        },
+        included: [
+          {
+            type: "children",
+            id: "123"
+          },
+          {
+            type: "terminals",
+            id: "1234",
+            relationships: {
+              location: {
+                data: {
+                  id: "12",
+                  type: "locations"
+                }
+              }
+            }
+          }
+        ]
+      })
+    ).toEqual({
+      id: "12",
+      children: { id: "123" },
+      included: {
+        "children:123": { id: "123" },
+        "terminals:1234": { id: "1234", location: "12" }
+      }
     });
   });
 
