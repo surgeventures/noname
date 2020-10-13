@@ -230,6 +230,7 @@ export default class ResourceImpl implements Resource {
         result[name] = null;
       }
     });
-    return { ...result, ...(includesMap ? { included: includesMap } : {}) };
+
+    return { ...result, ...(includesMap ? { included_: includesMap } : {}) };
   }
 }
