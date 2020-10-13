@@ -4,7 +4,8 @@
   "description": "POC of a API / data layer for Fresha SPA",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "pretest": "npx lerna bootstrap",
+    "test": "npx lerna exec -- npm test"
   },
   "repository": {
     "type": "git",
