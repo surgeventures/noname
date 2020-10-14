@@ -231,6 +231,6 @@ export default class ResourceImpl implements Resource {
       }
     });
 
-    return { ...result, ...(includesMap ? { included_: includesMap } : {}) };
+    return result;
   }
 }

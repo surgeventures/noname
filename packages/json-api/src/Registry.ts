@@ -96,12 +96,32 @@ export default class RegistryImpl implements Registry {
         }, {})
       : undefined;
 
-    if (Array.isArray(document.data)) {
-      return (document.data as JSONAPIResource[]).map(elem =>
-        parseResource(elem, includesMap)
+    let included: { [key: string]: Array<JSONValue> } = {};
+    if (includesMap) {
+      included = Object.keys(includesMap).reduce(
+        (acc: { [key: string]: Array<JSONValue> }, key) => {
+          const unifiedKey: string = key.split(":")[0];
+          if (acc[unifiedKey]) acc[unifiedKey].push(includesMap[key]);
+          else acc[unifiedKey] = [includesMap[key]];
+          return acc;
+        },
+        {}
       );
     }
-    return parseResource(document.data as JSONAPIResource, includesMap);
+
+    const data = Array.isArray(document.data)
+      ? (document.data as JSONAPIResource[]).map(elem =>
+          parseResource(elem, includesMap)
+        )
+      : parseResource(document.data as JSONAPIResource, includesMap);
+
+    Object.defineProperty(data, "included_", {
+      value: included,
+      writable: false,
+      enumerable: false
+    });
+
+    return data;
   }
 }
 
