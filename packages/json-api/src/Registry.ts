@@ -1,4 +1,4 @@
-import { JSONValue, JSONAPIDocument, JSONAPIResource } from "./jsonApiTypes";
+import { JSONValue, JSONAPIDocument, JSONAPIResource } from "@fresha/noname-core";
 import {
   IncludesMap,
   MapObject,

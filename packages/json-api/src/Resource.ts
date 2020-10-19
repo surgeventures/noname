@@ -5,7 +5,7 @@ import {
   JSONValue,
   JSONAPIResourceRelationship,
   JSONAPIResourceId
-} from "./jsonApiTypes";
+} from "@fresha/noname-core";
 import {
   IncludesMap,
   MapObject,
