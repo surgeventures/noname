@@ -1,4 +1,3 @@
-// import { JSONObject } from "./jsonApiTypes";
 import Registry, { KeyTransforms } from "./Registry";
 
 describe("Registry.define", () => {
@@ -242,6 +241,58 @@ describe("Registry.parse", () => {
       {
         id: "1234",
         location: "12"
+      }
+    ]);
+  });
+
+  it("parses included with resource type", () => {
+    const response = registry.parse(
+      {
+        data: {
+          type: "parent",
+          id: "12",
+          relationships: {
+            children: {
+              data: {
+                type: "children",
+                id: "123"
+              }
+            }
+          }
+        },
+        included: [
+          {
+            type: "children",
+            id: "123"
+          },
+          {
+            type: "terminals",
+            id: "1234",
+            relationships: {
+              location: {
+                data: {
+                  id: "12",
+                  type: "locations"
+                }
+              }
+            }
+          }
+        ]
+      },
+      { includedInResponse: true, typeAttr: "type_" }
+    );
+
+    expect(response).toEqual([
+      {
+        id: "12",
+        type_: "parent",
+        children: { id: "123", type_: "children" }
+      },
+      { id: "123", type_: "children" },
+      {
+        id: "1234",
+        location: "12",
+        type_: "terminals"
       }
     ]);
   });

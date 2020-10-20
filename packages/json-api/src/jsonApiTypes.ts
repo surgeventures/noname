@@ -12,10 +12,6 @@ export type JSONObject = {
   [key: string]: JSONValue;
 };
 
-export type JSONObjectOfArrays = {
-  [key: string]: Array<JSONValue>;
-};
-
 /* JSON API definitions */
 
 export type JSONAPIError = {
