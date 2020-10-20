@@ -22,11 +22,14 @@ type ResourceIdMapper = {
   format(value: JSONValue): string | null | undefined;
   parse(resource: JSONAPIResourceId): string | null;
 };
+
 type ResourceAttributeMapper = {
   getter(data: JSONObject, key: string): any;
   formatter(data: JSONValue): JSONValue;
 };
+
 type ResourceAttributeHelpers = Array<[string, ResourceAttributeMapper]>;
+
 const defaultIdMapper: ResourceIdMapper = {
   attr: "id",
   format(value) {
@@ -42,15 +45,19 @@ const defaultIdMapper: ResourceIdMapper = {
     return null;
   }
 };
+
 const defaultAttributeMapper: ResourceAttributeMapper = {
   getter: (data: JSONObject, key: string) => data[key] as JSONObject,
   formatter: (value: JSONValue) => value
 };
+
 type ResourceRelationshipMapper = (
   data: JSONObject,
   key: string
 ) => JSONAPIResourceRelationship;
+
 type ResourceRelationshipHelpers = Array<[string, ResourceRelationshipMapper]>;
+
 function normalizeAttributes(
   specs?: ResourceAttributesSpec
 ): ResourceAttributeHelpers {
@@ -70,10 +77,12 @@ function normalizeAttributes(
   }
   return [];
 }
+
 // a runtime equivalent of `value implements Resource`
 function isResource(value: any): value is Resource {
   return "document" in value && "resource" in value && "parse" in value;
 }
+
 function normalizeRelationships(
   registry: Registry,
   relationshipSpecs?: ResourceRelationshipsSpec
@@ -91,13 +100,16 @@ function normalizeRelationships(
             (value as { type: string }).type
           );
         }
+
         if (relatedResourceClass == null) {
           throw new Error(`Cannot find ${dataKey} resource`);
         }
+
         // eslint-disable-next-line no-underscore-dangle
         const formatRelationship = (value as { _embed?: boolean })._embed
           ? (r: JSONObject) => (relatedResourceClass as Resource).resource(r)
           : (r: JSONObject) => (relatedResourceClass as Resource).link(r);
+
         const raw = data[dataKey];
         if (Array.isArray(raw)) {
           return {
@@ -113,11 +125,13 @@ function normalizeRelationships(
           data: null
         };
       };
+
       return [key, getter as ResourceRelationshipMapper];
     });
   }
   return null;
 }
+
 export default class ResourceImpl implements Resource {
   private readonly registry: Registry;
 
@@ -155,16 +169,19 @@ export default class ResourceImpl implements Resource {
     const result: MapObject<any> = {
       type: this.type
     };
+
     const id = this.idSpec.format(data[this.idSpec.attr]);
     if (id !== undefined) {
       result.id = id;
     }
+
     result.attributes = this.registry.keyTransformFunc(
       this.attributes.reduce((accum: MapObject<any>, [key, desc]) => {
         const value = desc.formatter(desc.getter(data, key));
         return value !== undefined ? { ...accum, [key]: value } : accum;
       }, {})
     );
+
     if (this.relationships != null) {
       result.relationships = this.registry.keyTransformFunc(
         this.relationships.reduce((accum: MapObject<any>, [key, desc]) => {
@@ -177,6 +194,7 @@ export default class ResourceImpl implements Resource {
         }, {})
       );
     }
+
     return result as JSONAPIResource;
   }
 
@@ -192,16 +210,20 @@ export default class ResourceImpl implements Resource {
     data: JSONAPIResource,
     includesMap?: IncludesMap,
     options?: ResourceParseOptions
-  ): JSONObject | { included: { [key: string]: JSONObject } } {
+  ): JSONObject {
     const result: MapObject<any> = {};
+
     if (options && options.typeAttr) {
       result[options.typeAttr] = this.type;
     }
+
     result[this.idSpec.attr] = this.idSpec.parse(data);
+
     const attributes = this.registry.keyParseFunc(data.attributes || {});
     Object.entries(attributes as JSONObject).forEach(([name, value]) => {
       result[name] = value;
     });
+
     const getRelatedObject = (link: JSONAPIResourceId) => {
       if (link) {
         if (includesMap) {
@@ -214,9 +236,11 @@ export default class ResourceImpl implements Resource {
       }
       return null;
     };
+
     const relationships = this.registry.keyParseFunc(
       (data.relationships as JSONObject) || {}
     );
+
     Object.entries(
       relationships as Record<string, JSONAPIResourceRelationship>
     ).forEach(([name, value]) => {
