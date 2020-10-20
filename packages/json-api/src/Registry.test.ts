@@ -71,6 +71,12 @@ describe("Registry.parse", () => {
         parent: "children"
       }
     });
+
+    registry.define("terminals", {
+      relationships: {
+        parent: "terminals"
+      }
+    });
   });
 
   it("should parse single resource with attributes", () => {
@@ -187,6 +193,108 @@ describe("Registry.parse", () => {
       id: "12",
       children: { id: "123" }
     });
+  });
+
+  it("parses single relationship with additional included", () => {
+    const response = registry.parse(
+      {
+        data: {
+          type: "parent",
+          id: "12",
+          relationships: {
+            children: {
+              data: {
+                type: "children",
+                id: "123"
+              }
+            }
+          }
+        },
+        included: [
+          {
+            type: "children",
+            id: "123"
+          },
+          {
+            type: "terminals",
+            id: "1234",
+            relationships: {
+              location: {
+                data: {
+                  id: "12",
+                  type: "locations"
+                }
+              }
+            }
+          }
+        ]
+      },
+      { includedInResponse: true }
+    );
+
+    expect(response).toEqual([
+      {
+        id: "12",
+        children: { id: "123" }
+      },
+      { id: "123" },
+      {
+        id: "1234",
+        location: "12"
+      }
+    ]);
+  });
+
+  it("parses included with resource type", () => {
+    const response = registry.parse(
+      {
+        data: {
+          type: "parent",
+          id: "12",
+          relationships: {
+            children: {
+              data: {
+                type: "children",
+                id: "123"
+              }
+            }
+          }
+        },
+        included: [
+          {
+            type: "children",
+            id: "123"
+          },
+          {
+            type: "terminals",
+            id: "1234",
+            relationships: {
+              location: {
+                data: {
+                  id: "12",
+                  type: "locations"
+                }
+              }
+            }
+          }
+        ]
+      },
+      { includedInResponse: true, typeAttr: "type_" }
+    );
+
+    expect(response).toEqual([
+      {
+        id: "12",
+        type_: "parent",
+        children: { id: "123", type_: "children" }
+      },
+      { id: "123", type_: "children" },
+      {
+        id: "1234",
+        location: "12",
+        type_: "terminals"
+      }
+    ]);
   });
 
   it("parses multiple relationship", () => {

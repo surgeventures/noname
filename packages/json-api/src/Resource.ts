@@ -240,6 +240,7 @@ export default class ResourceImpl implements Resource {
     const relationships = this.registry.keyParseFunc(
       (data.relationships as JSONObject) || {}
     );
+
     Object.entries(
       relationships as Record<string, JSONAPIResourceRelationship>
     ).forEach(([name, value]) => {

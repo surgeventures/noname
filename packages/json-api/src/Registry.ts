@@ -96,12 +96,26 @@ export default class RegistryImpl implements Registry {
         }, {})
       : undefined;
 
+    const includedResources =
+      document.included && options?.includedInResponse
+        ? document.included.map(elem => parseResource(elem, includesMap))
+        : null;
     if (Array.isArray(document.data)) {
-      return (document.data as JSONAPIResource[]).map(elem =>
+      const primaryResources = (document.data as JSONAPIResource[]).map(elem =>
         parseResource(elem, includesMap)
       );
+      return includedResources != null
+        ? [...primaryResources, ...includedResources]
+        : primaryResources;
     }
-    return parseResource(document.data as JSONAPIResource, includesMap);
+    const primaryResource = parseResource(
+      document.data as JSONAPIResource,
+      includesMap
+    );
+
+    return includedResources != null
+      ? [primaryResource, ...includedResources]
+      : primaryResource;
   }
 }
 

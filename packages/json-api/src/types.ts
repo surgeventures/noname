@@ -63,6 +63,7 @@ export type IncludesMap = {
 
 export type ResourceParseOptions = {
   typeAttr?: string;
+  includedInResponse?: boolean;
 };
 
 export interface Resource {
