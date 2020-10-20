@@ -1,16 +1,16 @@
 import { Model, ORM, attr, many } from "../..";
-import {
-  measureMs,
-  nTimes,
-  avg,
-  round,
-  IManyQuerySet,
-} from "../helpers";
+import { castTo } from "../../hacks";
+import { measureMs, nTimes, avg, round, IManyQuerySet } from "../helpers";
 
 const crypto = require("crypto");
 
 const PRECISION = 2;
-const logTime = (message: string, tookSeconds: number, maxSeconds: number, measurements: number[]) => {
+const logTime = (
+  message: string,
+  tookSeconds: number,
+  maxSeconds: number,
+  measurements: number[]
+) => {
   let out = `${message} took ${tookSeconds}s / ${maxSeconds}s`;
   if (measurements) {
     const measurementSeconds = measurements
@@ -38,12 +38,12 @@ describe("Big Data Test", () => {
       static fields = {
         id: attr(),
         name: attr(),
-      }
-    };
+      };
+    }
 
     orm = new ORM();
     orm.register(Item);
-    session = orm.session(orm.getEmptyState()) as unknown as ExtendedSession;
+    session = castTo<ExtendedSession>(orm.session(orm.getEmptyState()));
   });
 
   it("adds a big amount of items in acceptable time", () => {
@@ -147,15 +147,15 @@ describe("Many-to-many relationship performance", () => {
         name: attr(),
         children: many("Child", "parent"),
       };
-    };
+    }
 
     class Child extends Model {
       static modelName = "Child";
-    };
+    }
 
     orm = new ORM();
     orm.register(Parent, Child);
-    session = orm.session(orm.getEmptyState()) as unknown as CustomSession;
+    session = castTo<CustomSession>(orm.session(orm.getEmptyState()));
   });
 
   const createChildren = (start: number, end: number) => {
@@ -167,7 +167,11 @@ describe("Many-to-many relationship performance", () => {
     }
   };
 
-  const assignChildren = (parent: Model & ParentProps, start: number, end: number) => {
+  const assignChildren = (
+    parent: Model & ParentProps,
+    start: number,
+    end: number
+  ) => {
     for (let i = start; i < end; ++i) {
       parent.children.add(i);
     }
@@ -184,9 +188,11 @@ describe("Many-to-many relationship performance", () => {
 
     const measurements = nTimes(n)
       .map((_value, index) => {
-        parent = Parent.create({
-          id: index,
-        }) as unknown as (Model & ParentProps);
+        parent = castTo<Model & ParentProps>(
+          Parent.create({
+            id: index,
+          })
+        );
         return measureMs(() => {
           assignChildren(parent, 0, childAmount);
         });
@@ -211,13 +217,13 @@ describe("Many-to-many relationship performance", () => {
     const queryCount = 500;
     const parent = Parent.create({ id: 1 });
     createChildren(0, 10000);
-    assignChildren(parent as unknown as (Model & ParentProps), 0, 3000);
+    assignChildren(castTo<Model & ParentProps>(parent), 0, 3000);
 
     const measurements = nTimes(n)
       .map((_value, _index) =>
         measureMs(() => {
           for (let i = 0; i < queryCount; ++i) {
-            (parent as unknown as ParentProps).children.count();
+            castTo<ParentProps>(parent).children.count();
           }
         })
       )
@@ -242,7 +248,7 @@ describe("Many-to-many relationship performance", () => {
 
     const parent = Parent.create({ id: 1 });
     createChildren(0, removeCount * n);
-    assignChildren(parent as unknown as (Model & ParentProps), 0, removeCount * n);
+    assignChildren(castTo<Model & ParentProps>(parent), 0, removeCount * n);
 
     const measurements = nTimes(n)
       .map((_value, index) => {
@@ -250,14 +256,14 @@ describe("Many-to-many relationship performance", () => {
         const end = removeCount + start;
         const ms = measureMs(() => {
           for (let i = start; i < end; ++i) {
-            (parent as unknown as ParentProps).children.remove(i);
+            castTo<ParentProps>(parent).children.remove(i);
           }
         });
         /**
          * reassign children to parent (undo the above code)
          * otherwise the removal will speed up the removal of further children
          */
-        assignChildren(parent as unknown as (Model & ParentProps), start, end);
+        assignChildren(castTo<Model & ParentProps>(parent), start, end);
         return ms;
       })
       .map((ms: number) => ms / 1000);

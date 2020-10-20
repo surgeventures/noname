@@ -4,6 +4,7 @@ import { normalizeEntity } from "./utils";
 import { UPDATE, DELETE, FILTER, EXCLUDE, ORDER_BY } from "./constants";
 import Model from "./Model";
 import { ModelData, ModelId, TableRow } from "./types";
+import { castTo } from "./hacks";
 
 type QuerySetConstructor = {
   new (modelClass: typeof Model, clauses?: any[], opts?: object): QuerySet;
@@ -53,7 +54,7 @@ export default class QuerySet {
 
   _new(clauses: any[], userOpts?: object) {
     const opts = Object.assign({}, this._opts, userOpts);
-    return new ((this.constructor as unknown) as QuerySetConstructor)(
+    return new (castTo<QuerySetConstructor>(this.constructor))(
       this.modelClass,
       clauses,
       opts

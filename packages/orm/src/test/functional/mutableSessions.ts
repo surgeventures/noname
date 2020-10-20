@@ -1,4 +1,5 @@
 import Model from "../..";
+import { castTo } from "../../hacks";
 import ORM from "../../ORM";
 import { OrmState } from "../../types";
 import {
@@ -17,7 +18,7 @@ describe("Mutating session", () => {
   });
 
   it("works", () => {
-    const mutating = (orm.mutableSession(state) as unknown) as ExtendedSession;
+    const mutating = castTo<ExtendedSession>(orm.mutableSession(state));
     const { Book, Cover } = mutating;
 
     const cover = Cover.create({ src: "somecover.png" });
@@ -29,7 +30,7 @@ describe("Mutating session", () => {
     expect(state.Book.itemsById[bookId]).toBe(bookRef);
     const newName = "New Name";
 
-    const bookProps = (book as unknown) as BookProps;
+    const bookProps = castTo<BookProps>(book);
     bookProps.name = newName;
 
     expect(bookProps.name).toBe(newName);

@@ -1,4 +1,5 @@
 import { ORM, Session, Model, oneToOne, fk, many, attr } from "../..";
+import { castTo } from "../../hacks";
 import { createTestModels, ExtendedSession } from "../helpers";
 
 describe("ORM", () => {
@@ -103,7 +104,7 @@ describe("ORM", () => {
 
     it("correctly starts session", () => {
       const initialState = {};
-      const session = orm.session(initialState) as unknown as ExtendedSession;
+      const session = castTo<ExtendedSession>(orm.session(initialState));
       expect(session).toBeInstanceOf(Session);
     });
 
@@ -176,7 +177,10 @@ describe("ORM", () => {
       expect(typeof genresDescriptor.get).toBe("function");
       expect(typeof genresDescriptor.set).toBe("function");
 
-      tagsDescriptor = Object.getOwnPropertyDescriptor(Book.prototype, "tags") as PropertyDescriptor;
+      tagsDescriptor = Object.getOwnPropertyDescriptor(
+        Book.prototype,
+        "tags"
+      ) as PropertyDescriptor;
       expect(typeof tagsDescriptor.get).toBe("function");
       expect(typeof tagsDescriptor.set).toBe("function");
 

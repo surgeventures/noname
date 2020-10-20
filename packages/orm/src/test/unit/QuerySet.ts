@@ -1,6 +1,11 @@
 import { Model, QuerySet } from "../..";
+import { castTo } from "../../hacks";
 import { ModelData, TableRow } from "../../types";
-import { createTestModels, createTestSessionWithData, ExtendedSession } from "../helpers";
+import {
+  createTestModels,
+  createTestSessionWithData,
+  ExtendedSession,
+} from "../helpers";
 
 describe("QuerySet tests", () => {
   let session: ExtendedSession;
@@ -9,7 +14,7 @@ describe("QuerySet tests", () => {
   let tagQs: QuerySet;
   beforeEach(() => {
     const result = createTestSessionWithData();
-    session = result.session as unknown as ExtendedSession;
+    session = castTo<ExtendedSession>(result.session);
     bookQs = session.Book.getQuerySet();
     genreQs = session.Genre.getQuerySet();
     tagQs = session.Tag.getQuerySet();
@@ -109,7 +114,9 @@ describe("QuerySet tests", () => {
   });
 
   it("exclude works correctly with function argument", () => {
-    const excluded = bookQs.exclude(({ author }: { author: number }) => author === 1);
+    const excluded = bookQs.exclude(
+      ({ author }: { author: number }) => author === 1
+    );
     expect(excluded.count()).toBe(2);
 
     const idArr = excluded.toRefArray().map((row: TableRow) => row.id);
@@ -131,7 +138,9 @@ describe("QuerySet tests", () => {
   });
 
   it("toString returns evaluated models", () => {
-    const firstTwoBooks = bookQs.filter(({ id }: TableRow) => [0, 1].includes(id));
+    const firstTwoBooks = bookQs.filter(({ id }: TableRow) =>
+      [0, 1].includes(id)
+    );
     expect(firstTwoBooks.toString()).toBe(`QuerySet contents:
     - Book: {id: 0, name: Tommi Kaikkonen - an Autobiography, releaseYear: 2050, author: 0, cover: 0, genres: [0, 1], tags: [Technology, Literary], publisher: 1}
     - Book: {id: 1, name: Clean Code, releaseYear: 2008, author: 1, cover: 1, genres: [2], tags: [Technology], publisher: 0}`);
@@ -161,7 +170,7 @@ describe("QuerySet tests", () => {
   //   const orm = new ORM();
   //   orm.register(Book, Genre, Tag, Cover, Author, Publisher, Movie);
   //   const res = createTestSessionWithData(orm);
-  //   const sess = res.session as unknown as ExtendedSession;
+  //   const sess = castTo<ExtendedSession>(res.session);
 
   //   const customQs = sess.Book.getQuerySet();
 

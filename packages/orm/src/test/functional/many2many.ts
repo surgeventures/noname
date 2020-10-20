@@ -1,4 +1,5 @@
 import { Model, QuerySet, ORM, attr, many, fk, Session } from "../..";
+import { castTo } from "../../hacks";
 import { ModelId, TableRow } from "../../types";
 import {
   createTestSessionWithData,
@@ -6,10 +7,6 @@ import {
   IManyQuerySet,
   TagProps,
 } from "../helpers";
-
-function typedCast<T>(arg: Model): T {
-  return (arg as unknown) as typeof Model & T;
-}
 
 class User extends Model {
   static modelName = "User";
@@ -66,7 +63,7 @@ describe("Many to many relationships", () => {
 
       orm = new ORM();
       orm.register(MyUser, MyTeam);
-      session = (orm.session() as unknown) as CustomSession;
+      session = castTo<CustomSession>(orm.session());
 
       session.Team.create({ name: "team0" });
       session.Team.create({ name: "team1" });
@@ -87,32 +84,32 @@ describe("Many to many relationships", () => {
         userLast = session.User.last()!;
 
         expect(
-          ((teamFirst as unknown) as TeamProps).users
-            .toRefArray()
+          castTo<TeamProps>(teamFirst)
+            .users.toRefArray()
             .map((row: TableRow) => row.id)
         ).toEqual([
-          typedCast<UserProps>(userFirst).id,
-          typedCast<UserProps>(userLast).id,
+          castTo<UserProps>(userFirst).id,
+          castTo<UserProps>(userLast).id,
         ]);
         expect(
-          typedCast<UserProps>(userFirst)
+          castTo<UserProps>(userFirst)
             .teams.toRefArray()
             .map((row: TableRow) => row.id)
-        ).toEqual([typedCast<UserProps>(teamFirst).id]);
+        ).toEqual([castTo<UserProps>(teamFirst).id]);
         expect(
-          typedCast<UserProps>(userLast)
+          castTo<UserProps>(userLast)
             .teams.toRefArray()
             .map((row: TableRow) => row.id)
-        ).toEqual([typedCast<UserProps>(teamFirst).id]);
+        ).toEqual([castTo<UserProps>(teamFirst).id]);
 
         expect(TeamUsers.count()).toBe(2);
       };
     });
 
     it("add forward many-many field", () => {
-      typedCast<TeamProps>(teamFirst).users.add(
-        (userFirst as unknown) as typeof User & UserProps,
-        (userLast as unknown) as typeof User & UserProps
+      castTo<TeamProps>(teamFirst).users.add(
+        castTo<typeof User & UserProps>(userFirst),
+        castTo<typeof User & UserProps>(userLast)
       );
       validateRelationState();
     });
@@ -123,11 +120,11 @@ describe("Many to many relationships", () => {
     });
 
     it("add backward many-many field", () => {
-      typedCast<UserProps>(userFirst).teams.add(
-        (teamFirst as unknown) as typeof Team & TeamProps
+      castTo<UserProps>(userFirst).teams.add(
+        castTo<typeof Team & TeamProps>(teamFirst)
       );
-      typedCast<UserProps>(userLast).teams.add(
-        (teamFirst as unknown) as typeof Team & TeamProps
+      castTo<UserProps>(userLast).teams.add(
+        castTo<typeof Team & TeamProps>(teamFirst)
       );
       validateRelationState();
     });
@@ -249,22 +246,22 @@ describe("Many to many relationships", () => {
 
     beforeEach(() => {
       validateRelationState = () => {
-        const { User, Team, User2Team } = (session as unknown) as {
+        const { User, Team, User2Team } = castTo<{
           User: typeof Model;
           Team: typeof Model;
           User2Team: typeof Model;
-        };
+        }>(session);
 
         // Forward (from many-to-many field declaration)
         const user = User.get({ name: "user0" });
-        const { teams: relatedTeams } = typedCast<UserProps>(user!);
+        const { teams: relatedTeams } = castTo<UserProps>(user!);
         expect(relatedTeams).toBeInstanceOf(QuerySet);
         expect(relatedTeams.modelClass).toBe(Team);
         expect(relatedTeams.count()).toBe(1);
 
         // Backward
         const team = Team.get({ name: "team0" })!;
-        const { users: relatedUsers } = (team as unknown) as TeamProps;
+        const { users: relatedUsers } = castTo<TeamProps>(team);
         expect(relatedUsers).toBeInstanceOf(QuerySet);
         expect(relatedUsers.modelClass).toBe(User);
         expect(relatedUsers.count()).toBe(2);
@@ -273,16 +270,16 @@ describe("Many to many relationships", () => {
           relatedUsers.toRefArray().map((row: TableRow) => row.id)
         ).toEqual(["u0", "u1"]);
         expect(
-          typedCast<TeamProps>(Team.withId("t2")!)
+          castTo<TeamProps>(Team.withId("t2")!)
             .users.toRefArray()
             .map((row: TableRow) => row.id)
         ).toEqual(["u1"]);
 
         expect(
           relatedTeams.toRefArray().map((row: TableRow) => row.id)
-        ).toEqual([typedCast<TeamProps>(team!).id]);
+        ).toEqual([castTo<TeamProps>(team!).id]);
         expect(
-          typedCast<UserProps>(User.withId("u1")!)
+          castTo<UserProps>(User.withId("u1")!)
             .teams.toRefArray()
             .map((row: TableRow) => row.id)
         ).toEqual(["t0", "t2"]);
@@ -325,10 +322,10 @@ describe("Many to many relationships", () => {
       orm = new ORM();
       orm.register(UserModel, TeamModel, User2TeamModel);
       session = orm.session(orm.getEmptyState());
-      const { User, Team } = (session as unknown) as {
+      const { User, Team } = castTo<{
         User: typeof Model;
         Team: typeof Model;
-      };
+      }>(session);
 
       Team.create({ id: "t0", name: "team0" });
       Team.create({ id: "t1", name: "team1" });
@@ -375,10 +372,10 @@ describe("Many to many relationships", () => {
       orm = new ORM();
       orm.register(UserModel, TeamModel, User2TeamModel);
       session = orm.session(orm.getEmptyState());
-      const { User, Team } = (session as unknown) as {
+      const { User, Team } = castTo<{
         User: typeof Model;
         Team: typeof Model;
-      };
+      }>(session);
 
       Team.create({ id: "t0", name: "team0" });
       Team.create({ id: "t1", name: "team1" });
@@ -425,13 +422,13 @@ describe("Many to many relationships", () => {
       type UserProps = {
         name: string;
         links: IManyQuerySet<typeof Model & TeamProps>;
-      }
+      };
 
       type User2TeamProps = {
         user: typeof Model & UserProps;
         team: typeof Model & TeamProps;
         name: string;
-      }
+      };
 
       type TeamModel = {
         name: string;
@@ -441,11 +438,11 @@ describe("Many to many relationships", () => {
       orm = new ORM();
       orm.register(UserModel, TeamModel, User2TeamModel);
       session = orm.session(orm.getEmptyState());
-      const { User, Team, User2Team } = (session as unknown) as {
+      const { User, Team, User2Team } = castTo<{
         User: typeof Model & UserProps;
         Team: typeof Model & TeamProps;
         User2Team: typeof Model & User2TeamProps;
-      };
+      }>(session);
 
       Team.create({ id: "t0", name: "team0" });
       Team.create({ id: "t1", name: "team1" });
@@ -461,12 +458,12 @@ describe("Many to many relationships", () => {
       validateRelationState();
 
       expect(
-        (User.withId("u0")! as unknown as UserProps)
+        castTo<UserProps>(User.withId("u0")!)
           .links.toRefArray()
           .map((row: TableRow) => row.name)
       ).toEqual(["link0"]);
       expect(
-        (User.withId("u1")! as unknown as UserProps)
+        castTo<UserProps>(User.withId("u1")!)
           .links.toRefArray()
           .map((row: TableRow) => row.name)
       ).toEqual(["link1", "link2"]);
@@ -510,7 +507,7 @@ describe("Many to many relationships", () => {
     it('adds relationships correctly when toModelName is "this"', () => {
       const { Tag, TagSubTags } = session as ExtendedSession;
       expect(TagSubTags.count()).toBe(0);
-      ((Tag.withId("Technology")! as unknown) as TagProps).subTags.add("Redux");
+      castTo<TagProps>(Tag.withId("Technology")!).subTags.add("Redux");
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
           id: 0,
@@ -518,39 +515,31 @@ describe("Many to many relationships", () => {
           toTagId: "Redux",
         },
       ]);
+      expect(castTo<TagProps>(Tag.withId("Technology")!).subTags.count()).toBe(
+        1
+      );
       expect(
-        ((Tag.withId("Technology")! as unknown) as TagProps).subTags.count()
-      ).toBe(1);
-      expect(
-        ((Tag.withId(
-          "Technology"
-        )! as unknown) as TagProps).subTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Technology")!).subTags.toRefArray()
       ).toEqual([Tag.withId("Redux")!.ref]);
 
+      expect(castTo<TagProps>(Tag.withId("Redux")!).subTags.count()).toBe(0);
       expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).subTags.count()
-      ).toBe(0);
-      expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).subTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Redux")!).subTags.toRefArray()
       ).toEqual([]);
     });
 
     it('removes relationships correctly when toModelName is "this"', () => {
-      const { Tag, TagSubTags } = (session as unknown) as {
+      const { Tag, TagSubTags } = castTo<{
         Tag: typeof Model;
         TagSubTags: typeof Model;
-      };
-      ((Tag.withId("Technology")! as unknown) as TagProps).subTags.add("Redux");
-      ((Tag.withId("Redux")! as unknown) as TagProps).subTags.add("Technology");
+      }>(session);
+      castTo<TagProps>(Tag.withId("Technology")!).subTags.add("Redux");
+      castTo<TagProps>(Tag.withId("Redux")!).subTags.add("Technology");
 
-      ((Tag.withId("Redux")! as unknown) as TagProps).subTags.remove(
-        "Technology"
-      );
+      castTo<TagProps>(Tag.withId("Redux")!).subTags.remove("Technology");
 
       expect(
-        ((Tag.withId(
-          "Technology"
-        )! as unknown) as TagProps).subTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Technology")!).subTags.toRefArray()
       ).toEqual([Tag.withId("Redux")!.ref]);
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
@@ -559,75 +548,59 @@ describe("Many to many relationships", () => {
           toTagId: "Redux",
         },
       ]);
+      expect(castTo<TagProps>(Tag.withId("Technology")!).subTags.count()).toBe(
+        1
+      );
       expect(
-        ((Tag.withId("Technology")! as unknown) as TagProps).subTags.count()
-      ).toBe(1);
-      expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).subTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Redux")!).subTags.toRefArray()
       ).toEqual([]);
-      expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).subTags.count()
-      ).toBe(0);
+      expect(castTo<TagProps>(Tag.withId("Redux")!).subTags.count()).toBe(0);
     });
 
     it('querying backwards relationships works when toModelName is "this"', () => {
-      const { Tag } = (session as unknown) as { Tag: typeof Model };
-      ((Tag.withId("Technology")! as unknown) as TagProps).subTags.add("Redux");
+      const { Tag } = castTo<{ Tag: typeof Model }>(session);
+      castTo<TagProps>(Tag.withId("Technology")!).subTags.add("Redux");
 
       expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).parentTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Redux")!).parentTags.toRefArray()
       ).toEqual([Tag.withId("Technology")!.ref]);
+      expect(castTo<TagProps>(Tag.withId("Redux")!).parentTags.count()).toBe(1);
       expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).parentTags.count()
-      ).toBe(1);
-      expect(
-        ((Tag.withId(
-          "Technology"
-        )! as unknown) as TagProps).parentTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Technology")!).parentTags.toRefArray()
       ).toEqual([]);
       expect(
-        ((Tag.withId("Technology")! as unknown) as TagProps).parentTags.count()
+        castTo<TagProps>(Tag.withId("Technology")!).parentTags.count()
       ).toBe(0);
     });
 
     it('adding relationships via backwards descriptor works when toModelName is "this"', () => {
-      const { Tag } = (session as unknown) as { Tag: typeof Model };
-      ((Tag.withId("Redux")! as unknown) as TagProps).parentTags.add(
-        "Technology"
-      );
+      const { Tag } = castTo<{ Tag: typeof Model }>(session);
+      castTo<TagProps>(Tag.withId("Redux")!).parentTags.add("Technology");
 
       expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).parentTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Redux")!).parentTags.toRefArray()
       ).toEqual([Tag.withId("Technology")!.ref]);
+      expect(castTo<TagProps>(Tag.withId("Redux")!).parentTags.count()).toBe(1);
       expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).parentTags.count()
-      ).toBe(1);
-      expect(
-        ((Tag.withId(
-          "Technology"
-        )! as unknown) as TagProps).subTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Technology")!).subTags.toRefArray()
       ).toEqual([Tag.withId("Redux")!.ref]);
-      expect(
-        ((Tag.withId("Technology")! as unknown) as TagProps).subTags.count()
-      ).toBe(1);
+      expect(castTo<TagProps>(Tag.withId("Technology")!).subTags.count()).toBe(
+        1
+      );
     });
 
     it('removing relationships via backwards descriptor works when toModelName is "this"', () => {
-      const { Tag, TagSubTags } = (session as unknown) as {
+      const { Tag, TagSubTags } = castTo<{
         Tag: typeof Model;
         TagSubTags: typeof Model;
-      };
-      ((Tag.withId("Technology")! as unknown) as TagProps).subTags.add("Redux");
-      ((Tag.withId("Redux")! as unknown) as TagProps).subTags.add("Technology");
+      }>(session);
+      castTo<TagProps>(Tag.withId("Technology")!).subTags.add("Redux");
+      castTo<TagProps>(Tag.withId("Redux")!).subTags.add("Technology");
 
-      ((Tag.withId("Technology")! as unknown) as TagProps).parentTags.remove(
-        "Redux"
-      );
+      castTo<TagProps>(Tag.withId("Technology")!).parentTags.remove("Redux");
 
       expect(
-        ((Tag.withId(
-          "Technology"
-        )! as unknown) as TagProps).subTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Technology")!).subTags.toRefArray()
       ).toEqual([Tag.withId("Redux")!.ref]);
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
@@ -636,15 +609,13 @@ describe("Many to many relationships", () => {
           toTagId: "Redux",
         },
       ]);
+      expect(castTo<TagProps>(Tag.withId("Technology")!).subTags.count()).toBe(
+        1
+      );
       expect(
-        ((Tag.withId("Technology")! as unknown) as TagProps).subTags.count()
-      ).toBe(1);
-      expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).subTags.toRefArray()
+        castTo<TagProps>(Tag.withId("Redux")!).subTags.toRefArray()
       ).toEqual([]);
-      expect(
-        ((Tag.withId("Redux")! as unknown) as TagProps).subTags.count()
-      ).toBe(0);
+      expect(castTo<TagProps>(Tag.withId("Redux")!).subTags.count()).toBe(0);
     });
   });
 
@@ -677,7 +648,7 @@ describe("Many to many relationships", () => {
 
       orm = new ORM();
       orm.register(User);
-      session = (orm.session() as unknown) as ExtendedSession;
+      session = castTo<ExtendedSession>(orm.session());
 
       session.User.create({ id: "u0" });
       session.User.create({ id: "u1" });
@@ -695,18 +666,18 @@ describe("Many to many relationships", () => {
         user2 = session.User.withId("u2")!;
 
         expect(
-          ((user0 as unknown) as UserProps).subscribed
-            .toRefArray()
+          castTo<UserProps>(user0)
+            .subscribed.toRefArray()
             .map((row: TableRow) => row.id)
         ).toEqual(["u2"]);
         expect(
-          ((user1 as unknown) as UserProps).subscribed
-            .toRefArray()
+          castTo<UserProps>(user1)
+            .subscribed.toRefArray()
             .map((row: TableRow) => row.id)
         ).toEqual(["u0", "u2"]);
         expect(
-          ((user2 as unknown) as UserProps).subscribed
-            .toRefArray()
+          castTo<UserProps>(user2)
+            .subscribed.toRefArray()
             .map((row: TableRow) => row.id)
         ).toEqual(["u1"]);
 
@@ -715,15 +686,15 @@ describe("Many to many relationships", () => {
     });
 
     it("add forward many-many field", () => {
-      ((user0 as unknown) as UserProps).subscribed.add(
-        (user2 as unknown) as typeof Model & UserProps
+      castTo<UserProps>(user0).subscribed.add(
+        castTo<typeof Model & UserProps>(user2)
       );
-      ((user1 as unknown) as UserProps).subscribed.add(
-        (user0 as unknown) as typeof Model & UserProps,
-        (user2 as unknown) as typeof Model & UserProps
+      castTo<UserProps>(user1).subscribed.add(
+        castTo<typeof Model & UserProps>(user0),
+        castTo<typeof Model & UserProps>(user2)
       );
-      ((user2 as unknown) as UserProps).subscribed.add(
-        (user1 as unknown) as typeof Model & UserProps
+      castTo<UserProps>(user2).subscribed.add(
+        castTo<typeof Model & UserProps>(user1)
       );
       validateRelationState();
     });
@@ -736,15 +707,15 @@ describe("Many to many relationships", () => {
     });
 
     it("add backward many-many field", () => {
-      ((user0 as unknown) as UserProps).subscribers.add(
-        (user1 as unknown) as typeof Model & UserProps
+      castTo<UserProps>(user0).subscribers.add(
+        castTo<typeof Model & UserProps>(user1)
       );
-      ((user1 as unknown) as UserProps).subscribers.add(
-        (user2 as unknown) as typeof Model & UserProps
+      castTo<UserProps>(user1).subscribers.add(
+        castTo<typeof Model & UserProps>(user2)
       );
-      ((user2 as unknown) as UserProps).subscribers.add(
-        (user0 as unknown) as typeof Model & UserProps,
-        (user1 as unknown) as typeof Model & UserProps
+      castTo<UserProps>(user2).subscribers.add(
+        castTo<typeof Model & UserProps>(user0),
+        castTo<typeof Model & UserProps>(user1)
       );
       validateRelationState();
     });

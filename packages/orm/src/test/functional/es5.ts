@@ -1,6 +1,7 @@
-import ORM from '../../ORM';
+import ORM from "../../ORM";
 import Session from "../../Session";
-import Model from '../../Model';
+import Model from "../../Model";
+import { castTo } from "../../hacks";
 
 describe("ES5 library code", () => {
   describe("With ES6 client code", () => {
@@ -21,7 +22,10 @@ describe("ES5 library code", () => {
           Book: typeof Model;
         };
 
-        book = (session as unknown as SessionWithBook).Book.create({ id: 1, title: "title" });
+        book = castTo<SessionWithBook>(session).Book.create({
+          id: 1,
+          title: "title",
+        });
       }).not.toThrow();
       expect(() => {
         book.update({ id: 1, title: "new title" });

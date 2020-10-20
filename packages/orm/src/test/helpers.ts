@@ -3,6 +3,7 @@ import Model from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
 import { ModelId, TableRow } from "../types";
 import Session from "../Session";
+import { castTo } from "../hacks";
 
 /**
  * These utils create a database schema for testing.
@@ -152,13 +153,13 @@ export interface IQuerySet<T = Model> {
   modelClass: T;
   _evaluate(): void;
   rows: TableRow[];
-};
+}
 
 export interface IManyQuerySet<T = Model> extends IQuerySet<T> {
   add(...objs: (ModelId | T)[]): void;
   remove(...objs: (ModelId | T)[]): this;
   clear(): void;
-};
+}
 
 export type BookProps = {
   id: ModelId;
@@ -287,13 +288,13 @@ export type MovieProps = {
 };
 
 export function createTestModels() {
-  const MyBook = class extends Book {}
-  const MyAuthor = class extends Author {}
-  const MyCover = class extends Cover {}
-  const MyGenre = class extends Genre {}
-  const MyTag = class extends Tag {}
-  const MyPublisher = class extends Publisher {}
-  const MyMovie = class extends Movie {}
+  const MyBook = class extends Book {};
+  const MyAuthor = class extends Author {};
+  const MyCover = class extends Cover {};
+  const MyGenre = class extends Genre {};
+  const MyTag = class extends Tag {};
+  const MyPublisher = class extends Publisher {};
+  const MyMovie = class extends Movie {};
 
   return {
     Book: MyBook,
@@ -343,15 +344,9 @@ export function createTestSession(): ExtendedSession {
 export function createTestSessionWithData(customORM?: ORM) {
   const orm = customORM || createTestORM();
   const state = orm.getEmptyState();
-  const {
-    Author,
-    Cover,
-    Genre,
-    Tag,
-    Book,
-    Publisher,
-    Movie,
-  } = (orm.mutableSession(state) as unknown) as ExtendedSession;
+  const { Author, Cover, Genre, Tag, Book, Publisher, Movie } = castTo<
+    ExtendedSession
+  >(orm.mutableSession(state));
 
   AUTHORS_INITIAL.forEach((props) => Author.create(props));
   COVERS_INITIAL.forEach((props) => Cover.create(props));

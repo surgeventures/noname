@@ -2,6 +2,7 @@ import Model, { ORM } from "../..";
 import { createTestModels, ExtendedSession, isSubclass } from "../helpers";
 import { CREATE } from "../../constants";
 import { OrmState } from "../../types";
+import { castTo } from "../../hacks";
 
 describe("Session", () => {
   let orm: ORM;
@@ -28,7 +29,7 @@ describe("Session", () => {
     expect(Cover.session).toBeUndefined();
     expect(Publisher.session).toBeUndefined();
 
-    const session = orm.session() as unknown as ExtendedSession;
+    const session = castTo<ExtendedSession>(orm.session());
 
     expect(session.Book.session).toBe(session);
     expect(session.Cover.session).toBe(session);
@@ -39,7 +40,7 @@ describe("Session", () => {
   });
 
   it("exposes models as getter properties", () => {
-    const session = orm.session() as unknown as ExtendedSession;
+    const session = castTo<ExtendedSession>(orm.session());
     expect(isSubclass(session.Book, Book)).toBe(true);
     expect(isSubclass(session.Author, Author)).toBe(true);
     expect(isSubclass(session.Cover, Cover)).toBe(true);

@@ -16,6 +16,7 @@ import {
   reverseFieldName,
   reverseFieldErrorMessage,
 } from "./utils";
+import { castTo } from "./hacks";
 
 /**
  * Contains the logic for how fields on {@link Model}s work
@@ -208,7 +209,7 @@ export abstract class Field {
     return false;
   }
 
-  getThroughModelName(_fieldName: string, _model: typeof Model): string | null  {
+  getThroughModelName(_fieldName: string, _model: typeof Model): string | null {
     return null;
   }
 
@@ -320,7 +321,7 @@ export type RelationalFieldOpts = {
   to: string;
   relatedName?: string;
   through?: string;
-  throughFields?: [string, string] | { from: string, to: string};
+  throughFields?: [string, string] | { from: string; to: string };
   as?: string;
 };
 
@@ -335,7 +336,7 @@ abstract class RelationalField extends Field {
   toModelName: string;
   relatedName?: string;
   through?: string;
-  throughFields?: [string, string] | { from: string, to: string};
+  throughFields?: [string, string] | { from: string; to: string };
   as?: string;
   toModel: typeof Model;
 
@@ -364,7 +365,7 @@ abstract class RelationalField extends Field {
     _toModel: typeof Model,
     _throughModel: typeof Model
   ) {
-    const ThisField = this.getClass() as unknown as RelationalFieldConstructor;
+    const ThisField = castTo<RelationalFieldConstructor>(this.getClass());
     return new ThisField(model.modelName, fieldName);
   }
 
@@ -477,7 +478,7 @@ export class ManyToMany extends RelationalField {
     toModel: typeof Model,
     throughModel: typeof Model
   ) {
-    const ThisField = this.getClass() as unknown as RelationalFieldConstructor;
+    const ThisField = castTo<RelationalFieldConstructor>(this.getClass());
     return new ThisField({
       to: model.modelName,
       relatedName: fieldName,
@@ -497,7 +498,7 @@ export class ManyToMany extends RelationalField {
     toModel: typeof Model,
     throughModel: typeof Model
   ) {
-    const ThisField = this.getClass() as unknown as RelationalFieldConstructor;
+    const ThisField = castTo<RelationalFieldConstructor>(this.getClass());
     return new ThisField({
       to: toModel.modelName,
       relatedName: fieldName,
@@ -520,7 +521,7 @@ export class ManyToMany extends RelationalField {
     model: typeof Model,
     toModel: typeof Model,
     throughModel: typeof Model
-  ): { from: string, to: string } {
+  ): { from: string; to: string } {
     if (this.throughFields) {
       const [fieldAName, fieldBName] = this.throughFields as [string, string];
       const fieldA = throughModel.fields[fieldAName];

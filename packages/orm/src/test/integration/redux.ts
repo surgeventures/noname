@@ -5,6 +5,7 @@ import Model, {
   createReducer,
   createSelector,
 } from "../..";
+import { castTo } from "../../hacks";
 import { ModelId, OrmState, ReduxAction } from "../../types";
 import {
   createTestModels,
@@ -217,7 +218,7 @@ describe("Redux integration", () => {
       selector(session.state);
       expect(memoized).toHaveBeenCalledTimes(1);
 
-      ((movie as unknown) as MovieProps).name = "Updated name";
+      castTo<MovieProps>(movie).name = "Updated name";
 
       selector(session.state);
       expect(memoized).toHaveBeenCalledTimes(2);
@@ -309,9 +310,7 @@ describe("Redux integration", () => {
 
       const session = orm.session(nextState) as ExtendedSession;
       expect(
-        ((session.Publisher.withId(
-          123
-        )! as unknown) as PublisherProps).movies.count()
+        castTo<PublisherProps>(session.Publisher.withId(123)!).movies.count()
       ).toBe(1);
     });
 
@@ -322,7 +321,9 @@ describe("Redux integration", () => {
 
       const _orm = new ORM();
       _orm.register(CustomizedModel);
-      const session = _orm.session() as Session & { CustomizedModel: typeof CustomizedModel };
+      const session = castTo<
+        Session & { CustomizedModel: typeof CustomizedModel }
+      >(_orm.session());
 
       const memoized = jest.fn((selectorSession) =>
         selectorSession.CustomizedModel.count()

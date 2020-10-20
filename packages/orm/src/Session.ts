@@ -1,10 +1,21 @@
 import { BatchToken, getBatchToken } from "immutable-ops";
-import Model from "./Model";
+import Model, { ModelClassMap } from "./Model";
 
 import { SUCCESS, UPDATE, DELETE } from "./constants";
 import ORM from "./ORM";
-import { Database, OrmState, Query, UpdateSpec, ModelId, TableRow, WithForEach, QueryClause, ObjectMap } from "./types";
+import {
+  Database,
+  OrmState,
+  Query,
+  UpdateSpec,
+  ModelId,
+  TableRow,
+  WithForEach,
+  QueryClause,
+  ObjectMap,
+} from "./types";
 import { clauseFiltersByAttribute } from "./utils";
+import { castTo } from "./hacks";
 
 type ModelData = {
   [modelName: string]: any;
@@ -18,8 +29,8 @@ export default class Session {
   readonly withMutations: boolean;
   private readonly batchToken: BatchToken;
   private readonly modelData: ModelData;
-  private readonly models: (typeof Model)[];
-  sessionBoundModels: (typeof Model)[];
+  private readonly models: typeof Model[];
+  sessionBoundModels: typeof Model[];
 
   /**
    * Creates a new Session.
@@ -51,7 +62,11 @@ export default class Session {
 
     this.sessionBoundModels = this.models.map((modelClass: typeof Model) => {
       function SessionBoundModel(): typeof Model {
-        return Reflect.construct(modelClass, arguments, SessionBoundModel) as typeof Model; // eslint-disable-line prefer-rest-params
+        return Reflect.construct(
+          modelClass,
+          arguments,
+          SessionBoundModel
+        ) as typeof Model; // eslint-disable-line prefer-rest-params
       }
       Reflect.setPrototypeOf(SessionBoundModel.prototype, modelClass.prototype);
       Reflect.setPrototypeOf(SessionBoundModel, modelClass);
@@ -60,8 +75,9 @@ export default class Session {
         get: () => SessionBoundModel,
       });
 
-      (SessionBoundModel as unknown as typeof Model).connect(this);
-      return SessionBoundModel as unknown as typeof Model;
+      const result = castTo<typeof Model>(SessionBoundModel);
+      result.connect(this);
+      return result;
     });
   }
 
@@ -154,21 +170,25 @@ export default class Session {
     const { table, clauses } = querySpec;
     const { rows } = result;
 
-    const { idAttribute } = (this as unknown as Record<string, typeof Model>)[table];
-    const accessedIds = new Set<ModelId>(rows.map((row: TableRow) => row[idAttribute]));
+    const { idAttribute } = castTo<ModelClassMap>(this)[table];
+    const accessedIds = new Set<ModelId>(
+      rows.map((row: TableRow) => row[idAttribute])
+    );
 
-    const anyClauseFilteredById = clauses.some((clause: QueryClause<ObjectMap<any>>) => {
-      if (!clauseFiltersByAttribute(clause, idAttribute)) {
-        return false;
+    const anyClauseFilteredById = clauses.some(
+      (clause: QueryClause<ObjectMap<any>>) => {
+        if (!clauseFiltersByAttribute(clause, idAttribute)) {
+          return false;
+        }
+        /**
+         * we previously knew which row we wanted to access,
+         * so there was no need to scan the entire table
+         */
+        const id = clause.payload[idAttribute];
+        accessedIds.add(id);
+        return true;
       }
-      /**
-       * we previously knew which row we wanted to access,
-       * so there was no need to scan the entire table
-       */
-      const id = clause.payload[idAttribute];
-      accessedIds.add(id);
-      return true;
-    });
+    );
 
     if (anyClauseFilteredById) {
       /**

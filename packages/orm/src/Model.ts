@@ -9,6 +9,7 @@ import {
   m2mName,
 } from "./utils";
 import { ModelData, ModelId, Query, ReduxAction } from "./types";
+import { castTo } from "./hacks";
 
 /**
  * Generates a query specification to get the instance's
@@ -680,10 +681,9 @@ export default class Model {
 
       const throughModelName =
         field.through || m2mName(ThisModel.modelName, name);
-      const ThroughModel = ((ThisModel.session as unknown) as Record<
-        string,
-        typeof Model
-      >)[throughModelName];
+      const ThroughModel = castTo<ModelClassMap>(ThisModel.session)[
+        throughModelName
+      ];
 
       let fromField: string;
       let toField: string;
@@ -695,7 +695,8 @@ export default class Model {
       }
 
       const currentIds = ThroughModel.filter(
-        (through: ModelData) => through[fromField] === (this as ModelData)[ThisModel.idAttribute]
+        (through: ModelData) =>
+          through[fromField] === (this as ModelData)[ThisModel.idAttribute]
       )
         .toRefArray()
         .map((ref: ModelData) => ref[toField]);
@@ -781,3 +782,5 @@ export default class Model {
     return this.getQuerySet().delete();
   }
 }
+
+export type ModelClassMap = Record<string, typeof Model>;

@@ -1,3 +1,4 @@
+import { castTo } from "../../hacks";
 import ORM from "../../ORM";
 import { OrmState } from "../../types";
 import { createTestSessionWithData, ExtendedSession } from "../helpers";
@@ -9,14 +10,14 @@ describe("Multiple concurrent sessions", () => {
 
   beforeEach(() => {
     const result = createTestSessionWithData();
-    session = result.session as unknown as ExtendedSession;
+    session = castTo<ExtendedSession>(result.session);
     orm = result.orm;
     state = result.state;
   });
 
   it("separate sessions can manage separate data stores", () => {
     const firstSession: ExtendedSession = session;
-    const secondSession: ExtendedSession = orm.session(state) as unknown as ExtendedSession;
+    const secondSession = castTo<ExtendedSession>(orm.session(state));
 
     expect(firstSession.Book.count()).toBe(3);
     expect(secondSession.Book.count()).toBe(3);
@@ -35,8 +36,8 @@ describe("Multiple concurrent sessions", () => {
   });
 
   it("separate sessions have different session bound models", () => {
-    const firstSession = orm.session() as unknown as ExtendedSession;
-    const secondSession = orm.session() as unknown as ExtendedSession;
+    const firstSession = castTo<ExtendedSession>(orm.session());
+    const secondSession = castTo<ExtendedSession>(orm.session());
 
     expect(firstSession.Book).not.toBe(secondSession.Book);
     expect(firstSession.Author).not.toBe(secondSession.Author);

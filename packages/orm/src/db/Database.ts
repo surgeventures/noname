@@ -1,6 +1,7 @@
 import ops from "immutable-ops";
 
 import { CREATE, DELETE, SUCCESS, UPDATE } from "../constants";
+import { castTo } from "../hacks";
 import {
   OrmState,
   Query,
@@ -55,7 +56,7 @@ function update(
   let resultPayload;
 
   if (action === CREATE) {
-    ({ table: tableName } = (updateSpec as unknown) as UpdateCreateSpec);
+    ({ table: tableName } = castTo<UpdateCreateSpec>(updateSpec));
     const table = tables[tableName];
     const currTableState = state[tableName];
     const result = table.insert(tx, currTableState, payload);
@@ -70,7 +71,12 @@ function update(
     const currTableState = state[tableName];
 
     if (action === UPDATE) {
-      nextTableState = table.update(tx, currTableState, rows as object[], payload);
+      nextTableState = table.update(
+        tx,
+        currTableState,
+        rows as object[],
+        payload
+      );
       // return updated rows
       resultPayload = query(tables, querySpec as Query, state).rows;
     } else if (action === DELETE) {

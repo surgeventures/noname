@@ -1,4 +1,5 @@
-import Model from ".";
+import { castTo } from "./hacks";
+import Model, { ModelClassMap } from "./Model";
 import { ModelData, ModelId, TableRow } from "./types";
 import { normalizeEntity } from "./utils";
 
@@ -46,17 +47,16 @@ function forwardsManyToOneDescriptor(
 ) {
   return {
     get() {
-      const thisModel = (this as unknown) as Model;
-      const DeclaredToModel = ((thisModel.getClass()
-        .session as unknown) as Record<string, typeof Model>)[
-        declaredToModelName
-      ];
+      const thisModel = castTo<Model>(this);
+      const DeclaredToModel = castTo<ModelClassMap>(
+        thisModel.getClass().session
+      )[declaredToModelName];
       const { [fieldName]: toId } = thisModel._fields;
 
       return DeclaredToModel.withId(toId);
     },
     set(value: any) {
-      const thisModel = (this as unknown) as Model;
+      const thisModel = castTo<Model>(this);
       thisModel.update({
         [fieldName]: normalizeEntity(value),
       });
@@ -96,11 +96,10 @@ function backwardsOneToOneDescriptor(
 ) {
   return {
     get() {
-      const thisModel = (this as unknown) as Model;
-      const DeclaredFromModel = ((thisModel.getClass()
-        .session as unknown) as Record<string, typeof Model>)[
-        declaredFromModelName
-      ];
+      const thisModel = castTo<Model>(this);
+      const DeclaredFromModel = castTo<ModelClassMap>(
+        thisModel.getClass().session
+      )[declaredFromModelName];
 
       return DeclaredFromModel.get({
         [declaredFieldName]: thisModel.getId(),
@@ -125,11 +124,10 @@ function backwardsManyToOneDescriptor(
 ) {
   return {
     get() {
-      const thisModel = (this as unknown) as Model;
-      const DeclaredFromModel = ((thisModel.getClass()
-        .session as unknown) as Record<string, typeof Model>)[
-        declaredFromModelName
-      ];
+      const thisModel = castTo<Model>(this);
+      const DeclaredFromModel = castTo<ModelClassMap>(
+        thisModel.getClass().session
+      )[declaredFromModelName];
 
       return DeclaredFromModel.filter({
         [declaredFieldName]: thisModel.getId(),
@@ -154,11 +152,8 @@ function manyToManyDescriptor(
 ) {
   return {
     get() {
-      const thisModel = (this as unknown) as Model;
-      const session = (thisModel.getClass().session as unknown) as Record<
-        string,
-        typeof Model
-      >;
+      const thisModel = castTo<Model>(this);
+      const session = castTo<ModelClassMap>(thisModel.getClass().session);
       const {
         [declaredFromModelName]: DeclaredFromModel,
         [declaredToModelName]: DeclaredToModel,

@@ -1,4 +1,5 @@
 import { ORM, Model as BaseModel, QuerySet, attr, Session } from "../..";
+import { castTo } from "../../hacks";
 import { ObjectMap } from "../../types";
 
 describe("Model", () => {
@@ -16,11 +17,11 @@ describe("Model", () => {
       // won't survive longer than each test.
       Model = class extends BaseModel {
         static modelName = "UnitTestModel";
-      }
+      };
 
       const orm = new ORM();
       orm.register(Model);
-      sessionMock = orm.session() as unknown as SessionWithModel;
+      sessionMock = castTo<SessionWithModel>(orm.session());
     });
 
     it("make sure instance methods are enumerable", () => {
@@ -191,8 +192,12 @@ describe("Model", () => {
         randomNumber,
         someString: "some string",
       });
-      expect((model as unknown as { randomNumber: string }).randomNumber).toBe(randomNumber);
-      expect((model as unknown as { someString: string }).someString).toBe("some string");
+      expect(castTo<{ randomNumber: string }>(model).randomNumber).toBe(
+        randomNumber
+      );
+      expect(castTo<{ someString: string }>(model).someString).toBe(
+        "some string"
+      );
     });
   });
 });
