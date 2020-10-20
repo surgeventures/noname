@@ -192,7 +192,7 @@ export default class ResourceImpl implements Resource {
     data: JSONAPIResource,
     includesMap?: IncludesMap,
     options?: ResourceParseOptions
-  ): JSONObject {
+  ): JSONObject | { included: { [key: string]: JSONObject } } {
     const result: MapObject<any> = {};
     if (options && options.typeAttr) {
       result[options.typeAttr] = this.type;

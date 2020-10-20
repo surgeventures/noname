@@ -1,4 +1,4 @@
-import { JSONObject } from "./jsonApiTypes";
+// import { JSONObject } from "./jsonApiTypes";
 import Registry, { KeyTransforms } from "./Registry";
 
 describe("Registry.define", () => {
@@ -197,49 +197,53 @@ describe("Registry.parse", () => {
   });
 
   it("parses single relationship with additional included", () => {
-    const response = registry.parse({
-      data: {
-        type: "parent",
-        id: "12",
-        relationships: {
-          children: {
-            data: {
-              type: "children",
-              id: "123"
-            }
-          }
-        }
-      },
-      included: [
-        {
-          type: "children",
-          id: "123"
-        },
-        {
-          type: "terminals",
-          id: "1234",
+    const response = registry.parse(
+      {
+        data: {
+          type: "parent",
+          id: "12",
           relationships: {
-            location: {
+            children: {
               data: {
-                id: "12",
-                type: "locations"
+                type: "children",
+                id: "123"
               }
             }
           }
-        }
-      ]
-    });
+        },
+        included: [
+          {
+            type: "children",
+            id: "123"
+          },
+          {
+            type: "terminals",
+            id: "1234",
+            relationships: {
+              location: {
+                data: {
+                  id: "12",
+                  type: "locations"
+                }
+              }
+            }
+          }
+        ]
+      },
+      { includedInResponse: true }
+    );
 
-    expect(response).toEqual({
-      id: "12",
-      children: { id: "123" }
-    });
-
-    /* eslint-disable no-underscore-dangle */
-    expect((response as JSONObject).included_).toEqual({
-      children: [{ id: "123" }],
-      terminals: [{ id: "1234", location: "12" }]
-    });
+    expect(response).toEqual([
+      {
+        id: "12",
+        children: { id: "123" }
+      },
+      { id: "123" },
+      {
+        id: "1234",
+        location: "12"
+      }
+    ]);
   });
 
   it("parses multiple relationship", () => {
