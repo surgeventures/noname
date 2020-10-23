@@ -17,7 +17,7 @@ import { normalizeEntity } from "./utils";
  * Defines a basic non-key attribute.
  * @param  {string} fieldName - the name of the field the descriptor will be assigned to.
  */
-function attrDescriptor(fieldName: string) {
+export function attrDescriptor(fieldName: string) {
   return {
     get(): any {
       return (this as ModelData)._fields[fieldName];
@@ -41,7 +41,7 @@ function attrDescriptor(fieldName: string) {
  * @param  {string} fieldName - the name of the field the descriptor will be assigned to.
  * @param  {string} declaredToModelName - the name of the model that the field references.
  */
-function forwardsManyToOneDescriptor(
+export function forwardsManyToOneDescriptor(
   fieldName: string,
   declaredToModelName: string
 ) {
@@ -75,7 +75,7 @@ function forwardsManyToOneDescriptor(
  *
  * @see {@link module:descriptors~forwardsManyToOneDescriptor|forwardsManyToOneDescriptor}
  */
-function forwardsOneToOneDescriptor(
+export function forwardsOneToOneDescriptor(
   fieldName: string,
   declaredToModelName: string
 ) {
@@ -90,7 +90,7 @@ function forwardsOneToOneDescriptor(
  * @param  {string} declaredFieldName - the name of the field referencing the current model.
  * @param  {string} declaredFromModelName - the name of the other model.
  */
-function backwardsOneToOneDescriptor(
+export function backwardsOneToOneDescriptor(
   declaredFieldName: string,
   declaredFromModelName: string
 ) {
@@ -118,7 +118,7 @@ function backwardsOneToOneDescriptor(
  * An example would be `author.books` referencing all instances of
  * the `Book` model that reference the author using `fk()`.
  */
-function backwardsManyToOneDescriptor(
+export function backwardsManyToOneDescriptor(
   declaredFieldName: string,
   declaredFromModelName: string
 ) {
@@ -143,7 +143,7 @@ function backwardsManyToOneDescriptor(
  * This descriptor is assigned to both sides of a many-to-many relationship.
  * To indicate the backwards direction pass `true` for `reverse`.
  */
-function manyToManyDescriptor(
+export function manyToManyDescriptor(
   declaredFromModelName: string,
   declaredToModelName: string,
   throughModelName: string,
@@ -284,12 +284,3 @@ function manyToManyDescriptor(
     },
   };
 }
-
-export {
-  attrDescriptor,
-  forwardsManyToOneDescriptor,
-  forwardsOneToOneDescriptor,
-  backwardsOneToOneDescriptor,
-  backwardsManyToOneDescriptor,
-  manyToManyDescriptor,
-};

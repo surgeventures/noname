@@ -174,3 +174,7 @@ export type ForEachCallback<T> = {
 export type WithForEach<T> = {
   forEach: (cb: ForEachCallback<T>) => void;
 }
+
+export type TableMap = Record<string, Table>;
+
+export type EqualityFunc = (arg1: any, arg2: any) => boolean;

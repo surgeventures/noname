@@ -6,6 +6,7 @@ import {
   OrmState,
   Query,
   SchemaSpec,
+  TableMap,
   TableState,
   Transaction,
   UpdateCreateSpec,
@@ -13,10 +14,6 @@ import {
 } from "../types";
 
 import Table from "./Table";
-
-type TableMap = {
-  [tableName: string]: Table;
-};
 
 function replaceTableState(
   tableName: string,

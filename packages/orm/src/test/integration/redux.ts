@@ -96,6 +96,7 @@ describe("Redux integration", () => {
   });
 
   it("correctly returns a different state when calling a reducer", () => {
+    emptyState = orm.getEmptyState();
     nextState = ormReducer(emptyState, {
       type: CREATE_MOVIE,
       payload: {
@@ -117,6 +118,10 @@ describe("Redux integration", () => {
   });
 
   describe("selectors memoize results as intended", () => {
+    beforeEach(() => {
+      emptyState = orm.getEmptyState();
+    });
+
     it("basic selector", () => {
       const memoized = jest.fn();
       const selector = createSelector(orm, memoized);
@@ -157,9 +162,9 @@ describe("Redux integration", () => {
     });
 
     it("id lookups", () => {
-      const memoized = jest.fn((selectorSession) =>
-        selectorSession.Movie.withId(0)
-      );
+      const memoized = jest.fn((selectorSession) => {
+        return selectorSession.Movie.withId(0)
+      });
       const selector = createSelector(orm, memoized);
       expect(typeof selector).toBe("function");
 

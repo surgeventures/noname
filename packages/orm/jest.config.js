@@ -11,7 +11,7 @@ module.exports = {
         'test/functional/performance\\.(ts)',
     ],
     coverageDirectory: './coverage/',
-    collectCoverage: true,
+    collectCoverage: false,
     collectCoverageFrom: [
         '*.ts',
         '*/*.ts',

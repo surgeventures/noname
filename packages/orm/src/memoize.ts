@@ -1,7 +1,5 @@
 import ORM from "./ORM";
-import { ModelId, ObjectMap, OrmState } from "./types";
-
-export type EqualityFunc = (arg1: any, arg2: any) => boolean;
+import { ModelId, ObjectMap, OrmState, EqualityFunc } from "./types";
 
 type MemoizeState = {
   result: any;
@@ -54,11 +52,12 @@ const accessedModelInstancesAreEqual = (
 const fullTableScannedModelsAreEqual = (
   previous: MemoizeState,
   ormState: OrmState
-) =>
-  previous.fullTableScannedModels.every(
+) => {
+  return previous.fullTableScannedModels.every(
     (modelName: string) =>
       (previous.ormState as OrmState)[modelName] === ormState[modelName]
   );
+}
 
 /**
  * A memoizer to use with redux-orm

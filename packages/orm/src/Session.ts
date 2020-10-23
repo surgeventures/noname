@@ -13,13 +13,10 @@ import {
   WithForEach,
   QueryClause,
   ObjectMap,
+  ModelData,
 } from "./types";
 import { clauseFiltersByAttribute } from "./utils";
 import { castTo } from "./hacks";
-
-type ModelData = {
-  [modelName: string]: any;
-};
 
 export default class Session {
   readonly schema: ORM;
