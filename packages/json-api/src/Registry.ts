@@ -1,4 +1,12 @@
-import { JSONValue, JSONAPIDocument, JSONAPIResource } from "@fresha/noname-core";
+import {
+  JSONValue,
+  JSONAPIDocument,
+  JSONAPIResource,
+  identity,
+  kebabCaseDeep,
+  camelCaseDeep,
+  TransformFunc
+} from "@fresha/noname-core";
 import {
   IncludesMap,
   MapObject,
@@ -7,7 +15,6 @@ import {
   ResourceParseOptions,
   ResourceSpec
 } from "./types";
-import { identity, kebabCaseDeep, camelCaseDeep, TransformFunc } from "./utils";
 import ResourceImpl from "./Resource";
 import DuplicateResourceError from "./DuplicateResourceError";
 

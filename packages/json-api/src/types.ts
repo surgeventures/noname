@@ -5,9 +5,9 @@ import {
   JSONAPIResource,
   JSONAPIResourceId,
   JSONObject,
-  JSONValue
+  JSONValue,
+  TransformFunc
 } from "@fresha/noname-core";
-import { TransformFunc } from "./utils";
 
 export type MapObject<V> = {
   [key: string]: V;
