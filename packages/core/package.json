@@ -14,7 +14,7 @@
     "url": "git+https://github.com/surgeventures/noname.git"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc",
     "lint": "eslint --ext .ts src/",
     "lint:fix": "eslint --ext .ts src/ --fix",
     "prebuild": "rimraf ./dist",

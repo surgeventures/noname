@@ -3,11 +3,11 @@ import { JSONValue, JSONObject } from './jsonTypes';
 export type KeyTransformFunc = (key: string) => string;
 export type TransformFunc = (obj: JSONValue) => JSONValue;
 
-export const identity: TransformFunc = obj => obj;
+export const identity: TransformFunc = (obj) => obj;
 
 const transformKeysDeep = (obj: JSONValue, keyFn: KeyTransformFunc): JSONValue => {
   if (Array.isArray(obj)) {
-    return obj.map(o => transformKeysDeep(o, keyFn));
+    return obj.map((o) => transformKeysDeep(o, keyFn));
   }
   if (obj instanceof Object) {
     return Object.entries(obj).reduce((accum: JSONObject, [key, value]) => {
@@ -18,21 +18,21 @@ const transformKeysDeep = (obj: JSONValue, keyFn: KeyTransformFunc): JSONValue =
   return obj;
 };
 
-export const kebabCase: KeyTransformFunc = str => {
+export const kebabCase: KeyTransformFunc = (str) => {
   return str
     .split(/([A-Z][a-z0-9]+)/g)
-    .map(s => s.toLowerCase())
-    .filter(s => !!s.length)
+    .map((s) => s.toLowerCase())
+    .filter((s) => !!s.length)
     .join('-');
 };
 
-export const kebabCaseDeep: TransformFunc = obj => transformKeysDeep(obj, kebabCase);
+export const kebabCaseDeep: TransformFunc = (obj) => transformKeysDeep(obj, kebabCase);
 
-export const camelCase: KeyTransformFunc = str => {
+export const camelCase: KeyTransformFunc = (str) => {
   return str
     .split('-')
     .map((s, index) => (index > 0 ? s.slice(0, 1).toUpperCase() + s.slice(1) : s))
     .join('');
 };
 
-export const camelCaseDeep: TransformFunc = obj => transformKeysDeep(obj, camelCase);
+export const camelCaseDeep: TransformFunc = (obj) => transformKeysDeep(obj, camelCase);

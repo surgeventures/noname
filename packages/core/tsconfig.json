@@ -1,21 +1,19 @@
 {
   "compilerOptions": {
+    "alwaysStrict": true,
     "declaration": true,
-    "target": "es6",
-    "module": "esnext",
     "esModuleInterop": true,
-    "noImplicitAny": true,
     "lib": [
       "es6"
     ],
-    "outDir": "dist",
-    "noImplicitThis": true,
-    "strictFunctionTypes": true,
-    "strictNullChecks": true,
-    "sourceMap": true,
-    "noUnusedParameters": true,
+    "module": "esnext",
+    "moduleResolution": "node",
     "noUnusedLocals": true,
-    "moduleResolution": "node"
+    "noUnusedParameters": true,
+    "outDir": "dist",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es6"
   },
   "exclude": [
     "node_modules/**/*"

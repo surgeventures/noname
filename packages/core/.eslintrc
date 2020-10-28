@@ -11,9 +11,6 @@
   "root": true,
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaFeatures": {
-      "legacyDecorators": true
-    },
     "project": "./tsconfig.json"
   },
   "plugins": ["@typescript-eslint", "prettier", "jest"],
@@ -21,8 +18,7 @@
     "prettier/prettier": ["error", {
       "trailingComma": "all",
       "singleQuote": true,
-      "printWidth": 100,
-      "arrowParens": "avoid"
+      "printWidth": 100
     }],
     // see https://github.com/typescript-eslint/typescript-eslint/issues/2484
     "no-shadow": "off",
