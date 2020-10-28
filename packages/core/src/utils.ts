@@ -18,19 +18,21 @@ const transformKeysDeep = (obj: JSONValue, keyFn: KeyTransformFunc): JSONValue =
   return obj;
 };
 
+const RE_WORD_START = /[A-Z][^A-Z]/g;
+
 export const kebabCase: KeyTransformFunc = (str) => {
-  return str
-    .split(/([A-Z][a-z0-9]+)/g)
-    .map((s) => s.toLowerCase())
-    .filter((s) => !!s.length)
-    .join('-');
+  const parts = str.replace(RE_WORD_START, (r) => `-${r.toLowerCase()}`).match(/[a-z0-9]+/g);
+  return parts != null ? parts.filter((elem) => elem.length).join('-') : str;
 };
 
 export const kebabCaseDeep: TransformFunc = (obj) => transformKeysDeep(obj, kebabCase);
 
+const RE_WORD_SEPARATOR = /[-_]/g;
+
 export const camelCase: KeyTransformFunc = (str) => {
   return str
-    .split('-')
+    .split(RE_WORD_SEPARATOR)
+    .filter(Boolean)
     .map((s, index) => (index > 0 ? s.slice(0, 1).toUpperCase() + s.slice(1) : s))
     .join('');
 };
