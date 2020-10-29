@@ -29,6 +29,7 @@
     "url": "https://github.com/surgeventures/noname/issues"
   },
   "dependencies": {
+    "@fresha/noname-core": "0.1.0",
     "core-js": "3.5.0"
   },
   "devDependencies": {

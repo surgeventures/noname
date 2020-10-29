@@ -1,18 +1,8 @@
 /* eslint-disable no-use-before-define */
 
-/* JSON definitions */
-
-export type JSONPrimitive = null | boolean | number | string;
-
-export type JSONValue = JSONPrimitive | JSONArray | JSONObject;
-
-export type JSONArray = ArrayLike<JSONValue>;
-
-export type JSONObject = {
-  [key: string]: JSONValue;
-};
-
 /* JSON API definitions */
+
+export const JSON_API_MEDIA_TYPE = 'application/vnd.api+json';
 
 export type JSONAPIError = {
   id?: string;
@@ -44,12 +34,7 @@ type JSONAPITopLevelLinks = {
 };
 
 export type JSONAPIDocument = {
-  data:
-    | JSONAPIResource
-    | JSONAPIResource[]
-    | JSONAPIResourceId
-    | JSONAPIResourceId[]
-    | null;
+  data: JSONAPIResource | JSONAPIResource[] | JSONAPIResourceId | JSONAPIResourceId[] | null;
   errors?: JSONAPIError[];
   meta?: JSONAPIMeta;
   jsonapi?: JSONAPIImplementationInfo;

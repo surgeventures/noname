@@ -1,0 +1,45 @@
+{
+  "name": "@fresha/noname-core",
+  "version": "0.1.0",
+  "description": "Shared code, like typings",
+  "author": "Fresha Engineering",
+  "homepage": "https://github.com/surgeventures/noname/tree/master/packages/noname-json-api#readme",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/surgeventures/noname.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint --ext .ts src/",
+    "lint:fix": "eslint --ext .ts src/ --fix",
+    "prebuild": "rimraf ./dist",
+    "prepublish": "npm run build",
+    "pretest": "npm run lint",
+    "test": "jest",
+    "test:dev": "jest --watchAll"
+  },
+  "bugs": {
+    "url": "https://github.com/surgeventures/noname/issues"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.15",
+    "@types/node": "^14.14.5",
+    "@typescript-eslint/eslint-plugin": "^4.6.0",
+    "@typescript-eslint/parser": "^4.6.0",
+    "eslint": "^7.12.1",
+    "eslint-config-prettier": "^6.14.0",
+    "eslint-plugin-jest": "^24.1.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "jest": "^26.6.1",
+    "prettier": "^2.1.2",
+    "rimraf": "^3.0.2",
+    "ts-jest": "^26.4.3",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.5"
+  }
+}
