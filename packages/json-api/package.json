@@ -8,7 +8,8 @@
   },
   "homepage": "https://github.com/surgeventures/noname/tree/master/packages/noname-json-api#readme",
   "license": "MIT",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "publishConfig": {
     "access": "public"
   },
