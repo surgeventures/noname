@@ -1,6 +1,6 @@
 {
   "name": "@fresha/noname-json-api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "JSON:API request &amp; response helpers.",
   "author": {
     "name": "Andriy Mykulyak",
@@ -30,7 +30,7 @@
     "url": "https://github.com/surgeventures/noname/issues"
   },
   "dependencies": {
-    "@fresha/noname-core": "0.1.0",
+    "@fresha/noname-core": "^0.1.1",
     "core-js": "3.5.0"
   },
   "devDependencies": {
