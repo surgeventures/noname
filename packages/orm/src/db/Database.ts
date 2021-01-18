@@ -3,6 +3,7 @@ import ops from "immutable-ops";
 import { CREATE, DELETE, SUCCESS, UPDATE } from "../constants";
 import { castTo } from "../hacks";
 import {
+  Database,
   OrmState,
   Query,
   SchemaSpec,
@@ -93,7 +94,7 @@ function update(
   };
 }
 
-export function createDatabase(schemaSpec: SchemaSpec) {
+export function createDatabase(schemaSpec: SchemaSpec): Database {
   const { tables: tableSpecs } = schemaSpec;
   const tables: TableMap = Object.entries(tableSpecs).reduce(
     (map, [tableName, tableSpec]) => ({
@@ -111,8 +112,23 @@ export function createDatabase(schemaSpec: SchemaSpec) {
       }),
       {}
     );
+
+  const injectTables = (newSchemaSpec: SchemaSpec) => {
+    const { tables: newTableSpecs } = newSchemaSpec;
+    const newEmptyState: OrmState = {};
+    Object.entries(newTableSpecs).forEach(
+      ([tableName, tableSpec]) => {
+        const newTable = new Table(tableSpec);
+        tables[tableName] = newTable;
+        newEmptyState[tableName] = newTable.getEmptyState();
+      }
+    );
+    return newEmptyState;
+  };
+
   return {
     getEmptyState,
+    injectTables,
     query: query.bind(null, tables),
     update: update.bind(null, tables),
     // Used to inspect the schema.

@@ -126,6 +126,7 @@ export interface Database {
     tx: Transaction,
     state: OrmState
   ): { status: string; state: OrmState; payload: object };
+  injectTables(schemaSpec: SchemaSpec): OrmState;
 }
 
 export type ModelId = number | string;

@@ -37,6 +37,8 @@ export default class ORM {
   private readonly createDatabase: DatabaseCreator;
   readonly registry: typeof Model[];
   readonly implicitThroughModels: typeof Model[];
+  private tempRegistry: typeof Model[];
+  private tempImplicitThroughModels: typeof Model[];
   private readonly installedFields: ObjectMap<ObjectMap<boolean>>;
   private db: Database;
 
@@ -48,7 +50,27 @@ export default class ORM {
     this.createDatabase = createDatabase;
     this.registry = [];
     this.implicitThroughModels = [];
+    this.tempRegistry = [];
+    this.tempImplicitThroughModels = [];
     this.installedFields = {};
+  }
+
+  injectModels(...models: typeof Model[]): OrmState {
+    if (!this.db) {
+      throw new Error("Cannot dynamically inject models, if database is not created");
+    }
+    models.forEach((model) => {
+      if (model.modelName === undefined) {
+        throw new Error("A model was passed that doesn't have a modelName set");
+      }
+
+      model.invalidateClassCache();
+
+      this.registerManyToManyModelsFor(model, true);
+      this.tempRegistry.push(model);
+    });
+
+    return this.db.injectTables(this.generateSchemaSpec(true));
   }
 
   /**
@@ -74,7 +96,7 @@ export default class ORM {
     });
   }
 
-  registerManyToManyModelsFor(model: typeof Model) {
+  registerManyToManyModelsFor(model: typeof Model, temp = false) {
     const { fields } = model;
     const thisModelName = model.modelName;
 
@@ -127,7 +149,11 @@ export default class ORM {
         };
 
         Through.invalidateClassCache();
-        this.implicitThroughModels.push(Through);
+        if (temp) {
+          this.tempImplicitThroughModels.push(Through);
+        } else {
+          this.implicitThroughModels.push(Through);
+        }
       }
     });
   }
@@ -156,8 +182,21 @@ export default class ORM {
     return this.registry.concat(this.implicitThroughModels);
   }
 
-  generateSchemaSpec() {
-    const models = this.getModelClasses();
+  getTempModelClasses() {
+    this._setupModelPrototypes(this.tempRegistry);
+    this.registry.push(...this.tempRegistry);
+    this._setupModelPrototypes(this.tempImplicitThroughModels);
+    this.implicitThroughModels.push(...this.tempImplicitThroughModels)
+
+    const modelClasses = this.tempRegistry.concat(this.tempImplicitThroughModels);
+    // clear temporary registry
+    this.tempRegistry = [];
+    this.tempImplicitThroughModels = [];
+    return modelClasses;
+  }
+
+  generateSchemaSpec(temp = false) {
+    const models = temp ? this.getTempModelClasses() : this.getModelClasses();
     const tables = models.reduce<Record<string, TableSpec>>((spec, modelClass) => {
       const tableName = modelClass.modelName;
       const tableSpec = modelClass._getTableOpts(); // eslint-disable-line no-underscore-dangle
