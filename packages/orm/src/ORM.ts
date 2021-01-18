@@ -187,7 +187,12 @@ export default class ORM {
     this.registry.push(...this.tempRegistry);
     this._setupModelPrototypes(this.tempImplicitThroughModels);
     this.implicitThroughModels.push(...this.tempImplicitThroughModels)
-    return this.tempRegistry.concat(this.tempImplicitThroughModels);
+
+    const modelClasses = this.tempRegistry.concat(this.tempImplicitThroughModels);
+    // clear temporary registry
+    this.tempRegistry = [];
+    this.tempImplicitThroughModels = [];
+    return modelClasses;
   }
 
   generateSchemaSpec(temp = false) {
