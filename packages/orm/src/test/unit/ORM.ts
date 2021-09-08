@@ -1,6 +1,10 @@
 import { ORM, Session, Model, oneToOne, fk, many, attr } from "../..";
+import { ModelDescriptorsRegistry, registerDescriptors, AnyModel } from '../../Model';
 import { createTestModels, Schema } from "../helpers";
 import { OrmState } from '../../types';
+
+const registry = ModelDescriptorsRegistry.getInstance();
+registry.clear()
 
 describe("ORM", () => {
   it("constructor works", () => {
@@ -19,12 +23,13 @@ describe("ORM", () => {
 
       class B extends Model {
         static modelName = "B" as const;
-        static fields = {
-          id: attr(),
-          field1: oneToOne("A"),
-          field2: oneToOne("A"),
-        };
       }
+
+      registerDescriptors("B" as any, {
+        id: attr(),
+        field1: oneToOne("A"),
+        field2: oneToOne("A"),
+      })
 
       const orm = new ORM<Schema>();
       orm.register(A, B);
@@ -42,12 +47,13 @@ describe("ORM", () => {
 
       class B extends Model<typeof B> {
         static modelName = "B" as const;
-        static fields = {
-          id: attr(),
-          field1: fk("A"),
-          field2: fk("A"),
-        };
       }
+
+      registerDescriptors("B" as any, {
+        id: attr(),
+        field1: fk("A"),
+        field2: fk("A"),
+      })
 
       const orm = new ORM<Schema>();
       orm.register(A, B);
@@ -65,12 +71,13 @@ describe("ORM", () => {
 
       class B extends Model<typeof B> {
         static modelName = "B" as const;
-        static fields = {
-          id: attr(),
-          field1: many("A"),
-          field2: many("A"),
-        };
       }
+
+      registerDescriptors("B" as any, {
+        id: attr(),
+        field1: many("A"),
+        field2: many("A"),
+      })
 
       const orm = new ORM<Schema>();
       orm.register(A, B);

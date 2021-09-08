@@ -5,6 +5,7 @@ import {
   QuerySet,
   Model,
 } from "../..";
+import { AnyModel } from "../../Model";
 import { castTo } from "../../hacks";
 import { ModelId, OrmState, ReduxAction, Ref, SessionWithBoundModels, TableState } from "../../types";
 import {

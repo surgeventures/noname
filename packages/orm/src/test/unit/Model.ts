@@ -1,7 +1,12 @@
 import { ORM, Model, QuerySet, attr } from "../..";
+import { AnyModel } from "../../Model";
+import { ModelDescriptorsRegistry, registerDescriptors } from '../../Model';
 import { castTo } from "../../hacks";
 import { ModelId, SessionWithBoundModels } from "../../types";
 
+
+const registry = ModelDescriptorsRegistry.getInstance();
+registry.clear();
 
 describe("Model", () => {
   const getTestModelClass = () => {
@@ -127,7 +132,7 @@ describe("Model", () => {
       object?: {};
     }
     type Schema = {
-      UnitTestModel: ReturnType<typeof getTestModelClass>; 
+      UnitTestModel: ReturnType<typeof getTestModelClass>;
     }
     const getTestModelClass = () => {
       return class Test extends Model<typeof Test, TestDescriptors> {

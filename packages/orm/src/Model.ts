@@ -12,6 +12,57 @@ import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor,
 import { castTo } from "./hacks";
 import { Attribute } from ".";
 
+export type Registry<
+    T extends { [k in keyof T]: typeof Model } = {},
+    K extends keyof T = Extract<keyof T, T[keyof T]['modelName']>,
+    D extends {[k: string]: Attribute | OneToOne | ManyToMany | ForeignKey} = {[k: string]: Attribute | OneToOne | ManyToMany | ForeignKey}
+> = { [k in K]: D };
+
+type Schema = {
+  User: typeof Model;
+}
+
+export class ModelDescriptorsRegistry {
+  private static instance: ModelDescriptorsRegistry;
+  public registry: Registry<Schema> = {} as Registry<Schema>;
+
+  private constructor() { }
+
+  public static getInstance(): ModelDescriptorsRegistry {
+      if (!ModelDescriptorsRegistry.instance) {
+        ModelDescriptorsRegistry.instance = new ModelDescriptorsRegistry();
+      }
+
+      return ModelDescriptorsRegistry.instance;
+  }
+
+  public add<D extends {[k: string]: Attribute | OneToOne | ManyToMany | ForeignKey}>(modelName: keyof Schema, descriptors: D): void {
+    this.registry[modelName] = descriptors;
+  }
+
+  public getDescriptors(modelName: keyof Schema) {
+    const descriptors = this.registry[modelName];
+    if (!descriptors) {
+      this.add(modelName, this.getDefaultDescriptors());
+      return this.registry[modelName];
+    }
+    return descriptors;
+  }
+
+  public getDefaultDescriptors() {
+    return { id: attr() };
+  }
+
+  public clear(): void {
+    this.registry = {} as Registry<Schema>;
+  }
+}
+
+export function registerDescriptors(modelName: keyof Schema, descriptors: {}) {
+  const registry = ModelDescriptorsRegistry.getInstance();
+  registry.add(modelName, descriptors);
+}
+
 /**
  * Generates a query specification to get the instance's
  * corresponding table row using its primary key.
@@ -36,11 +87,6 @@ function getByIdQuery(modelInstance: AnyModel): Query<AnySchema, Record<string, 
   };
 }
 
-type __TemporaryModelFields = {
-  id: Attribute;
-  [key: string]: Field;
-};
-
 /**
  * The heart of an ORM, the data model.
  *
@@ -61,9 +107,6 @@ type __TemporaryModelFields = {
  */
 export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFieldMap extends ModelFieldMap = ModelFieldMap> {
   static modelName: string;
-  static fields: __TemporaryModelFields = {
-    id: attr(),
-  };
   static virtualFields: Record<string, RelationalField> = {};
   static readonly querySetClass = QuerySet;
   static isSetUp: boolean;
@@ -256,20 +299,20 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
     const props: Record<string, AnyModel | ModelId | null | (AnyModel | ModelId | null)[]> = { ...userProps };
 
     const m2mRelations: Record<string, (AnyModel | ModelId)[]> = {} as Record<string, (AnyModel | ModelId)[]>;
-
-    const declaredFieldNames = Object.keys(this.fields);
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const descriptors = registry.getDescriptors(this.modelName as any);
+    const declaredFieldNames = Object.keys(descriptors);
     const declaredVirtualFieldNames = Object.keys(this.virtualFields);
 
     declaredFieldNames.forEach((key) => {
-      const fields = this.fields;
-      const field = fields[key];
+      const field = descriptors[key];
       const valuePassed = userProps.hasOwnProperty(key);
       if (!(field instanceof ManyToMany)) {
         if (valuePassed) {
-          const value = (userProps[key as keyof RefWithFields<InstanceType<MClassType>>] as unknown) as AnyModel;
-          (props as any)[key] = normalizeEntity(value);
+          const value = userProps[key];
+          props[key] = normalizeEntity(value);
         } else if ((field as Attribute).getDefault) {
-          (props as any)[key] = (field as Attribute).getDefault!();
+          props[key] = (field as any).getDefault();
         }
       } else if (valuePassed) {
         // If a value is supplied for a ManyToMany field,
@@ -445,7 +488,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
     // eslint-disable-next-line no-underscore-dangle
     return ThisModel._findDatabaseRows<this>({
       [ThisModel.idAttribute as 'id']: this.getId(),
-    } as Ref<this>)[0];
+    } as Ref<this>)[0] as Attrs;
   }
 
   /**
@@ -480,14 +523,16 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
   toString(): string {
     const ThisModel = this.getClass();
     const className = ThisModel.modelName;
-    const fieldNames = Object.keys(ThisModel.fields) as string[];
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const descriptors = registry.getDescriptors(className as any);
+    const fieldNames = Object.keys(descriptors) as string[];
     const fields = fieldNames
       .map((fieldName) => {
-        const field = ThisModel.fields[fieldName];
+        const field = descriptors[fieldName];
         if (field instanceof ManyToMany) {
           const ids: ModelId[] = (castTo<__TemporaryModelFields>(this)[fieldName] as unknown as QuerySet<MClass>)
             .toModelArray()
-            .map((model) => castTo<any>(model).getId());
+            .map((model: Model<MClass>) => model.getId());
           return `${fieldName}: [${ids.join(", ")}]`;
         }
         const val = this._fields[fieldName as keyof MFieldMap];
@@ -547,7 +592,9 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
 
     const mergeObj = { ...userMergeObj };
 
-    const { fields, virtualFields } = ThisModel;
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const fields = registry.getDescriptors(ThisModel.modelName as any);
+    const { virtualFields } = ThisModel;
 
     const m2mRelations: Record<string, ModelId[]> = {} as Record<string, ModelId[]>;
 
@@ -659,8 +706,9 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
    */
   _refreshMany2Many(relations: Record<string, (ModelId | AnyModel)[]>): void {
     const ThisModel = this.getClass();
-    const { fields, virtualFields, modelName } = ThisModel;
-
+    const { virtualFields, modelName } = ThisModel;
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const fields = registry.getDescriptors(ThisModel.modelName as any);
     Object.keys(relations).forEach((name) => {
       const reverse = !fields.hasOwnProperty(name);
       const field = virtualFields[name];

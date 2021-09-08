@@ -1,4 +1,5 @@
 import { ORM } from "../..";
+import { AnyModel } from "../../Model";
 import { createTestModels, isSubclass, Schema } from "../helpers";
 import { CREATE } from "../../constants";
 import { OrmState, TableState, UpdateSpec } from "../../types";

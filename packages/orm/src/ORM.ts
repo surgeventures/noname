@@ -1,5 +1,5 @@
 import Session from "./Session";
-import Model, { AnyModel, ModelClassMap } from "./Model";
+import Model, { ModelDescriptorsRegistry, AnyModel, ModelClassMap } from "./Model";
 import { createDatabase as defaultCreateDatabase } from "./db";
 import { ForeignKey, ManyToMany, attr, Field } from "./fields";
 
@@ -80,7 +80,8 @@ export default class ORM<
   registerManyToManyModelsFor(model: Schema[keyof Schema]) {
     const { fields } = model;
     const thisModelName = model.modelName;
-
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const fields = registry.getDescriptors(thisModelName as any);
     Object.entries(fields).forEach(([fieldName, fieldInstance]) => {
       if (!(fieldInstance instanceof ManyToMany)) {
         return;
@@ -123,11 +124,12 @@ export default class ORM<
           }
         };
         const ForeignKeyClass = selfReferencing ? PlainForeignKey : ForeignKey;
-        Through.fields = {
+        const registry = ModelDescriptorsRegistry.getInstance();
+        registry.add(Through.modelName as any, {
           id: attr(),
           [fromFieldName]: new ForeignKeyClass(thisModelName),
           [toFieldName]: new ForeignKeyClass(toModelName),
-        };
+        });
 
         Through.invalidateClassCache();
         this.implicitThroughModels.push(Through);
@@ -164,9 +166,11 @@ export default class ORM<
     const tables = models.reduce<{ [K in keyof Schema]: Schema[K] }>((spec, modelClass) => {
       const tableName = modelClass.modelName;
       const tableSpec = modelClass._getTableOpts();
+      const registry = ModelDescriptorsRegistry.getInstance();
+      const descriptors = registry.getDescriptors(tableName as any);
       spec[tableName as keyof Schema] = Object.assign(
         {},
-        { fields: modelClass.fields },
+        { fields: descriptors },
         tableSpec
       ) as Schema[keyof Schema];
       return spec;
@@ -206,16 +210,19 @@ export default class ORM<
    * @return {Session} a new {@link Session} instance
    */
   mutableSession(state?: OrmState<Schema>): SessionWithBoundModels<Schema> {
-    return new Session(this, this.getDatabase(), state, true) as SessionWithBoundModels<Schema>; 
+    return new Session(this, this.getDatabase(), state, true) as SessionWithBoundModels<Schema>;
   }
 
   /**
    * @private
    */
   _setupModelPrototypes<Models extends typeof AnyModel[]>(models: Models) {
+    const registry = ModelDescriptorsRegistry.getInstance();
+
     models.forEach((model) => {
       if (!model.isSetUp) {
-        const { fields, modelName } = model;
+        const { modelName } = model;
+        const fields = registry.getDescriptors(modelName as any);
         Object.entries(fields).forEach(([fieldName, field]) => {
           if (!this._isFieldInstalled(modelName, fieldName)) {
             this._installField(field, fieldName, model);

@@ -9,6 +9,7 @@ import {
   clauseFiltersByAttribute,
   ArrayDiffActionsResult
 } from "../../utils";
+import { AnyModel } from "../../Model";
 import { FILTER } from "../../constants";
 import { Model } from "../../index";
 import { QueryClause } from "../../types";

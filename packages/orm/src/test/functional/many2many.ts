@@ -1,4 +1,5 @@
 import { Model, QuerySet, ORM, attr, many, fk } from "../..";
+import { ModelDescriptorsRegistry, registerDescriptors } from '../../Model';
 import { castTo } from "../../hacks";
 import { AnyModel, ModelClassMap } from "../../Model";
 import { ModelId, Relations, SessionWithBoundModels, TargetRelationship, Ref, SourceRelationship, SessionBoundModel } from "../../types";
@@ -7,6 +8,9 @@ import {
   ExtendedSession,
   Schema,
 } from "../helpers";
+
+const registry = ModelDescriptorsRegistry.getInstance();
+registry.clear();
 
 type UserDescriptors = {
   id?: ModelId;
@@ -39,11 +43,13 @@ type TeamDescriptors = {
 
 class Team extends Model<typeof Team, TeamDescriptors> implements TeamDescriptors {
   static modelName = "Team" as const;
-  static fields = {
-    id: attr(),
-    name: attr(),
-    users: many("User", "teams"),
-  };
+}
+
+registerDescriptors("Team" as any, {
+  id: attr(),
+  name: attr(),
+  users: many("User", "teams"),
+});
 
   id?: ModelId;
   name?: string;
@@ -58,7 +64,7 @@ describe("Many to many relationships", () => {
       TeamUsers: typeof User;
       User2Team: typeof AnyModel;
     }
-    
+
     type CustomSession = SessionWithBoundModels<Schema>;
     let session: CustomSession;
     let teamFirst: SessionBoundModel<Team>;
@@ -250,6 +256,7 @@ describe("Many to many relationships", () => {
     let validateRelationState: <Schema extends ModelClassMap>(session: SessionWithBoundModels<Schema>) => void;
 
     beforeEach(() => {
+      registry.clear();
       validateRelationState = <Schema extends ModelClassMap>(session: SessionWithBoundModels<Schema>) => {
         const { User, Team, User2Team } = session;
 
@@ -288,7 +295,7 @@ describe("Many to many relationships", () => {
         expect(User2Team.count()).toBe(3);
       };
     });
-
+    // HERE
     it("without throughFields", () => {
       type UserModelDescriptors = {
         id: ModelId;
@@ -415,7 +422,9 @@ describe("Many to many relationships", () => {
 
       class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> implements TeamModelDescriptors {
         static modelName = "Team" as const;
-        static fields = {
+      }
+
+      registerDescriptors("Team" as any, {
           id: attr(),
           name: attr(),
           users: many({
@@ -424,6 +433,7 @@ describe("Many to many relationships", () => {
             relatedName: "teams",
             throughFields: ["user", "team"],
           }),
+        });
         };
 
         id: ModelId;
@@ -587,7 +597,7 @@ describe("Many to many relationships", () => {
         id: ModelId;
         name: string;
       }
-      
+
       type Schema = {
         UserModel: typeof UserModel;
         User2UserModel: typeof User2UserModel;
@@ -615,7 +625,7 @@ describe("Many to many relationships", () => {
       expect(TagSubTags.count()).toBe(0);
 
       const technologySubTags = Tag.withId("Technology")!.subTags!;
-      
+
       technologySubTags.add("Redux");
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
@@ -736,7 +746,7 @@ describe("Many to many relationships", () => {
       subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
       subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
     }
-    
+
     type Schema = {
       User: typeof User;
       UserSubscribed: typeof User;

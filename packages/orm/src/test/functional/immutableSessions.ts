@@ -1,4 +1,6 @@
 import deepFreeze from "deep-freeze";
+import { Model, QuerySet, ORM, attr, Session } from "../..";
+import { ModelDescriptorsRegistry, registerDescriptors } from '../../Model';
 import { Model, QuerySet, ORM, attr } from "../..";
 import { AnyModel } from "../../Model";
 import { castTo } from "../../hacks";
@@ -13,6 +15,12 @@ import {
   Publisher,
 } from "../helpers";
 
+const registry = ModelDescriptorsRegistry.getInstance();
+registry.clear()
+
+type WithSetter = {
+  author: Author | number | null;
+};
 
 describe("Immutable session", () => {
   let session: ExtendedSession;
@@ -244,10 +252,10 @@ describe("Immutable session", () => {
     const { name, characters, meta } = movie;
     const oldRef = movie.ref;
 
-    movie.update({ name });
+    movie.update({ name } as any);
     expect(oldRef).toBe<Ref<Movie>>(movie.ref);
 
-    movie.update({ meta });
+    movie.update({ meta } as any);
     expect(oldRef).toBe<Ref<Movie>>(movie.ref);
 
     movie.update({ characters });
@@ -292,7 +300,7 @@ describe("Immutable session", () => {
 
     const movie2 = Movie.create({
       characters: ["Joker"],
-    });
+    }) as Movie;
     const oldRef2 = movie2.ref;
     movie2.equals = function characterAmountsEqual(otherModel: AnyModel) {
       return (
@@ -596,7 +604,7 @@ describe("Immutable session", () => {
     // Forward
     const book = Book.first()!;
     const { author } = book;
-    const { author: rawFk } = book.ref;
+    const { author: rawFk } = book.ref as any;
     expect(author).toBeInstanceOf(Author);
     expect(author?.getId()).toBe<ModelId>(rawFk!);
 
@@ -609,7 +617,7 @@ describe("Immutable session", () => {
 
     // Forward with 'as' option
     const movie = Movie.first()!;
-    const { publisher, publisherId } = movie;
+    const { publisher, publisherId } = movie as any;
     expect(publisher).toBeInstanceOf(Publisher);
     expect(publisher!.getId()).toBe(publisherId);
   });
@@ -661,7 +669,7 @@ describe("Immutable session", () => {
     // Forward
     const book = Book.first()!;
     const { cover } = book;
-    const { cover: rawFk } = book.ref;
+    const { cover: rawFk } = book.ref as any;
     expect(cover).toBeInstanceOf(Cover);
     expect(cover!.getId()).toBe(rawFk);
 

@@ -1,7 +1,10 @@
 import ORM from "../ORM";
-import Model from "../Model";
+import Model, { ModelDescriptorsRegistry, registerDescriptors } from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
 import { ModelId, Relations, SessionWithBoundModels, SourceRelationship, TargetRelationship } from "../types";
+
+const registry = ModelDescriptorsRegistry.getInstance();
+registry.clear();
 
 /**
  * These utils create a database schema for testing.
@@ -171,7 +174,7 @@ export class Author extends Model<typeof Author, AuthorDescriptors> implements A
   id?: ModelId;
   name?: string;
   publishers?: TargetRelationship<Publisher, Relations.ManyToMany>;
-  books?: SourceRelationship<typeof Book, Relations.ForeignKey>; 
+  books?: SourceRelationship<typeof Book, Relations.ForeignKey>;
 }
 
 
@@ -296,12 +299,61 @@ export class Movie extends Model<typeof Movie, MovieDescriptors> implements Movi
 
 export function createTestModels() {
   const MyBook = class extends Book {};
+  registerDescriptors(MyBook.modelName as any, {
+    id: attr(),
+    name: attr(),
+    releaseYear: attr(),
+    author: fk("Author", "books"),
+    cover: oneToOne("Cover"),
+    genres: many("Genre", "books"),
+    tags: many("Tag", "books"),
+    publisher: fk("Publisher", "books"),
+  })
   const MyAuthor = class extends Author {};
+  registerDescriptors(MyAuthor.modelName as any, {
+    id: attr(),
+    name: attr(),
+    publishers: many({
+      to: "Publisher",
+      through: "Book",
+      relatedName: "authors",
+    })
+  })
   const MyCover = class extends Cover {};
+  registerDescriptors(MyCover.modelName as any, {
+    id: attr(),
+    src: attr(),
+  })
   const MyGenre = class extends Genre {};
+  registerDescriptors(MyGenre.modelName as any, {
+    id: attr(),
+    name: attr(),
+  })
   const MyTag = class extends Tag {};
+  registerDescriptors(MyTag.modelName as any, {
+    id: attr(),
+    name: attr(),
+    subTags: many("this", "parentTags"),
+  })
   const MyPublisher = class extends Publisher {};
+  registerDescriptors(MyPublisher.modelName as any, {
+    id: attr(),
+    name: attr(),
+  })
   const MyMovie = class extends Movie {};
+  registerDescriptors(MyMovie.modelName as any, {
+    id: attr(),
+    name: attr(),
+    rating: attr(),
+    hasPremiered: attr(),
+    characters: attr(),
+    meta: attr(),
+    publisherId: fk({
+      to: "Publisher",
+      as: "publisher",
+      relatedName: "movies",
+    }),
+  })
 
   return {
     Book: MyBook,
@@ -320,9 +372,9 @@ export type Schema = {
   Genre: typeof Genre;
   Tag: typeof Tag;
   Author: typeof Author;
-  Movie: typeof Movie; 
+  Movie: typeof Movie;
   Publisher: typeof Publisher;
-  
+
   BookGenres: typeof Model;
   BookTags: typeof Model;
   TagSubTags: typeof Tag;

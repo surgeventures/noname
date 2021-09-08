@@ -1,6 +1,10 @@
 import { Model, ORM, attr, many } from "../..";
+import { ModelDescriptorsRegistry, registerDescriptors } from '../../Model';
 import { ModelId, Relations, SessionBoundModel, SessionWithBoundModels, TargetRelationship, SourceRelationship } from "../../types";
 import { measureMs, nTimes, avg, round } from "../helpers";
+
+const registry = ModelDescriptorsRegistry.getInstance();
+registry.clear()
 
 const crypto = require("crypto");
 
@@ -26,6 +30,22 @@ const logTime = (
 const randomName = (): string => crypto.randomBytes(16).toString("hex");
 
 describe("Big Data Test", () => {
+  type ExtendedSession = {
+    Item: typeof Model;
+  };
+
+  let orm: ORM;
+  let session: ExtendedSession;
+
+  beforeEach(() => {
+    class Item extends Model {
+      static modelName = "Item";
+    }
+
+    registerDescriptors("Item" as any, {
+      id: attr(),
+      name: attr(),
+    })
   type ItemDescriptors = {
     id: ModelId;
     name: string;
