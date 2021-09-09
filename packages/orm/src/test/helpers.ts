@@ -2,6 +2,14 @@ import ORM from "../ORM";
 import Model, { ModelDescriptorsRegistry, registerDescriptors } from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
 import { ModelId, Relations, SessionWithBoundModels, SourceRelationship, TargetRelationship } from "../types";
+import { fk, many, attr } from "../fields";
+import { ModelId, TableRow } from "../types";
+import Session from "../Session";
+import { castTo } from "../hacks";
+import { Attribute } from "../decorators/attribute";
+import { ManyToMany } from "../decorators/manyToMany";
+import { ForeignKey } from "../decorators/foreignKey";
+import { OneToOne } from "../decorators/oneToOne";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 registry.clear();
@@ -151,6 +159,33 @@ export class Book extends Model<typeof Book, BookDescriptors> implements BookDes
   tags?: TargetRelationship<Tag, Relations.ManyToMany>;
   publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
   author?: TargetRelationship<Author, Relations.ForeignKey>;
+
+  @Attribute
+  public id: string | number;
+
+  @Attribute
+  public name: string;
+
+  @Attribute
+  public releaseYear: number;
+
+  @ForeignKey("Author", "books")
+  public author: any // Should be TargetModelRelationship<typeof Author, Relations.ForeignKey>
+
+  @OneToOne("Cover")
+  public cover: any // Should be TargetModelRelationship<typeof Cover, Relations.ForeignKey>
+
+  @ManyToMany("Genre", "books")
+  public genres: any // Should be TargetModelRelationship<typeof Genre, Relations.ForeignKey>
+
+  @ManyToMany("Tag", "books")
+  public tags: any // Should be TargetModelRelationship<typeof Tag, Relations.ForeignKey>
+
+  @ForeignKey("Publisher", "books")
+  public publisher: any // Should be TargetModelRelationship<typeof Publisher, Relations.ForeignKey>
+
+  public foreignKeyOfSomeSourceModel: unknown // Should be SourceModelRelationship<typeof SomeSourceModel, Relations.ForeignKey> or unknown
+
 }
 
 export type AuthorDescriptors = {
@@ -227,6 +262,24 @@ export class Tag extends Model<typeof Tag, TagDescriptors> implements TagDescrip
       idAttribute: "name",
     };
   }
+
+  @Attribute
+  public id: string;
+
+  @Attribute
+  public name: string;
+
+  @ManyToMany("this", "parentTags")
+  subTags: any;
+}
+
+export type TagProps = {
+  id: ModelId;
+  name: string;
+  subTags: IManyQuerySet<Tag & TagProps>;
+  parentTags: IManyQuerySet<Tag & TagProps>;
+  books: IQuerySet<Book & BookProps>;
+};
   static fields = {
     id: attr(),
     name: attr(),
@@ -298,17 +351,32 @@ export class Movie extends Model<typeof Movie, MovieDescriptors> implements Movi
 }
 
 export function createTestModels() {
-  const MyBook = class extends Book {};
-  registerDescriptors(MyBook.modelName as any, {
-    id: attr(),
-    name: attr(),
-    releaseYear: attr(),
-    author: fk("Author", "books"),
-    cover: oneToOne("Cover"),
-    genres: many("Genre", "books"),
-    tags: many("Tag", "books"),
-    publisher: fk("Publisher", "books"),
-  })
+  class MyBook extends Book {
+    @Attribute
+    public id: string | number;
+
+    @Attribute
+    public name: string;
+
+    @Attribute
+    public releaseYear: number;
+
+    @ForeignKey("Author", "books")
+    public author: any // Should be TargetModelRelationship<typeof Author, Relations.ForeignKey>
+
+    @OneToOne("Cover")
+    public cover: any // Should be TargetModelRelationship<typeof Cover, Relations.ForeignKey>
+
+    @ManyToMany("Genre", "books")
+    public genres: any // Should be TargetModelRelationship<typeof Genre, Relations.ForeignKey>
+
+    @ManyToMany("Tag", "books")
+    public tags: any // Should be TargetModelRelationship<typeof Tag, Relations.ForeignKey>
+
+    @ForeignKey("Publisher", "books")
+    public publisher: any // Should be TargetModelRelationship<typeof Publisher, Relations.ForeignKey>
+  }
+
   const MyAuthor = class extends Author {};
   registerDescriptors(MyAuthor.modelName as any, {
     id: attr(),
@@ -329,12 +397,17 @@ export function createTestModels() {
     id: attr(),
     name: attr(),
   })
-  const MyTag = class extends Tag {};
-  registerDescriptors(MyTag.modelName as any, {
-    id: attr(),
-    name: attr(),
-    subTags: many("this", "parentTags"),
-  })
+  class MyTag extends Tag {
+    @Attribute
+    public id: string;
+
+    @Attribute
+    public name: string;
+
+    @ManyToMany("this", "parentTags")
+    subTags: any;
+  }
+
   const MyPublisher = class extends Publisher {};
   registerDescriptors(MyPublisher.modelName as any, {
     id: attr(),
