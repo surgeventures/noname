@@ -1,6 +1,5 @@
 import { ORM, Model as BaseModel, QuerySet, attr, Session } from "../..";
 import { castTo } from "../../hacks";
-import { ObjectMap } from "../../types";
 
 describe("Model", () => {
   describe("static method", () => {
@@ -27,7 +26,7 @@ describe("Model", () => {
     it("make sure instance methods are enumerable", () => {
       // See #29.
 
-      const enumerableProps: ObjectMap<any> = {};
+      const enumerableProps: Record<string, any> = {};
       for (const propName in Model) {
         // eslint-disable-line
         enumerableProps[propName] = true;

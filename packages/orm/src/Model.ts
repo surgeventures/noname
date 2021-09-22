@@ -1,6 +1,6 @@
 import Session from "./Session";
 import QuerySet from "./QuerySet";
-import { ManyToMany, ForeignKey, OneToOne, attr } from "./fields";
+import { ManyToMany, ForeignKey, OneToOne, attr, RelationalField, Field } from "./fields";
 import { CREATE, UPDATE, DELETE, FILTER } from "./constants";
 import {
   normalizeEntity,
@@ -8,8 +8,9 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { ModelData, ModelId, Query, ReduxAction } from "./types";
+import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, ModelFields, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel } from "./types";
 import { castTo } from "./hacks";
+import { Attribute } from ".";
 
 /**
  * Generates a query specification to get the instance's
@@ -18,7 +19,7 @@ import { castTo } from "./hacks";
  * @private
  * @returns {Object}
  */
-function getByIdQuery(modelInstance: Model): Query {
+function getByIdQuery(modelInstance: AnyModel): Query<AnySchema, Record<string, ModelId>> {
   const modelClass = modelInstance.getClass();
   const { idAttribute, modelName } = modelClass;
 
@@ -35,9 +36,9 @@ function getByIdQuery(modelInstance: Model): Query {
   };
 }
 
-type ModelFields = {
-  id: any;
-  [key: string]: any;
+type ModelFieldss = {
+  id: Attribute;
+  [key: string]: Field;
 };
 
 /**
@@ -58,20 +59,20 @@ type ModelFields = {
  * information about the data model, override static class methods. Define instance
  * logic by defining prototype methods (without `static` keyword).
  */
-export default class Model {
+export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Attrs extends ModelFieldMap = ModelFieldMap> {
   static modelName: string;
-  static fields: ModelFields = {
+  static fields: ModelFieldss = {
     id: attr(),
   };
-  static virtualFields: Record<string, any> = {};
+  static virtualFields: Record<string, RelationalField> = {};
   static readonly querySetClass = QuerySet;
   static isSetUp: boolean;
-  static _session: Session;
-  _fields: ModelData;
-  static reducer: (
+  static _session: Session<any>;
+  _fields: Partial<ModelAttrs<Attrs>>;
+  static reducer: <Schema extends AnySchema, ModelClass extends Schema[keyof Schema]>(
     action: ReduxAction,
-    modelClass: typeof Model,
-    session: Session
+    modelClass: ModelClass,
+    session: Session<Schema>
   ) => void;
 
   /**
@@ -79,12 +80,12 @@ export default class Model {
    * Don't use this to create a new record; Use the static method {@link Model#create}.
    * @param  {Object} props - the properties to instantiate with
    */
-  constructor(props?: object) {
+  constructor(props: Partial<ModelAttrs<Attrs>>) {
     this._initFields(props);
   }
 
-  _initFields(props?: object) {
-    const propsObj = Object(props);
+  _initFields(props?: Partial<ModelAttrs<Attrs>>): void {
+    const propsObj = Object(props) as ModelAttrs<Attrs>;
     this._fields = { ...propsObj };
 
     Object.keys(propsObj).forEach((fieldName) => {
@@ -104,7 +105,7 @@ export default class Model {
     });
   }
 
-  static toString() {
+  static toString(): string {
     return `ModelClass: ${this.modelName}`;
   }
 
@@ -127,7 +128,7 @@ export default class Model {
   /**
    * @return {undefined}
    */
-  static markAccessed(ids: ModelId[]) {
+  static markAccessed(ids: ModelId[]): void {
     if (typeof this._session === "undefined") {
       throw new Error(
         [
@@ -143,7 +144,7 @@ export default class Model {
   /**
    * @return {undefined}
    */
-  static markFullTableScanned() {
+  static markFullTableScanned(): void {
     if (typeof this._session === "undefined") {
       throw new Error(
         [
@@ -161,7 +162,7 @@ export default class Model {
    *
    * @return {string} The id attribute of this {@link Model}.
    */
-  static get idAttribute() {
+  static get idAttribute(): string {
     if (typeof this._session === "undefined") {
       throw new Error(
         [
@@ -180,7 +181,7 @@ export default class Model {
    * @private
    * @param  {Session} session - The session to connect to.
    */
-  static connect(session: Session) {
+  static connect<S extends AnySchema>(session: Session<S>): void {
     if (!(session instanceof Session)) {
       throw new Error("A model can only be connected to instances of Session.");
     }
@@ -193,7 +194,7 @@ export default class Model {
    * @private
    * @return {Session} The current {@link Session} instance.
    */
-  static get session() {
+  static get session(): Session<AnySchema> {
     return this._session;
   }
 
@@ -203,7 +204,7 @@ export default class Model {
    *
    * @return {Object} An instance of the model's `querySetClass`.
    */
-  static getQuerySet() {
+  static getQuerySet(): QuerySet<AnyModel> {
     const { querySetClass: QuerySetClass } = this;
     return new QuerySetClass(this);
   }
@@ -211,7 +212,7 @@ export default class Model {
   /**
    * @return {undefined}
    */
-  static invalidateClassCache() {
+  static invalidateClassCache(): void {
     this.isSetUp = false;
     this.virtualFields = {};
   }
@@ -219,7 +220,7 @@ export default class Model {
   /**
    * @see {@link Model.getQuerySet}
    */
-  static get query() {
+  static get query(): QuerySet<AnyModel> {
     return this.getQuerySet();
   }
 
@@ -242,7 +243,7 @@ export default class Model {
    * @param  {props} userProps - the new {@link Model}'s properties.
    * @return {Model} a new {@link Model} instance.
    */
-  static create(userProps: Record<string, any>) {
+  static create<Fields extends ModelFieldMap, Props extends ModelAttrs<Fields>>(userProps: Partial<Props>) {
     if (typeof this._session === "undefined") {
       throw new Error(
         [
@@ -252,27 +253,28 @@ export default class Model {
         ].join("")
       );
     }
-    const props = { ...userProps };
+    const props: Partial<Props> = { ...userProps };
 
-    const m2mRelations: Record<string, any> = {};
+    const m2mRelations: Record<string, ModelId[]> = {} as Record<string, ModelId[]>;
 
     const declaredFieldNames = Object.keys(this.fields);
     const declaredVirtualFieldNames = Object.keys(this.virtualFields);
 
     declaredFieldNames.forEach((key) => {
-      const field = this.fields[key];
+      const fields = this.fields;
+      const field = fields[key];
       const valuePassed = userProps.hasOwnProperty(key);
       if (!(field instanceof ManyToMany)) {
         if (valuePassed) {
-          const value = userProps[key];
-          props[key] = normalizeEntity(value);
-        } else if (field.getDefault) {
-          props[key] = field.getDefault();
+          const value = (userProps[key] as unknown) as AnyModel;
+          (props as any)[key] = normalizeEntity(value);
+        } else if ((field as Attribute).getDefault) {
+          (props as any)[key] = (field as Attribute).getDefault!();
         }
       } else if (valuePassed) {
         // If a value is supplied for a ManyToMany field,
         // discard them from props and save for later processing.
-        m2mRelations[key] = userProps[key];
+        m2mRelations[key] = userProps[key] as ModelId[];
         delete props[key];
       }
     });
@@ -284,20 +286,20 @@ export default class Model {
         if (userProps.hasOwnProperty(key) && field instanceof ManyToMany) {
           // If a value is supplied for a ManyToMany field,
           // discard them from props and save for later processing.
-          m2mRelations[key] = userProps[key];
+          m2mRelations[key] = userProps[key] as ModelId[];
           delete props[key];
         }
       }
     });
 
-    const newEntry = this.session.applyUpdate({
+    const newEntry = this.session.applyUpdate<Partial<Props>>({
       action: CREATE,
       table: this.modelName,
       payload: props,
     });
 
     const ThisModel = this;
-    const instance = new ThisModel(newEntry);
+    const instance = new ThisModel<typeof ThisModel, Props>(newEntry);
     instance._refreshMany2Many(m2mRelations); // eslint-disable-line no-underscore-dangle
     return instance;
   }
@@ -311,7 +313,7 @@ export default class Model {
    * @param  {props} userProps - the required {@link Model}'s properties.
    * @return {Model} a {@link Model} instance.
    */
-  static upsert(userProps: { [k: string]: any }) {
+  static upsert<Fields extends ModelFieldMap, Props extends ModelAttrs<Fields>>(userProps: Partial<Props>) {
     if (typeof this.session === "undefined") {
       throw new Error(
         [
@@ -324,9 +326,9 @@ export default class Model {
 
     const { idAttribute } = this;
     if (userProps.hasOwnProperty(idAttribute)) {
-      const id = userProps[idAttribute];
+      const id = userProps[idAttribute] as string;
       if (this.idExists(id)) {
-        const model = this.withId(id) as Model;
+        const model = this.withId(id)!;
         model.update(userProps);
         return model;
       }
@@ -360,7 +362,7 @@ export default class Model {
    *
    * @since 0.11.0
    */
-  static idExists(id?: any) {
+  static idExists(id: ModelId) {
     return this.exists({
       [this.idAttribute]: id,
     });
@@ -373,7 +375,7 @@ export default class Model {
    * @param  {*}  props - a key-value that {@link Model} instances should have to be considered as existing.
    * @return {Boolean} a boolean indicating if entity with `props` exists in the state
    */
-  static exists(lookupObj: object) {
+  static exists<LookupObj extends {}>(lookupObj: LookupObj) {
     if (typeof this.session === "undefined") {
       throw new Error(
         [
@@ -396,7 +398,7 @@ export default class Model {
    * @throws {Error} If more than one entity matches the properties in `lookupObj`.
    * @return {Model} a {@link Model} instance that matches the properties in `lookupObj`.
    */
-  static get(lookupObj: object) {
+  static get<LookupObj extends {}>(lookupObj: LookupObj) {
     const ThisModel = this;
 
     const rows = this._findDatabaseRows(lookupObj);
@@ -419,16 +421,16 @@ export default class Model {
    * @return {Model} The {@link Model} class or subclass constructor used to instantiate
    *                 this instance.
    */
-  getClass(): typeof Model {
-    return this.constructor as typeof Model;
+  getClass(): MClass {
+    return this.constructor as MClass;
   }
 
   /**
    * Gets the id value of the current instance by looking up the id attribute.
    * @return {*} The id value of the current instance.
    */
-  getId() {
-    return this._fields[this.getClass().idAttribute];
+  getId(): ModelId {
+    return this._fields[this.getClass().idAttribute as keyof ModelAttrs<Attrs>] as unknown as ModelId;
   }
 
   /**
@@ -437,7 +439,7 @@ export default class Model {
    *
    * @return {Object} a reference to the plain JS object in the store
    */
-  get ref() {
+  get ref(): Row<this>[] {
     const ThisModel = this.getClass();
 
     // eslint-disable-next-line no-underscore-dangle
@@ -454,8 +456,8 @@ export default class Model {
    * @return {Boolean} a boolean indicating if entity with `props` exists in the state
    * @private
    */
-  static _findDatabaseRows(lookupObj: object) {
-    const querySpec: Query = {
+  static _findDatabaseRows<LookupObj extends {} = {}, M extends AnyModel = AnyModel>(lookupObj: LookupObj): Row<M>[] {
+    const querySpec: Query<ModelClassMap, LookupObj> = {
       table: this.modelName,
       clauses: [],
     };
@@ -467,7 +469,7 @@ export default class Model {
         },
       ];
     }
-    return this.session.query(querySpec).rows;
+    return this.session.query(querySpec).rows as Row<M>[];
   }
 
   /**
@@ -475,20 +477,20 @@ export default class Model {
    *
    * @return {string} A string representation of this {@link Model} instance.
    */
-  toString() {
+  toString(): string {
     const ThisModel = this.getClass();
     const className = ThisModel.modelName;
-    const fieldNames = Object.keys(ThisModel.fields);
+    const fieldNames = Object.keys(ThisModel.fields) as string[];
     const fields = fieldNames
       .map((fieldName) => {
         const field = ThisModel.fields[fieldName];
         if (field instanceof ManyToMany) {
-          const ids = (this as ModelData)[fieldName]
+          const ids: ModelId[] = (castTo<ModelFieldss>(this)[fieldName] as unknown as QuerySet<this>)
             .toModelArray()
-            .map((model: Model) => model.getId());
+            .map((model) => model.getId());
           return `${fieldName}: [${ids.join(", ")}]`;
         }
-        const val = this._fields[fieldName];
+        const val = this._fields[fieldName as keyof Attrs];
         return `${fieldName}: ${val}`;
       })
       .join(", ");
@@ -506,7 +508,7 @@ export default class Model {
    * @param  {Model} otherModel - a {@link Model} instance to compare
    * @return {Boolean} a boolean indicating if the {@link Model} instance's are equal.
    */
-  equals(otherModel: Model) {
+  equals<OtherMClass extends typeof AnyModel = typeof AnyModel, OtherAttrs extends ModelFieldMap = ModelFieldMap>(otherModel: Model<OtherMClass, OtherAttrs>) {
     // eslint-disable-next-line no-underscore-dangle
     return objectShallowEquals(this._fields, otherModel._fields);
   }
@@ -522,7 +524,7 @@ export default class Model {
   set(propertyName: string, value: any) {
     this.update({
       [propertyName]: value,
-    });
+    } as any);
   }
 
   /**
@@ -532,7 +534,7 @@ export default class Model {
    * @param  {Object} userMergeObj - an object that will be merged with this instance.
    * @return {undefined}
    */
-  update(userMergeObj: ModelData) {
+  update(userMergeObj: Partial<ModelAttrs<Attrs>>): void {
     const ThisModel = this.getClass();
     if (typeof ThisModel.session === "undefined") {
       throw new Error(
@@ -547,7 +549,7 @@ export default class Model {
 
     const { fields, virtualFields } = ThisModel;
 
-    const m2mRelations: Record<string, any> = {};
+    const m2mRelations: Record<string, ModelId[]> = {} as Record<string, ModelId[]>;
 
     // If an array of entities or id's is supplied for a
     // many-to-many related field, clear the old relations
@@ -561,17 +563,17 @@ export default class Model {
 
         if (field instanceof ForeignKey || field instanceof OneToOne) {
           // update one-one/fk relations
-          mergeObj[mergeKey] = normalizeEntity(mergeObj[mergeKey]);
+          mergeObj[mergeKey] = normalizeEntity(mergeObj[mergeKey] as AnyModel) as any;
         } else if (field instanceof ManyToMany) {
           // field is forward relation
-          m2mRelations[mergeKey] = mergeObj[mergeKey];
+          m2mRelations[mergeKey] = mergeObj[mergeKey] as ModelId[];
           delete mergeObj[mergeKey];
         }
       } else if (virtualFields.hasOwnProperty(mergeKey)) {
         const field = virtualFields[mergeKey];
         if (field instanceof ManyToMany) {
           // field is backward relation
-          m2mRelations[mergeKey] = mergeObj[mergeKey];
+          m2mRelations[mergeKey] = mergeObj[mergeKey] as ModelId[];
           delete mergeObj[mergeKey];
         }
       }
@@ -590,8 +592,8 @@ export default class Model {
     const relationsEqual = Object.keys(m2mRelations).every(
       (name) =>
         !arrayDiffActions(
-          (this as ModelData)[name],
-          (updatedModel as ModelData)[name]
+          (this as ModelData)[name] as ModelId[],
+          (updatedModel as ModelData)[name] as ModelId[]
         )
     );
     const fieldsEqual = this.equals(updatedModel);
@@ -621,7 +623,7 @@ export default class Model {
    * database state in the current session.
    * @return {undefined}
    */
-  refreshFromState() {
+  refreshFromState(): void {
     this._initFields(this.ref);
   }
 
@@ -631,7 +633,7 @@ export default class Model {
    *
    * @return {undefined}
    */
-  delete() {
+  delete(): void {
     const ThisModel = this.getClass();
     if (typeof ThisModel.session === "undefined") {
       throw new Error(
@@ -655,7 +657,7 @@ export default class Model {
    * @return undefined
    * @private
    */
-  _refreshMany2Many(relations: Record<string, object>) {
+  _refreshMany2Many(relations: Record<string, (ModelId | AnyModel)[]>): void {
     const ThisModel = this.getClass();
     const { fields, virtualFields, modelName } = ThisModel;
 
@@ -695,17 +697,18 @@ export default class Model {
       }
 
       const currentIds = ThroughModel.filter(
-        (through: ModelData) =>
-          through[fromField] === (this as ModelData)[ThisModel.idAttribute]
+        (through) =>
+          (through as ModelData)[fromField] === (this as ModelData)[ThisModel.idAttribute]
       )
         .toRefArray()
-        .map((ref: ModelData) => ref[toField]);
+        .map((ref) => castTo<ModelId>(ref[toField]));
 
       const diffActions = arrayDiffActions(currentIds, normalizedNewIds);
 
       if (diffActions) {
         const { delete: idsToDelete, add: idsToAdd } = diffActions;
         if (idsToDelete.length > 0) {
+          // Przyklad gdzie tworzac instancje, mozemy przekazywac nie tylko idki
           (this as ModelData)[name].remove(...idsToDelete);
         }
         if (idsToAdd.length > 0) {
@@ -719,7 +722,7 @@ export default class Model {
    * @return {undefined}
    * @private
    */
-  _onDelete() {
+  _onDelete(): void {
     const { virtualFields } = this.getClass();
     for (const key in virtualFields) {
       // eslint-disable-line
@@ -728,7 +731,7 @@ export default class Model {
         // Delete any many-to-many rows the entity is included in.
         (this as ModelData)[key].clear();
       } else if (field instanceof ForeignKey) {
-        const relatedQs = (this as Record<string, any>)[key];
+        const relatedQs = (this as ModelData)[key];
         if (relatedQs.exists()) {
           relatedQs.update({ [field.relatedName!]: null });
         }
@@ -742,45 +745,50 @@ export default class Model {
     }
   }
 
-  static count() {
+  static count(): number {
     return this.getQuerySet().count();
   }
 
-  static at(index: number) {
+  static at(index: number): SessionBoundModel | undefined {
     return this.getQuerySet().at(index);
   }
 
-  static all() {
+  static all(): QuerySet {
     return this.getQuerySet().all();
   }
 
-  static first(): Model | undefined {
+  static first(): SessionBoundModel | undefined {
     return this.getQuerySet().first();
   }
 
-  static last(): Model | undefined {
+  static last(): SessionBoundModel | undefined {
     return this.getQuerySet().last();
   }
 
-  static filter(lookupObj: object | ((model: typeof Model) => true)) {
+  static filter(lookupObj: Partial<Row<AnyModel>> | ((row: Row<AnyModel>) => boolean)): QuerySet {
     return this.getQuerySet().filter(lookupObj);
   }
 
-  static exclude(lookupObj: object) {
+  static exclude(lookupObj: Partial<Row<AnyModel>> | ((row: Row<AnyModel>) => boolean)): QuerySet {
     return this.getQuerySet().exclude(lookupObj);
   }
 
-  static orderBy(iteratees: string[], orders: (boolean | "asc" | "desc")[]) {
+  static orderBy(
+    iteratees: SortIteratee<AnyModel> | ReadonlyArray<SortIteratee<AnyModel>>,
+    orders?: SortOrder | ReadonlyArray<SortOrder>
+  ): QuerySet {
     return this.getQuerySet().orderBy(iteratees, orders);
   }
 
-  static update(mergeObj: object) {
+  static update(mergeObj: Partial<ModelAttrs>): void {
     return this.getQuerySet().update(mergeObj);
   }
 
-  static delete() {
+  static delete(): void {
     return this.getQuerySet().delete();
   }
 }
 
-export type ModelClassMap = Record<string, typeof Model>;
+export class AnyModel extends Model {}
+
+export type ModelClassMap = Record<string, typeof AnyModel>;

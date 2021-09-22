@@ -1,6 +1,7 @@
 import ops from "immutable-ops";
 import { FILTER, EXCLUDE } from "./constants";
-import { QueryClause } from "./types";
+import { AnyModel } from "./Model";
+import { AnyObject, ModelId, QueryClause } from "./types";
 
 /**
  * @module utils
@@ -9,6 +10,10 @@ import { QueryClause } from "./types";
 function capitalize(string: string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
+
+export type Entries<T> = {
+  [K in keyof T]: [K, T[K]];
+}[keyof T][];
 
 /**
  * Returns the branch name for a many-to-many relation.
@@ -58,8 +63,6 @@ function reverseFieldName(modelName: string) {
   return modelName.toLowerCase() + "Set"; // eslint-disable-line prefer-template
 }
 
-type ModelInst = { getId: () => string };
-
 /**
  * Normalizes `entity` to an id, where `entity` can be an id
  * or a Model instance.
@@ -68,16 +71,18 @@ type ModelInst = { getId: () => string };
  * @return {*} the id value of `entity`
  */
 function normalizeEntity(
-  entity: undefined | null | number | string | ModelInst | object
-) {
+  entity: undefined | null | AnyModel | ModelId
+): ModelId {
   if (
     entity !== null &&
     typeof entity !== "undefined" &&
-    typeof (entity as ModelInst).getId === "function"
+    typeof entity !== "string" &&
+    typeof entity !== "number" &&
+    typeof entity.getId === "function"
   ) {
-    return (entity as ModelInst).getId();
+    return entity.getId();
   }
-  return entity;
+  return entity as ModelId;
 }
 
 function reverseFieldErrorMessage(
@@ -93,7 +98,7 @@ function reverseFieldErrorMessage(
   ].join("");
 }
 
-function objectShallowEquals(a: any, b: any) {
+function objectShallowEquals(a: AnyObject, b: AnyObject) {
   let keysInA = 0;
 
   // eslint-disable-next-line consistent-return
@@ -108,11 +113,11 @@ function objectShallowEquals(a: any, b: any) {
 }
 
 export type ArrayDiffActionsResult = {
-  add: any[],
-  delete: any[],
+  add: ModelId[],
+  delete: ModelId[],
 };
 
-function arrayDiffActions(sourceArr: any[], targetArr: any[]): ArrayDiffActionsResult | null {
+function arrayDiffActions(sourceArr: ModelId[], targetArr: ModelId[]): ArrayDiffActionsResult | null {
   const itemsInBoth = sourceArr.filter((item) => targetArr.includes(item));
   const deleteItems = sourceArr.filter((item) => !itemsInBoth.includes(item));
   const addItems = targetArr.filter((item) => !itemsInBoth.includes(item));

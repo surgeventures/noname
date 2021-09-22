@@ -1,12 +1,13 @@
 import ORM from "./ORM";
-import { ModelId, ObjectMap, OrmState, EqualityFunc } from "./types";
+import AnyModel, { ModelClassMap } from "./Model";
+import { ModelId, OrmState, EqualityFunc, Row } from "./types";
 
-type MemoizeState = {
+type MemoizeState<Schema extends ModelClassMap> = {
   result: any;
   args: any[] | null;
-  ormState: OrmState | null;
-  fullTableScannedModels: string[];
-  accessedModelInstances: ObjectMap<ObjectMap<boolean>>;
+  ormState: OrmState<Schema> | null;
+  fullTableScannedModels: (keyof Schema)[];
+  accessedModelInstances: Record<string, Record<ModelId, boolean>>;
 };
 
 const defaultEqualityCheck: EqualityFunc = (a, b) => a === b;
@@ -20,20 +21,20 @@ const argsAreEqual = (
 
 const rowsAreEqual = (
   ids: ModelId[],
-  rowsA: ObjectMap<any>,
-  rowsB: ObjectMap<any>
+  rowsA: Record<ModelId, Row<AnyModel>>,
+  rowsB: Record<ModelId, Row<AnyModel>>
 ) => ids.every((id) => rowsA[id] === rowsB[id]);
 
-const accessedModelInstancesAreEqual = (
-  previous: MemoizeState,
-  _ormState: OrmState,
-  _orm: ORM
+const accessedModelInstancesAreEqual = <Schema extends ModelClassMap>(
+  previous: MemoizeState<Schema>,
+  _ormState: OrmState<Schema>,
+  _orm: ORM<Schema>
 ) => {
   const { accessedModelInstances } = previous;
 
   return Object.entries(accessedModelInstances).every(
     ([modelName, accessedInstances]) => {
-      const ormState2 = previous.ormState as OrmState;
+      const ormState2 = previous.ormState!;
 
       // if the entire table has not been changed, we have nothing to do
       if (ormState2[modelName] === ormState2[modelName]) {
@@ -49,13 +50,13 @@ const accessedModelInstancesAreEqual = (
   );
 };
 
-const fullTableScannedModelsAreEqual = (
-  previous: MemoizeState,
-  ormState: OrmState
+const fullTableScannedModelsAreEqual = <Schema extends ModelClassMap>(
+  previous: MemoizeState<Schema>,
+  ormState: OrmState<Schema>
 ) => {
   return previous.fullTableScannedModels.every(
-    (modelName: string) =>
-      (previous.ormState as OrmState)[modelName] === ormState[modelName]
+    (modelName) =>
+      previous.ormState![modelName] === ormState![modelName]
   );
 }
 
@@ -97,12 +98,12 @@ const fullTableScannedModelsAreEqual = (
  * @param  {ORM} orm - a redux-orm ORM instance
  * @return {Function} `func` memoized.
  */
-export function memoize(
+export function memoize<Schema extends ModelClassMap>(
   func: (...args: any[]) => any,
   argEqualityCheck: EqualityFunc = defaultEqualityCheck,
-  orm: ORM
+  orm: ORM<Schema>
 ) {
-  const previous: MemoizeState = {
+  const previous: MemoizeState<Schema> = {
     /* result of the previous function call */
     result: null,
     /* arguments to the previous function call (excluding ORM state) */
@@ -126,14 +127,12 @@ export function memoize(
     accessedModelInstances: {},
   };
 
-  return (...stateAndArgs: any[]) => {
-    const [ormState, ...args] = stateAndArgs;
-
+  return (ormState: OrmState<Schema>, ...args: any[]) => {
     const selectorWasCalledBefore = previous.args && previous.ormState;
 
     if (
       selectorWasCalledBefore &&
-      argsAreEqual(previous.args as any[], args, argEqualityCheck) &&
+      argsAreEqual(previous.args!, args, argEqualityCheck) &&
       fullTableScannedModelsAreEqual(previous, ormState) &&
       accessedModelInstancesAreEqual(previous, ormState, orm)
     ) {

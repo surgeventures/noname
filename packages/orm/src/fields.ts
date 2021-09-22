@@ -1,4 +1,4 @@
-import Model from "./Model";
+import { AnyModel } from "./Model";
 import ORM from "./ORM";
 import {
   attrDescriptor,
@@ -8,6 +8,7 @@ import {
   backwardsOneToOneDescriptor,
   manyToManyDescriptor,
 } from "./descriptors";
+import { ModelClassMap } from "./Model";
 
 import {
   m2mName,
@@ -16,7 +17,6 @@ import {
   reverseFieldName,
   reverseFieldErrorMessage,
 } from "./utils";
-import { castTo } from "./hacks";
 
 /**
  * Contains the logic for how fields on {@link Model}s work
@@ -29,11 +29,11 @@ import { castTo } from "./hacks";
  * @module fields
  */
 
-type FieldInstallerTemplateOptions = {
-  field: Field;
+type FieldInstallerTemplateOptions<Schema extends ModelClassMap> = {
+  field: RelationalField;
   fieldName: string;
-  model: typeof Model;
-  orm: ORM;
+  model: Schema[keyof Schema];
+  orm: ORM<Schema>;
 };
 
 /**
@@ -41,15 +41,15 @@ type FieldInstallerTemplateOptions = {
  * Conforms to the template method behavioral design pattern.
  * @private
  */
-abstract class FieldInstallerTemplate {
-  field: Field;
+abstract class FieldInstallerTemplate<Schema extends ModelClassMap = ModelClassMap> {
+  field: RelationalField;
   fieldName: string;
-  model: typeof Model;
-  orm: ORM;
-  _toModel: typeof Model | null;
-  _throughModel: typeof Model | null;
+  model: Schema[keyof Schema];
+  orm: ORM<Schema>;
+  _toModel: Schema[keyof Schema] | null;
+  _throughModel: typeof AnyModel | null;
 
-  constructor(opts: FieldInstallerTemplateOptions) {
+  constructor(opts: FieldInstallerTemplateOptions<Schema>) {
     this.field = opts.field;
     this.fieldName = opts.fieldName;
     this.model = opts.model;
@@ -61,13 +61,13 @@ abstract class FieldInstallerTemplate {
      * to be able to make better informed decisions
      */
     if (this.field.references(this.model)) {
-      (this.field as RelationalField).toModelName = "this";
+      this.field.toModelName = "this";
     }
   }
 
   get toModel() {
     if (typeof this._toModel === "undefined") {
-      const { toModelName } = this.field as RelationalField;
+      const { toModelName } = this.field;
       if (!toModelName) {
         this._toModel = null;
       } else if (toModelName === "this") {
@@ -201,15 +201,11 @@ export abstract class Field {
     return DefaultFieldInstaller;
   }
 
-  getClass() {
-    return this.constructor;
-  }
-
-  references(_model: typeof Model) {
+  references(_model: typeof AnyModel) {
     return false;
   }
 
-  getThroughModelName(_fieldName: string, _model: typeof Model): string | null {
+  getThroughModelName(_fieldName: string, _model: typeof AnyModel): string | null {
     return null;
   }
 
@@ -229,31 +225,19 @@ export abstract class Field {
     return false;
   }
 
-  abstract getBackwardsFieldName(model: typeof Model): string;
+  abstract getBackwardsFieldName(model: typeof AnyModel): string;
   abstract createForwardsDescriptor(
     fieldName: string,
-    model: typeof Model,
-    toModel: typeof Model,
-    throughModel: typeof Model
+    model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    throughModel: typeof AnyModel
   ): PropertyDescriptor;
   abstract createBackwardsDescriptor(
     fieldName: string,
-    model: typeof Model,
-    toModel: typeof Model,
-    throughModel: typeof Model
+    model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    throughModel: typeof AnyModel
   ): PropertyDescriptor;
-  abstract createForwardsVirtualField(
-    fieldName: string,
-    model: typeof Model,
-    toModel: typeof Model,
-    throughModel: typeof Model
-  ): Field;
-  abstract createBackwardsVirtualField(
-    fieldName: string,
-    model: typeof Model,
-    toModel: typeof Model,
-    throughModel: typeof Model
-  ): Field;
 }
 
 export type AttributeOptions = {
@@ -278,41 +262,32 @@ export class Attribute extends Field {
 
   createForwardsDescriptor(
     fieldName: string,
-    _model: typeof Model,
-    _toModel: typeof Model,
-    _throughModel: typeof Model
+    _model: typeof AnyModel,
+    _toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
   ): PropertyDescriptor {
     return attrDescriptor(fieldName);
   }
 
   createBackwardsDescriptor(
     _fieldName: string,
-    _model: typeof Model,
-    _toModel: typeof Model,
-    _throughModel: typeof Model
+    _model: typeof AnyModel,
+    _toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
   ): PropertyDescriptor {
-    throw new Error("Method not implemented.");
-  }
-
-  createForwardsVirtualField(
-    _fieldName: string,
-    _model: typeof Model,
-    _toModel: typeof Model,
-    _throughModel: typeof Model
-  ): Field {
     throw new Error("Method not implemented.");
   }
 
   createBackwardsVirtualField(
     _fieldName: string,
-    _model: typeof Model,
-    _toModel: typeof Model,
-    _throughModel: typeof Model
+    _model: typeof AnyModel,
+    _toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
   ): Field {
     throw new Error("Method not implemented.");
   }
 
-  getBackwardsFieldName(_model: typeof Model): string {
+  getBackwardsFieldName(_model: typeof AnyModel): string {
     throw new Error("Method not implemented.");
   }
 }
@@ -321,7 +296,7 @@ export type RelationalFieldOpts = {
   to: string;
   relatedName?: string;
   through?: string;
-  throughFields?: [string, string] | { from: string; to: string };
+  throughFields: { from: string; to: string };
   as?: string;
 };
 
@@ -332,13 +307,13 @@ export type RelationalFieldConstructor = {
 /**
  * @ignore
  */
-abstract class RelationalField extends Field {
+export abstract class RelationalField extends Field {
   toModelName: string;
   relatedName?: string;
   through?: string;
-  throughFields?: [string, string] | { from: string; to: string };
+  throughFields: { from: string; to: string };
   as?: string;
-  toModel: typeof Model;
+  toModel: typeof AnyModel;
 
   constructor(arg1: RelationalFieldOpts | string, arg2?: string) {
     super();
@@ -355,17 +330,28 @@ abstract class RelationalField extends Field {
     }
   }
 
-  getBackwardsFieldName(model: typeof Model) {
+  abstract createForwardsVirtualField(
+    fieldName: string,
+    model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    throughModel: typeof AnyModel
+  ): RelationalField;
+
+  getClass() {
+    return this.constructor as RelationalFieldConstructor;
+  }
+
+  getBackwardsFieldName(model: typeof AnyModel) {
     return this.relatedName || reverseFieldName(model.modelName);
   }
 
   createBackwardsVirtualField(
     fieldName: string,
-    model: typeof Model,
-    _toModel: typeof Model,
-    _throughModel: typeof Model
+    model: typeof AnyModel,
+    _toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
   ) {
-    const ThisField = castTo<RelationalFieldConstructor>(this.getClass());
+    const ThisField = this.getClass();
     return new ThisField(model.modelName, fieldName);
   }
 
@@ -377,7 +363,7 @@ abstract class RelationalField extends Field {
     return true;
   }
 
-  references(model: typeof Model) {
+  references(model: typeof AnyModel) {
     return this.toModelName === model.modelName;
   }
 
@@ -386,7 +372,7 @@ abstract class RelationalField extends Field {
       installForwardsDescriptor() {
         Object.defineProperty(
           this.model.prototype,
-          (this.field as RelationalField).as || this.fieldName, // use supplied name if possible
+          this.field.as || this.fieldName, // use supplied name if possible
           this.field.createForwardsDescriptor(
             this.fieldName,
             this.model,
@@ -405,26 +391,26 @@ abstract class RelationalField extends Field {
 export class ForeignKey extends RelationalField {
   createForwardsVirtualField(
     _fieldName: string,
-    _model: typeof Model,
-    _toModel: typeof Model,
-    _throughModel: typeof Model
-  ): Field {
+    _model: typeof AnyModel,
+    _toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
+  ): RelationalField {
     throw new Error("Method not implemented.");
   }
   createForwardsDescriptor(
     fieldName: string,
-    _model: typeof Model,
-    toModel: typeof Model,
-    _throughModel: typeof Model
+    _model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
   ) {
     return forwardsManyToOneDescriptor(fieldName, toModel.modelName);
   }
 
   createBackwardsDescriptor(
     fieldName: string,
-    model: typeof Model,
-    _toModel: typeof Model,
-    _throughModel: typeof Model
+    model: typeof AnyModel,
+    _toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
   ) {
     return backwardsManyToOneDescriptor(fieldName, model.modelName);
   }
@@ -438,15 +424,15 @@ export class ManyToMany extends RelationalField {
     return [];
   }
 
-  getThroughModelName(fieldName: string, model: typeof Model) {
+  getThroughModelName(fieldName: string, model: typeof AnyModel) {
     return this.through || m2mName(model.modelName, fieldName);
   }
 
   createForwardsDescriptor(
     fieldName: string,
-    model: typeof Model,
-    toModel: typeof Model,
-    throughModel: typeof Model
+    model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    throughModel: typeof AnyModel
   ) {
     return manyToManyDescriptor(
       model.modelName,
@@ -459,9 +445,9 @@ export class ManyToMany extends RelationalField {
 
   createBackwardsDescriptor(
     fieldName: string,
-    model: typeof Model,
-    toModel: typeof Model,
-    throughModel: typeof Model
+    model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    throughModel: typeof AnyModel
   ) {
     return manyToManyDescriptor(
       model.modelName,
@@ -474,11 +460,11 @@ export class ManyToMany extends RelationalField {
 
   createBackwardsVirtualField(
     fieldName: string,
-    model: typeof Model,
-    toModel: typeof Model,
-    throughModel: typeof Model
+    model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    throughModel: typeof AnyModel
   ) {
-    const ThisField = castTo<RelationalFieldConstructor>(this.getClass());
+    const ThisField = this.getClass();
     return new ThisField({
       to: model.modelName,
       relatedName: fieldName,
@@ -494,11 +480,11 @@ export class ManyToMany extends RelationalField {
 
   createForwardsVirtualField(
     fieldName: string,
-    model: typeof Model,
-    toModel: typeof Model,
-    throughModel: typeof Model
+    model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    throughModel: typeof AnyModel
   ) {
-    const ThisField = castTo<RelationalFieldConstructor>(this.getClass());
+    const ThisField = this.getClass();
     return new ThisField({
       to: toModel.modelName,
       relatedName: fieldName,
@@ -518,12 +504,12 @@ export class ManyToMany extends RelationalField {
 
   getThroughFields(
     _fieldName: string,
-    model: typeof Model,
-    toModel: typeof Model,
-    throughModel: typeof Model
+    model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    throughModel: typeof AnyModel
   ): { from: string; to: string } {
     if (this.throughFields) {
-      const [fieldAName, fieldBName] = this.throughFields as [string, string];
+      const [fieldAName, fieldBName] = this.throughFields as unknown as [string, string];
       const fieldA = throughModel.fields[fieldAName];
       return {
         to: fieldA.references(toModel) ? fieldAName : fieldBName,
@@ -548,7 +534,7 @@ export class ManyToMany extends RelationalField {
      * determine which field references which model
      * and infer the directions from that
      */
-    const throughModelFieldReferencing = (otherModel: typeof Model) =>
+    const throughModelFieldReferencing = (otherModel: typeof AnyModel) =>
       Object.keys(throughModel.fields).find((someFieldName) =>
         throughModel.fields[someFieldName].references(otherModel)
       );
@@ -566,30 +552,30 @@ export class ManyToMany extends RelationalField {
 export class OneToOne extends RelationalField {
   createForwardsVirtualField(
     _fieldName: string,
-    _model: typeof Model,
-    _toModel: typeof Model,
-    _throughModel: typeof Model
-  ): Field {
+    _model: typeof AnyModel,
+    _toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
+  ): RelationalField {
     throw new Error("Method not implemented.");
   }
-  getBackwardsFieldName(model: typeof Model) {
+  getBackwardsFieldName(model: typeof AnyModel) {
     return this.relatedName || model.modelName.toLowerCase();
   }
 
   createForwardsDescriptor(
     fieldName: string,
-    _model: typeof Model,
-    toModel: typeof Model,
-    _throughModel: typeof Model
+    _model: typeof AnyModel,
+    toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
   ) {
     return forwardsOneToOneDescriptor(fieldName, toModel.modelName);
   }
 
   createBackwardsDescriptor(
     fieldName: string,
-    model: typeof Model,
-    _toModel: typeof Model,
-    _throughModel: typeof Model
+    model: typeof AnyModel,
+    _toModel: typeof AnyModel,
+    _throughModel: typeof AnyModel
   ) {
     return backwardsOneToOneDescriptor(fieldName, model.modelName);
   }

@@ -1,6 +1,6 @@
 import { castTo } from "./hacks";
 import Model, { ModelClassMap } from "./Model";
-import { ModelData, ModelId, TableRow } from "./types";
+import { ModelData, ModelId, ModelAttrs, AnyObject } from "./types";
 import { normalizeEntity } from "./utils";
 
 /**
@@ -183,7 +183,7 @@ export function manyToManyDescriptor(
       const referencedOtherIds = new Set(
         throughQs
           .toRefArray()
-          .map((obj: TableRow) => obj[otherReferencingField])
+          .map((obj: ModelAttrs<AnyObject>) => obj[otherReferencingField])
       );
 
       /**
