@@ -227,7 +227,7 @@ export type QueryType = typeof FILTER | typeof EXCLUDE | typeof ORDER_BY;
  */
 export interface QueryClause<Payload extends object = {}> {
   type: QueryType;
-  payload: Payload;
+  payload?: Payload;
 }
 
 /**

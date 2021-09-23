@@ -71,18 +71,18 @@ function reverseFieldName(modelName: string) {
  * @return {*} the id value of `entity`
  */
 function normalizeEntity(
-  entity: undefined | null | AnyModel | ModelId
-): ModelId {
+  entity: undefined | null | AnyModel | ModelId | object
+) {
   if (
     entity !== null &&
     typeof entity !== "undefined" &&
     typeof entity !== "string" &&
     typeof entity !== "number" &&
-    typeof entity.getId === "function"
+    typeof (entity as AnyModel).getId === "function"
   ) {
-    return entity.getId();
+    return (entity as AnyModel).getId();
   }
-  return entity as ModelId;
+  return entity;
 }
 
 function reverseFieldErrorMessage(
@@ -140,7 +140,7 @@ function clauseFiltersByAttribute(
   }: QueryClause<{
     [attr: string]: any;
   }>,
-  attribute: string
+  attribute: string = ""
 ) {
   if (type !== FILTER) return false;
 
