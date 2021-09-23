@@ -3,8 +3,30 @@ import createDatabase from "../../db";
 import Table from "../../db/Table";
 import { getBatchToken } from "../../utils";
 import { FILTER, CREATE, UPDATE, DELETE, SUCCESS } from "../../constants";
+import Model from "../../Model";
+import { ModelId, OrmState, Query, TableState, UpdateSpec, UpdateStatus } from "../../types";
+import { attr } from "../..";
 
 describe("createDatabase", () => {
+  type BookDescriptors = {
+    id: ModelId;
+    name: string;
+  }
+  type AuthorDescriptors = {
+    id: ModelId;
+  }
+  class Book extends Model<typeof Book, BookDescriptors> {
+    static fields = {
+      id: attr(),
+      name: attr(),
+    }
+  }
+  class Author extends Model<typeof Author, AuthorDescriptors> {}
+  type Schema = {
+    Book: typeof Book;
+    Author: typeof Author;
+  }
+
   const schema = {
     tables: {
       Book: {
@@ -14,13 +36,13 @@ describe("createDatabase", () => {
         idAttribute: "id",
       },
     },
-  };
+  } as const;
 
-  const db = createDatabase(schema);
-  const emptyState = deepFreeze(db.getEmptyState());
+  const db = createDatabase<Schema>(schema);
+  const emptyState = deepFreeze(db.getEmptyState()) as ReturnType<typeof db.getEmptyState>;
 
   it("getEmptyState", () => {
-    expect(emptyState).toEqual({
+    expect(emptyState).toEqual<OrmState<Schema>>({
       Book: {
         items: [],
         itemsById: {},
@@ -40,7 +62,7 @@ describe("createDatabase", () => {
   });
 
   it("query on empty database", () => {
-    const querySpec = {
+    const querySpec: Query<Schema> = {
       table: "Book",
       clauses: [],
     };
@@ -50,17 +72,17 @@ describe("createDatabase", () => {
 
   it("insert row with id specified", () => {
     const props = { id: 0, name: "Example Book" };
-    const updateSpec = {
+    const updateSpec: UpdateSpec<Schema, typeof props> = {
       action: CREATE,
       payload: props,
       table: "Book",
     };
     const tx = { batchToken: getBatchToken(), withMutations: false };
-    const { status, state, payload } = db.update(updateSpec, tx, emptyState);
-    expect(status).toBe(SUCCESS);
-    expect(payload).toBe(props);
-    expect(state).not.toBe(emptyState);
-    expect(state).toEqual({
+    const { status, state, payload } = db.update<typeof props>(updateSpec, tx, emptyState);
+    expect(status).toBe<UpdateStatus>(SUCCESS);
+    expect(payload).toBe<typeof props>(props);
+    expect(state).not.toBe<OrmState<Schema>>(emptyState);
+    expect(state).toEqual<OrmState<Schema>>({
       Book: {
         items: [0],
         itemsById: {
@@ -80,17 +102,17 @@ describe("createDatabase", () => {
 
   it("insert row to empty database without id (autosequence)", () => {
     const props = { name: "Example Book" };
-    const updateSpec = {
+    const updateSpec: UpdateSpec<Schema, typeof props> = {
       action: CREATE,
       payload: props,
       table: "Book",
     };
     const tx = { batchToken: getBatchToken(), withMutations: false };
-    const { status, state, payload } = db.update(updateSpec, tx, emptyState);
-    expect(status).toBe(SUCCESS);
-    expect(payload).toEqual({ id: 0, name: "Example Book" });
-    expect(state).not.toBe(emptyState);
-    expect(state).toEqual({
+    const { status, state, payload } = db.update<typeof props>(updateSpec, tx, emptyState);
+    expect(status).toBe<UpdateStatus>(SUCCESS);
+    expect(payload).toEqual<typeof props & { id: ModelId }>({ id: 0, name: "Example Book" });
+    expect(state).not.toBe<OrmState<Schema>>(emptyState);
+    expect(state).toEqual<OrmState<Schema>>({
       Book: {
         items: [0],
         itemsById: {
@@ -113,21 +135,21 @@ describe("createDatabase", () => {
     // Second insert.
 
     const props2 = { name: "Example Book Two" };
-    const updateSpec2 = {
+    const updateSpec2: UpdateSpec<Schema, typeof props2> = {
       action: CREATE,
       payload: props2,
       table: "Book",
     };
-    const { status: status2, state: state2, payload: payload2 } = db.update(
+    const { status: status2, state: state2, payload: payload2 } = db.update<typeof props2>(
       updateSpec2,
       tx,
       state
     );
 
-    expect(status2).toBe(SUCCESS);
-    expect(payload2).toEqual({ id: 1, name: "Example Book Two" });
-    expect(state2).toBe(state);
-    expect(state2).toEqual({
+    expect(status2).toBe<UpdateStatus>(SUCCESS);
+    expect(payload2).toEqual<typeof props & { id: ModelId }>({ id: 1, name: "Example Book Two" });
+    expect(state2).toBe<OrmState<Schema>>(state);
+    expect(state2).toEqual<OrmState<Schema>>({
       Book: {
         items: [0, 1],
         itemsById: {
@@ -153,7 +175,7 @@ describe("createDatabase", () => {
   });
 
   it("update row", () => {
-    const startState = {
+    const startState: OrmState<Schema> = {
       Book: {
         items: [0],
         itemsById: {
@@ -173,7 +195,7 @@ describe("createDatabase", () => {
       },
     };
 
-    const updateSpec = {
+    const updateSpec: UpdateSpec<Schema, { name: string }> = {
       action: UPDATE,
       payload: {
         name: "Modified Example Book",
@@ -187,13 +209,13 @@ describe("createDatabase", () => {
     const tx = { batchToken: getBatchToken(), withMutations: false };
     const { status, state } = db.update(updateSpec, tx, startState);
 
-    expect(status).toBe(SUCCESS);
-    expect(state).not.toBe(startState);
+    expect(status).toBe<UpdateStatus>(SUCCESS);
+    expect(state).not.toBe<OrmState<Schema>>(startState);
     expect(state.Book.itemsById[0].name).toBe("Modified Example Book");
   });
 
   it("delete row", () => {
-    const startState = {
+    const startState: OrmState<Schema> = {
       Book: {
         items: [0],
         itemsById: {
@@ -213,7 +235,7 @@ describe("createDatabase", () => {
       },
     };
 
-    const updateSpec = {
+    const updateSpec: UpdateSpec<Schema> = {
       action: DELETE,
       table: "Book",
       query: {
@@ -224,9 +246,9 @@ describe("createDatabase", () => {
     const tx = { batchToken: getBatchToken(), withMutations: false };
     const { status, state } = db.update(updateSpec, tx, startState);
 
-    expect(status).toBe(SUCCESS);
-    expect(state).not.toBe(startState);
-    expect(state.Book.items).toEqual([]);
-    expect(state.Book.itemsById).toEqual({});
+    expect(status).toBe<UpdateStatus>(SUCCESS);
+    expect(state).not.toBe<OrmState<Schema>>(startState);
+    expect(state.Book.items).toEqual<TableState<typeof Book>['items']>([]);
+    expect(state.Book.itemsById).toEqual<TableState<typeof Book>['itemsById']>({});
   });
 });

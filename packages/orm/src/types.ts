@@ -260,7 +260,7 @@ export type UpdateStatus = typeof SUCCESS | typeof FAILURE;
  */
 export interface UpdateSpec<Schema extends ModelClassMap, Payload extends {} = {}> {
   action: UpdateType;
-  query?: Query<Schema, Payload>;
+  query?: Query<Schema>;
   table?: keyof Schema;
   payload?: Payload;
 }
@@ -342,10 +342,10 @@ export type ModelData = Record<string, any>;
  * 
  */
 export interface ModelTableOpts<MClassType extends typeof AnyModel> {
-  readonly idAttribute: IdAttribute<MClassType>;
-  readonly arrName: ArrName<MClassType>;
-  readonly mapName: MapName<MClassType>;
-  readonly fields: MClassType['fields'];
+  readonly idAttribute?: IdAttribute<MClassType>;
+  readonly arrName?: ArrName<MClassType>;
+  readonly mapName?: MapName<MClassType>;
+  readonly fields?: MClassType['fields'];
 }
 
 /**
