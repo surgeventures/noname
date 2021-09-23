@@ -1,20 +1,24 @@
 import { ORM, Session, Model, oneToOne, fk, many, attr } from "../..";
-import { castTo } from "../../hacks";
-import { createTestModels, ExtendedSession } from "../helpers";
+import { createTestModels, Schema } from "../helpers";
+import { OrmState } from '../../types';
 
 describe("ORM", () => {
   it("constructor works", () => {
-    new ORM(); // eslint-disable-line no-new
+    new ORM();
   });
 
   describe("throws on invalid model declarations", () => {
     it("with multiple one-to-one fields to the same model without related name", () => {
-      class A extends Model {
-        static modelName = "A";
+      type Schema = {
+        A: typeof A;
+        B: typeof B;
+      }
+      class A extends Model<typeof A> {
+        static modelName = "A" as const;
       }
 
       class B extends Model {
-        static modelName = "B";
+        static modelName = "B" as const;
         static fields = {
           id: attr(),
           field1: oneToOne("A"),
@@ -22,18 +26,22 @@ describe("ORM", () => {
         };
       }
 
-      const orm = new ORM();
+      const orm = new ORM<Schema>();
       orm.register(A, B);
       expect(() => orm.getModelClasses()).toThrow(/field/);
     });
 
     it("with multiple foreign keys to the same model without related name", () => {
-      class A extends Model {
-        static modelName = "A";
+      type Schema = {
+        A: typeof A;
+        B: typeof B;
+      }
+      class A extends Model<typeof A> {
+        static modelName = "A" as const;
       }
 
-      class B extends Model {
-        static modelName = "B";
+      class B extends Model<typeof B> {
+        static modelName = "B" as const;
         static fields = {
           id: attr(),
           field1: fk("A"),
@@ -41,18 +49,22 @@ describe("ORM", () => {
         };
       }
 
-      const orm = new ORM();
+      const orm = new ORM<Schema>();
       orm.register(A, B);
       expect(() => orm.getModelClasses()).toThrow(/field/);
     });
 
     it("with multiple many-to-manys to the same model without related name", () => {
-      class A extends Model {
-        static modelName = "A";
+      type Schema = {
+        A: typeof A;
+        B: typeof B;
+      }
+      class A extends Model<typeof A> {
+        static modelName = "A" as const;
       }
 
-      class B extends Model {
-        static modelName = "B";
+      class B extends Model<typeof B> {
+        static modelName = "B" as const;
         static fields = {
           id: attr(),
           field1: many("A"),
@@ -60,14 +72,15 @@ describe("ORM", () => {
         };
       }
 
-      const orm = new ORM();
+      const orm = new ORM<Schema>();
       orm.register(A, B);
       expect(() => orm.getModelClasses()).toThrow(/field/);
     });
 
     it("correctly throws an error when a model does not have a modelName property", () => {
-      class A extends Model {}
-      const orm = new ORM();
+      type Schema = { A: typeof A };
+      class A extends Model<typeof A> {}
+      const orm = new ORM<Schema>();
       expect(() => orm.register(A)).toThrow(
         "A model was passed that doesn't have a modelName set"
       );
@@ -75,17 +88,17 @@ describe("ORM", () => {
   });
 
   describe("simple orm", () => {
-    let orm: ORM;
-    let Book: typeof Model;
-    let Author: typeof Model;
-    let Cover: typeof Model;
-    let Genre: typeof Model;
-    let Tag: typeof Model;
-    let Publisher: typeof Model;
+    let orm: ORM<Schema>;
+    let Book: Schema['Book'];
+    let Author: Schema['Author'];
+    let Cover: Schema['Cover'];
+    let Genre: Schema['Genre'];
+    let Tag: Schema['Tag'];
+    let Publisher: Schema['Publisher'];
 
     beforeEach(() => {
       ({ Book, Author, Cover, Genre, Tag, Publisher } = createTestModels());
-      orm = new ORM();
+      orm = new ORM<Schema>();
     });
 
     it("correctly registers a single model at a time", () => {
@@ -103,18 +116,18 @@ describe("ORM", () => {
     });
 
     it("correctly starts session", () => {
-      const initialState = {};
-      const session = castTo<ExtendedSession>(orm.session(initialState));
+      const initialState = {} as OrmState<Schema>;
+      const session = orm.session(initialState);
       expect(session).toBeInstanceOf(Session);
     });
 
     it("correctly gets models from registry", () => {
       orm.register(Book);
-      expect(orm.get("Book")).toBe(Book);
+      expect(orm.get("Book")).toBe<typeof Book>(Book);
     });
 
     it("throws when trying to get inexistant model from registry", () => {
-      expect(() => orm.get("InexistantModel")).toThrow(
+      expect(() => orm.get("InexistantModel" as any)).toThrow(
         "Did not find model InexistantModel from registry."
       );
     });
@@ -159,44 +172,44 @@ describe("ORM", () => {
       coverDescriptor = Object.getOwnPropertyDescriptor(
         Book.prototype,
         "cover"
-      ) as PropertyDescriptor;
-      expect(typeof coverDescriptor.get).toBe("function");
-      expect(typeof coverDescriptor.set).toBe("function");
+      );
+      expect(typeof coverDescriptor?.get).toBe("function");
+      expect(typeof coverDescriptor?.set).toBe("function");
 
       authorDescriptor = Object.getOwnPropertyDescriptor(
         Book.prototype,
         "author"
-      ) as PropertyDescriptor;
-      expect(typeof authorDescriptor.get).toBe("function");
-      expect(typeof authorDescriptor.set).toBe("function");
+      );
+      expect(typeof authorDescriptor?.get).toBe("function");
+      expect(typeof authorDescriptor?.set).toBe("function");
 
       genresDescriptor = Object.getOwnPropertyDescriptor(
         Book.prototype,
         "genres"
-      ) as PropertyDescriptor;
-      expect(typeof genresDescriptor.get).toBe("function");
-      expect(typeof genresDescriptor.set).toBe("function");
+      );
+      expect(typeof genresDescriptor?.get).toBe("function");
+      expect(typeof genresDescriptor?.set).toBe("function");
 
       tagsDescriptor = Object.getOwnPropertyDescriptor(
         Book.prototype,
         "tags"
-      ) as PropertyDescriptor;
-      expect(typeof tagsDescriptor.get).toBe("function");
-      expect(typeof tagsDescriptor.set).toBe("function");
+      );
+      expect(typeof tagsDescriptor?.get).toBe("function");
+      expect(typeof tagsDescriptor?.set).toBe("function");
 
       publisherDescriptor = Object.getOwnPropertyDescriptor(
         Book.prototype,
         "publisher"
-      ) as PropertyDescriptor;
-      expect(typeof publisherDescriptor.get).toBe("function");
-      expect(typeof publisherDescriptor.set).toBe("function");
+      );
+      expect(typeof publisherDescriptor?.get).toBe("function");
+      expect(typeof publisherDescriptor?.set).toBe("function");
     });
 
     it("correctly gets the default state", () => {
       orm.register(Book, Author, Cover, Genre, Tag, Publisher);
       const defaultState = orm.getEmptyState();
 
-      expect(defaultState).toEqual({
+      expect(defaultState).toEqual<Omit<OrmState<Schema>, 'Movie'>>({
         Book: {
           items: [],
           itemsById: {},
