@@ -241,7 +241,7 @@ export interface Query<Schema extends ModelClassMap, Payload extends object = {}
 /**
  * Query wrapper definition, wraps {@link Query}.
  */
-export interface QuerySpec<Schema extends ModelClassMap, Payload extends {} = {}> {
+export interface QuerySpec<Schema extends ModelClassMap, Payload extends object = {}> {
   query: Query<Schema, Payload>;
 }
 

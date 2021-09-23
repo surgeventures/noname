@@ -1,19 +1,27 @@
 import deepFreeze from "deep-freeze";
+import { BatchToken } from "immutable-ops";
+
 import Table from "../../db/Table";
 import { getBatchToken } from "../../utils";
 import { FILTER, EXCLUDE, ORDER_BY } from "../../constants";
-import { QueryClause, TableRow, TableState, Transaction } from "../../types";
-import { BatchToken } from "immutable-ops";
+import { ModelId, QueryClause, Row, TableState, Transaction } from "../../types";
+import Model from "../../Model";
 
 describe("Table", () => {
   describe("prototype methods", () => {
-    let state: TableState;
+    type TestDescriptors = {
+      id: ModelId;
+      data: string;
+    };
+    class Test extends Model<typeof Test, TestDescriptors> {}
+
+    let state: TableState<typeof Test>;
     let batchToken: BatchToken;
     let txInfo: Transaction;
-    let table: Table;
+    let table: Table<typeof Test>;
 
     beforeEach(() => {
-      state = deepFreeze({
+      const stateObj = {
         items: [0, 1, 2],
         itemsById: {
           0: {
@@ -30,22 +38,23 @@ describe("Table", () => {
           },
         },
         meta: {},
-      });
+      };
+      state = deepFreeze(stateObj) as typeof stateObj;
       batchToken = getBatchToken();
       txInfo = { batchToken, withMutations: false };
-      table = new Table();
+      table = new Table<typeof Test>();
     });
 
     it("correctly accesses an id", () => {
-      expect(table.accessId(state, 1)).toBe(state.itemsById[1]);
+      expect(table.accessId(state, 1)).toBe<TableState<typeof Test>['itemsById'][number]>(state.itemsById[1]);
     });
 
     it("correctly accesses id's", () => {
-      expect(table.accessIdList(state)).toBe(state.items);
+      expect(table.accessIdList(state)).toBe<TableState<typeof Test>['items']>(state.items);
     });
 
     it("correctly returns a default state", () => {
-      expect(table.getEmptyState()).toEqual({
+      expect(table.getEmptyState()).toEqual<TableState<typeof Test>>({
         items: [],
         itemsById: {},
         meta: {},
@@ -56,11 +65,11 @@ describe("Table", () => {
       const entry = { id: 3, data: "newdata!" };
       const { state: newState, created } = table.insert(txInfo, state, entry);
 
-      expect(created).toBe(entry);
+      expect(created).toBe<Row<Test>>(entry);
 
-      expect(newState).not.toBe(state);
-      expect(newState.items).toEqual([0, 1, 2, 3]);
-      expect(newState.itemsById).toEqual({
+      expect(newState).not.toBe<TableState<typeof Test>>(state);
+      expect(newState.items).toEqual<TableState<typeof Test>['items']>([0, 1, 2, 3]);
+      expect(newState.itemsById).toEqual<TableState<typeof Test>['itemsById']>({
         0: {
           id: 0,
           data: "cooldata",
@@ -81,13 +90,13 @@ describe("Table", () => {
     });
 
     it("correctly updates entries with a merging object", () => {
-      const toMergeObj = { data: "modifiedData" };
-      const rowsToUpdate = [state.itemsById[1], state.itemsById[2]];
+      const toMergeObj: Row<Test> = { data: "modifiedData" };
+      const rowsToUpdate: TableState<typeof Test>['itemsById'][number][] = [state.itemsById[1], state.itemsById[2]];
       const newState = table.update(txInfo, state, rowsToUpdate, toMergeObj);
 
-      expect(newState).not.toBe(state);
-      expect(newState.items).toBe(state.items);
-      expect(newState.itemsById).toEqual({
+      expect(newState).not.toBe<TableState<typeof Test>>(state);
+      expect(newState.items).toBe<TableState<typeof Test>['items']>(state.items);
+      expect(newState.itemsById).toEqual<TableState<typeof Test>['itemsById']>({
         0: {
           id: 0,
           data: "cooldata",
@@ -104,28 +113,34 @@ describe("Table", () => {
     });
 
     it("correctly deletes entries", () => {
-      const rowsToDelete = [state.itemsById[1], state.itemsById[2]];
+      const rowsToDelete: TableState<typeof Test>['itemsById'][number][] = [state.itemsById[1], state.itemsById[2]];
       const newState = table.delete(txInfo, state, rowsToDelete);
-
-      expect(newState).not.toBe(state);
-      expect(newState.items).toEqual([0]);
-      expect(newState.itemsById).toEqual({
+      const expectedItemsById = {
         0: {
           id: 0,
           data: "cooldata",
         },
-      });
+      };
+
+      expect(newState).not.toBe<TableState<typeof Test>>(state);
+      expect(newState.items).toEqual<TableState<typeof Test>['items']>([0]);
+      expect(newState.itemsById).toEqual<TableState<typeof Test>['itemsById']>(expectedItemsById);
     });
 
     it("filter works correctly with object argument", () => {
-      const clauses: QueryClause[] = [{ type: FILTER, payload: { data: "verycooldata!" } }];
+      const clauses: QueryClause<{ data: string }>[] = [{ type: FILTER, payload: { data: "verycooldata!" } }];
       const result = table.query(state, clauses);
       expect(result).toHaveLength(1);
-      expect((result as object[])[0]).toBe(state.itemsById[1]);
+      expect(result[0]).toBe<TableState<typeof Test>['itemsById'][number]>(state.itemsById[1]);
     });
 
     it('filter works correctly with "idAttribute" is "name" and filter argument is a function', () => {
-      state = deepFreeze({
+      type TestDescriptors = {
+        name: string;
+      }
+      type TableStateItemsById = TableState<typeof Test>['itemsById'];
+      class Test extends Model<typeof Test, TestDescriptors> {}
+      const stateObj: TableState<typeof Test> = {
         items: ["work", "personal", "urgent"],
         itemsById: {
           work: {
@@ -139,25 +154,27 @@ describe("Table", () => {
           },
         },
         meta: {},
-      });
-      table = new Table({ idAttribute: "name" });
-      const clauses: QueryClause[] = [
+      };
+      const state = deepFreeze(stateObj) as typeof stateObj;
+      const table = new Table<typeof Test>({ idAttribute: "name" });
+      // ERROR: idAttribute is not mapped to id type
+      const clauses: QueryClause<(attrs: Row<Test>) => boolean>[] = [
         {
           type: FILTER,
-          payload: (attrs: TableRow) =>
-            ["work", "urgent"].indexOf(attrs[table.idAttribute]) > -1,
+          payload: attrs =>
+            ["work", "urgent"].indexOf((attrs as any)[table.idAttribute]) > -1,
         },
       ];
       const result = table.query(state, clauses);
       expect(result).toHaveLength(2);
-      expect(result[0]).toBe(state.itemsById.work);
-      expect(result[1]).toBe(state.itemsById.urgent);
+      expect(result[0]).toBe<TableStateItemsById[keyof TableStateItemsById]>(state.itemsById.work);
+      expect(result[1]).toBe<TableStateItemsById[keyof TableStateItemsById]>(state.itemsById.urgent);
     });
 
     it("orderBy works correctly with prop argument", () => {
-      const clauses: QueryClause[] = [{ type: ORDER_BY, payload: [["data"], ["inc"]] }];
+      const clauses: QueryClause<[string[], string[]]>[] = [{ type: ORDER_BY, payload: [["data"], ["inc"]] }];
       const result = table.query(state, clauses);
-      expect(result.map((row) => row.data)).toEqual([
+      expect(result.map((row) => row.data)).toEqual<Row<Test>['data'][]>([
         "awesomedata",
         "cooldata",
         "verycooldata!",
@@ -165,11 +182,11 @@ describe("Table", () => {
     });
 
     it("orderBy works correctly with function argument", () => {
-      const clauses: QueryClause[] = [
-        { type: ORDER_BY, payload: [(row: TableRow) => row.data, undefined] },
+      const clauses: QueryClause<[(row: Row<Test>) => Row<Test>['data'], undefined]>[] = [
+        { type: ORDER_BY, payload: [row => row.data, undefined] },
       ];
       const result = table.query(state, clauses);
-      expect(result.map((row) => row.data)).toEqual([
+      expect(result.map((row) => row.data)).toEqual<Row<Test>['data'][]>([
         "awesomedata",
         "cooldata",
         "verycooldata!",
@@ -177,27 +194,27 @@ describe("Table", () => {
     });
 
     it("exclude works correctly with object argument", () => {
-      const clauses: QueryClause[] = [{ type: EXCLUDE, payload: { data: "verycooldata!" } }];
-      const result: TableRow[] = table.query(state, clauses) as TableRow[];
+      const clauses: QueryClause<{ data: string }>[] = [{ type: EXCLUDE, payload: { data: "verycooldata!" } }];
+      const result = table.query(state, clauses);
       expect(result).toHaveLength(2);
-      expect(result.map((row: TableRow) => row.id)).toEqual([0, 2]);
+      expect(result.map((row) => row.id)).toEqual<Row<Test>['id'][]>([0, 2]);
     });
 
     it("query works with multiple clauses", () => {
-      const clauses: QueryClause[] = [
-        { type: FILTER, payload: (row: TableRow) => row.id > 0 },
+      const clauses: (QueryClause<(row: Row<Test>) => boolean> | QueryClause<[string[], string[]]>)[] = [
+        { type: FILTER, payload: row => row.id! > 0 },
         { type: ORDER_BY, payload: [["data"], ["inc"]] },
       ];
       const result = table.query(state, clauses);
-      expect(result.map((row) => row.data)).toEqual([
+      expect(result.map((row) => row.data)).toEqual<Row<Test>['data'][]>([
         "awesomedata",
         "verycooldata!",
       ]);
     });
 
     it("query works with an id filter for a row which is not in the current result set", () => {
-      const clauses: QueryClause[] = [
-        { type: FILTER, payload: (row: TableRow) => row.id !== 1 },
+      const clauses: (QueryClause<(row: Row<Test>) => boolean> | QueryClause<Row<Test>>)[] = [
+        { type: FILTER, payload: row => row.id !== 1 },
         { type: FILTER, payload: { id: 1 } },
       ];
       const result = table.query(state, clauses);

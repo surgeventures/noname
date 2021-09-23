@@ -191,9 +191,8 @@ export class Genre extends Model<typeof Genre, GenreProps> {
 export type TagDescriptors = {
   id: ModelId;
   name: string;
-  // @ts-ignore
-  subTags: TargetRelationship<Tag, Relations.ManyToMany>;
-  parentTags: TargetRelationship<Tag, Relations.ManyToMany>;
+  subTags: unknown; // Should be TargetRelationship<Tag, Relations.ManyToMany>
+  parentTags: unknown; // Verify the structure - should be TargetRelationship<Tag, Relations.ManyToMany>
   books: unknown;
 };
 export class Tag extends Model<typeof Tag, TagDescriptors> {
@@ -300,7 +299,6 @@ export function createTestORM() {
     Movie,
   } = createTestModels();
 
-  // @ts-ignore
   const orm = new ORM<Schema>();
   orm.register(Book, Author, Cover, Genre, Tag, Publisher, Movie);
   return orm;
