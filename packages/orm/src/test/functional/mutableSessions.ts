@@ -3,8 +3,8 @@ import { castTo } from "../../hacks";
 import ORM from "../../ORM";
 import { OrmState } from "../../types";
 import {
-  BookProps,
-  CoverProps,
+  BookDescriptors,
+  CoverDescriptors,
   createTestSessionWithData,
   ExtendedSession,
 } from "../helpers";
@@ -30,7 +30,7 @@ describe("Mutating session", () => {
     expect(state.Book.itemsById[bookId]).toBe(bookRef);
     const newName = "New Name";
 
-    const bookProps = castTo<BookProps>(book);
+    const bookProps = castTo<BookDescriptors>(book);
     bookProps.name = newName;
 
     expect(bookProps.name).toBe(newName);
@@ -39,7 +39,7 @@ describe("Mutating session", () => {
     expect(nextState).toBe(state);
     expect(state.Book.itemsById[bookId]).toBe(bookRef);
     expect(bookRef.name).toBe(newName);
-    expect((state.Cover.itemsById[coverId] as CoverProps).src).toBe(
+    expect((state.Cover.itemsById[coverId] as CoverDescriptors).src).toBe(
       "somecover.png"
     );
   });

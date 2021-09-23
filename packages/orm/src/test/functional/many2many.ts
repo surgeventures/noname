@@ -5,7 +5,7 @@ import {
   createTestSessionWithData,
   ExtendedSession,
   IManyQuerySet,
-  TagProps,
+  TagDescriptors,
 } from "../helpers";
 
 class User extends Model {
@@ -507,7 +507,7 @@ describe("Many to many relationships", () => {
     it('adds relationships correctly when toModelName is "this"', () => {
       const { Tag, TagSubTags } = session as ExtendedSession;
       expect(TagSubTags.count()).toBe(0);
-      castTo<TagProps>(Tag.withId("Technology")!).subTags.add("Redux");
+      castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.add("Redux");
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
           id: 0,
@@ -515,16 +515,16 @@ describe("Many to many relationships", () => {
           toTagId: "Redux",
         },
       ]);
-      expect(castTo<TagProps>(Tag.withId("Technology")!).subTags.count()).toBe(
+      expect(castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.count()).toBe(
         1
       );
       expect(
-        castTo<TagProps>(Tag.withId("Technology")!).subTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.toRefArray()
       ).toEqual([Tag.withId("Redux")!.ref]);
 
-      expect(castTo<TagProps>(Tag.withId("Redux")!).subTags.count()).toBe(0);
+      expect(castTo<TagDescriptors>(Tag.withId("Redux")!).subTags.count()).toBe(0);
       expect(
-        castTo<TagProps>(Tag.withId("Redux")!).subTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Redux")!).subTags.toRefArray()
       ).toEqual([]);
     });
 
@@ -533,13 +533,13 @@ describe("Many to many relationships", () => {
         Tag: typeof Model;
         TagSubTags: typeof Model;
       }>(session);
-      castTo<TagProps>(Tag.withId("Technology")!).subTags.add("Redux");
-      castTo<TagProps>(Tag.withId("Redux")!).subTags.add("Technology");
+      castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.add("Redux");
+      castTo<TagDescriptors>(Tag.withId("Redux")!).subTags.add("Technology");
 
-      castTo<TagProps>(Tag.withId("Redux")!).subTags.remove("Technology");
+      castTo<TagDescriptors>(Tag.withId("Redux")!).subTags.remove("Technology");
 
       expect(
-        castTo<TagProps>(Tag.withId("Technology")!).subTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.toRefArray()
       ).toEqual([Tag.withId("Redux")!.ref]);
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
@@ -548,43 +548,43 @@ describe("Many to many relationships", () => {
           toTagId: "Redux",
         },
       ]);
-      expect(castTo<TagProps>(Tag.withId("Technology")!).subTags.count()).toBe(
+      expect(castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.count()).toBe(
         1
       );
       expect(
-        castTo<TagProps>(Tag.withId("Redux")!).subTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Redux")!).subTags.toRefArray()
       ).toEqual([]);
-      expect(castTo<TagProps>(Tag.withId("Redux")!).subTags.count()).toBe(0);
+      expect(castTo<TagDescriptors>(Tag.withId("Redux")!).subTags.count()).toBe(0);
     });
 
     it('querying backwards relationships works when toModelName is "this"', () => {
       const { Tag } = castTo<{ Tag: typeof Model }>(session);
-      castTo<TagProps>(Tag.withId("Technology")!).subTags.add("Redux");
+      castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.add("Redux");
 
       expect(
-        castTo<TagProps>(Tag.withId("Redux")!).parentTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Redux")!).parentTags.toRefArray()
       ).toEqual([Tag.withId("Technology")!.ref]);
-      expect(castTo<TagProps>(Tag.withId("Redux")!).parentTags.count()).toBe(1);
+      expect(castTo<TagDescriptors>(Tag.withId("Redux")!).parentTags.count()).toBe(1);
       expect(
-        castTo<TagProps>(Tag.withId("Technology")!).parentTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Technology")!).parentTags.toRefArray()
       ).toEqual([]);
       expect(
-        castTo<TagProps>(Tag.withId("Technology")!).parentTags.count()
+        castTo<TagDescriptors>(Tag.withId("Technology")!).parentTags.count()
       ).toBe(0);
     });
 
     it('adding relationships via backwards descriptor works when toModelName is "this"', () => {
       const { Tag } = castTo<{ Tag: typeof Model }>(session);
-      castTo<TagProps>(Tag.withId("Redux")!).parentTags.add("Technology");
+      castTo<TagDescriptors>(Tag.withId("Redux")!).parentTags.add("Technology");
 
       expect(
-        castTo<TagProps>(Tag.withId("Redux")!).parentTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Redux")!).parentTags.toRefArray()
       ).toEqual([Tag.withId("Technology")!.ref]);
-      expect(castTo<TagProps>(Tag.withId("Redux")!).parentTags.count()).toBe(1);
+      expect(castTo<TagDescriptors>(Tag.withId("Redux")!).parentTags.count()).toBe(1);
       expect(
-        castTo<TagProps>(Tag.withId("Technology")!).subTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.toRefArray()
       ).toEqual([Tag.withId("Redux")!.ref]);
-      expect(castTo<TagProps>(Tag.withId("Technology")!).subTags.count()).toBe(
+      expect(castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.count()).toBe(
         1
       );
     });
@@ -594,13 +594,13 @@ describe("Many to many relationships", () => {
         Tag: typeof Model;
         TagSubTags: typeof Model;
       }>(session);
-      castTo<TagProps>(Tag.withId("Technology")!).subTags.add("Redux");
-      castTo<TagProps>(Tag.withId("Redux")!).subTags.add("Technology");
+      castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.add("Redux");
+      castTo<TagDescriptors>(Tag.withId("Redux")!).subTags.add("Technology");
 
-      castTo<TagProps>(Tag.withId("Technology")!).parentTags.remove("Redux");
+      castTo<TagDescriptors>(Tag.withId("Technology")!).parentTags.remove("Redux");
 
       expect(
-        castTo<TagProps>(Tag.withId("Technology")!).subTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.toRefArray()
       ).toEqual([Tag.withId("Redux")!.ref]);
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
@@ -609,13 +609,13 @@ describe("Many to many relationships", () => {
           toTagId: "Redux",
         },
       ]);
-      expect(castTo<TagProps>(Tag.withId("Technology")!).subTags.count()).toBe(
+      expect(castTo<TagDescriptors>(Tag.withId("Technology")!).subTags.count()).toBe(
         1
       );
       expect(
-        castTo<TagProps>(Tag.withId("Redux")!).subTags.toRefArray()
+        castTo<TagDescriptors>(Tag.withId("Redux")!).subTags.toRefArray()
       ).toEqual([]);
-      expect(castTo<TagProps>(Tag.withId("Redux")!).subTags.count()).toBe(0);
+      expect(castTo<TagDescriptors>(Tag.withId("Redux")!).subTags.count()).toBe(0);
     });
   });
 

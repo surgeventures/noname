@@ -1,9 +1,7 @@
 import ORM from "../ORM";
 import Model from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
-import { ModelId, TableRow } from "../types";
-import Session from "../Session";
-import { castTo } from "../hacks";
+import { ModelId, Relations, SessionLike, TargetRelationship } from "../types";
 
 /**
  * These utils create a database schema for testing.
@@ -119,7 +117,18 @@ const MOVIES_INITIAL = [
   },
 ];
 
-export class Book extends Model {
+export type BookDescriptors = {
+  id: ModelId;
+  name: string;
+  releaseYear: number;
+  author: TargetRelationship<Author, Relations.ForeignKey>;
+  cover: TargetRelationship<Cover, Relations.OneToOne>;
+  genres: TargetRelationship<Genre, Relations.ManyToMany>;
+  // @ts-ignore
+  tags: TargetRelationship<Tag, Relations.ManyToMany>;
+  publisher: TargetRelationship<Publisher, Relations.ForeignKey>;
+}
+export class Book extends Model<typeof Book, BookDescriptors> {
   static modelName = "Book";
   static fields = {
     id: attr(),
@@ -133,46 +142,12 @@ export class Book extends Model {
   };
 }
 
-export interface IQuerySet<T = Model> {
-  toRefArray(): TableRow[];
-  toModelArray(): T[];
-  count(): number;
-  exists(): boolean;
-  at(index: number): T;
-  first(): T | null;
-  last(): T | null;
-  all(): IQuerySet<T>;
-  filter(lookupObj: object): IQuerySet<T>;
-  exclude(lookupObj: object): IQuerySet<T>;
-  orderBy(
-    iteratees: string[],
-    orders?: (boolean | "asc" | "desc")[]
-  ): IQuerySet<T>;
-  update(mergeObj: object): void;
-  delete(): void;
-  modelClass: T;
-  _evaluate(): void;
-  rows: TableRow[];
-}
-
-export interface IManyQuerySet<T = Model> extends IQuerySet<T> {
-  add(...objs: (ModelId | T)[]): void;
-  remove(...objs: (ModelId | T)[]): this;
-  clear(): void;
-}
-
-export type BookProps = {
+export type AuthorDescriptors = {
   id: ModelId;
   name: string;
-  releaseYear: number;
-  author: Author & AuthorProps;
-  cover: Cover & CoverProps;
-  genres: IManyQuerySet<Genre>;
-  tags: IQuerySet<Tag>;
-  publisher: Publisher & PublisherProps;
-};
-
-export class Author extends Model {
+  publishers: TargetRelationship<Publisher, Relations.ManyToMany>;
+}
+export class Author extends Model<typeof Author, AuthorDescriptors> {
   static modelName = "Author";
   static fields = {
     id: attr(),
@@ -185,14 +160,13 @@ export class Author extends Model {
   };
 }
 
-export type AuthorProps = {
-  id: ModelId;
-  name: string;
-  publishers: IQuerySet<Publisher & PublisherProps>;
-  books: IQuerySet<Author & AuthorProps>;
-};
 
-export class Cover extends Model {
+export type CoverDescriptors = {
+  id: ModelId;
+  src: string;
+  book: unknown;
+};
+export class Cover extends Model<typeof Cover, CoverDescriptors> {
   static modelName = "Cover";
   static fields = {
     id: attr(),
@@ -200,13 +174,13 @@ export class Cover extends Model {
   };
 }
 
-export type CoverProps = {
+export type GenreProps = {
   id: ModelId;
-  src: string;
-  book: Book & BookProps;
+  name: string;
+  books: unknown;
 };
 
-export class Genre extends Model {
+export class Genre extends Model<typeof Genre, GenreProps> {
   static modelName = "Genre";
   static fields = {
     id: attr(),
@@ -214,13 +188,15 @@ export class Genre extends Model {
   };
 }
 
-export type GenreProps = {
+export type TagDescriptors = {
   id: ModelId;
   name: string;
-  books: IQuerySet<Book & BookProps>;
+  // @ts-ignore
+  subTags: TargetRelationship<Tag, Relations.ManyToMany>;
+  parentTags: TargetRelationship<Tag, Relations.ManyToMany>;
+  books: unknown;
 };
-
-export class Tag extends Model {
+export class Tag extends Model<typeof Tag, TagDescriptors> {
   static modelName = "Tag";
   static options() {
     return {
@@ -231,20 +207,17 @@ export class Tag extends Model {
     id: attr(),
     name: attr(),
     subTags: many("this", "parentTags"),
-    // TODO: bidirectional many-to-many relations
-    // synonymousTags: many('Tag', 'synonymousTags'),
   };
 }
 
-export type TagProps = {
+export type PublisherDescriptors = {
   id: ModelId;
   name: string;
-  subTags: IManyQuerySet<Tag & TagProps>;
-  parentTags: IManyQuerySet<Tag & TagProps>;
-  books: IQuerySet<Book & BookProps>;
+  authors: unknown;
+  movies: unknown;
 };
 
-export class Publisher extends Model {
+export class Publisher extends Model<typeof Publisher, PublisherDescriptors> {
   static modelName = "Publisher";
   static fields = {
     id: attr(),
@@ -252,14 +225,18 @@ export class Publisher extends Model {
   };
 }
 
-export type PublisherProps = {
-  id: string;
+export type MovieDescriptors = {
+  id: ModelId;
   name: string;
-  authors: IQuerySet<Author & AuthorProps>;
-  movies: IManyQuerySet<Movie & MovieProps>;
+  rating: number;
+  hasPremiered: boolean;
+  characters: string;
+  meta: string;
+  publisherId: ModelId | undefined;
+  publisher: TargetRelationship<Publisher, Relations.ForeignKey>;
 };
 
-export class Movie extends Model {
+export class Movie extends Model<typeof Movie, MovieDescriptors> {
   static modelName = "Movie";
   static fields = {
     id: attr(),
@@ -275,17 +252,6 @@ export class Movie extends Model {
     }),
   };
 }
-
-export type MovieProps = {
-  id: ModelId;
-  name: string;
-  rating: number;
-  hasPremiered: boolean;
-  characters: string;
-  meta: string;
-  publisherId: Publisher;
-  publisher: Publisher & PublisherProps;
-};
 
 export function createTestModels() {
   const MyBook = class extends Book {};
@@ -307,6 +273,22 @@ export function createTestModels() {
   };
 }
 
+export type Schema = {
+  Book: typeof Book;
+  Cover: typeof Cover;
+  Genre: typeof Genre;
+  Tag: typeof Tag;
+  Author: typeof Author;
+  Movie: typeof Movie; 
+  Publisher: typeof Publisher;
+  
+  BookGenres: typeof Model; // Verify
+  BookTags: typeof Model; // Verify
+  TagSubTags: typeof Tag; // Verify
+}
+
+export type ExtendedSession = SessionLike<Schema>;
+
 export function createTestORM() {
   const {
     Book,
@@ -318,35 +300,22 @@ export function createTestORM() {
     Movie,
   } = createTestModels();
 
-  const orm = new ORM();
+  // @ts-ignore
+  const orm = new ORM<Schema>();
   orm.register(Book, Author, Cover, Genre, Tag, Publisher, Movie);
   return orm;
 }
 
-export type ExtendedSession = Session & {
-  Book: typeof Book & BookProps;
-  Cover: typeof Cover & CoverProps;
-  Genre: typeof Genre & GenreProps;
-  Tag: typeof Tag & TagProps;
-  Author: typeof Author & AuthorProps;
-  BookGenres: typeof Model;
-  BookTags: typeof Model;
-  Movie: typeof Movie & MovieProps;
-  Publisher: typeof Publisher & PublisherProps;
-  TagSubTags: typeof Model;
-};
 
 export function createTestSession(): ExtendedSession {
   const orm = createTestORM();
-  return orm.session(orm.getEmptyState()) as ExtendedSession;
+  return orm.session(orm.getEmptyState());
 }
 
-export function createTestSessionWithData(customORM?: ORM) {
+export function createTestSessionWithData(customORM?: ORM<Schema>) {
   const orm = customORM || createTestORM();
   const state = orm.getEmptyState();
-  const { Author, Cover, Genre, Tag, Book, Publisher, Movie } = castTo<
-    ExtendedSession
-  >(orm.mutableSession(state));
+  const { Author, Cover, Genre, Tag, Book, Publisher, Movie } = orm.mutableSession(state);
 
   AUTHORS_INITIAL.forEach((props) => Author.create(props));
   COVERS_INITIAL.forEach((props) => Cover.create(props));

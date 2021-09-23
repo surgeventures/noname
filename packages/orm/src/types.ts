@@ -28,7 +28,7 @@ export type AnySchema = Record<string, typeof AnyModel>;
 /**
  * Enumerates possible relations
  */
-enum Relations {
+export enum Relations {
   OneToOne = "oneToOne",
   ForeignKey = "foreignKey",
   ManyToMany = "manyToMany"
@@ -118,7 +118,7 @@ type BackwardsModelField = unknown;
  * Extracts the first generic argument from the derived class.
  */
 export type ModelFieldMap = {
-  id?: string;
+  id?: ModelId;
   [K: string]: ModelField | BackwardsModelField;
 };
 
@@ -205,6 +205,11 @@ export type TableState<MClass extends typeof AnyModel> = {
   items: ModelId[];
   itemsById: Record<ModelId, Ref<InstanceType<MClass>>>;
 };
+
+/**
+ * 
+ */
+ export type SessionLike<Schema extends ModelClassMap> = Session<Schema> & Schema;
 
 /**
  * 

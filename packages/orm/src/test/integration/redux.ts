@@ -10,8 +10,8 @@ import { ModelId, OrmState, ReduxAction } from "../../types";
 import {
   createTestModels,
   ExtendedSession,
-  MovieProps,
-  PublisherProps,
+  MovieDescriptors,
+  PublisherDescriptors,
 } from "../helpers";
 
 describe("Redux integration", () => {
@@ -140,7 +140,7 @@ describe("Redux integration", () => {
     it("arbitrary filters", () => {
       const memoized = jest.fn((selectorSession) =>
         selectorSession.Movie.filter(
-          (movie: MovieProps) => movie.name === "Getting started with filters"
+          (movie: MovieDescriptors) => movie.name === "Getting started with filters"
         ).toRefArray()
       );
       const selector = createSelector(orm, memoized);
@@ -223,7 +223,7 @@ describe("Redux integration", () => {
       selector(session.state);
       expect(memoized).toHaveBeenCalledTimes(1);
 
-      castTo<MovieProps>(movie).name = "Updated name";
+      castTo<MovieDescriptors>(movie).name = "Updated name";
 
       selector(session.state);
       expect(memoized).toHaveBeenCalledTimes(2);
@@ -256,7 +256,7 @@ describe("Redux integration", () => {
         selectorSession.Movie.all()
           .toModelArray()
           .reduce(
-            (map: Record<ModelId, object>, movie: MovieProps) => ({
+            (map: Record<ModelId, object>, movie: MovieDescriptors) => ({
               ...map,
               [movie.id]: movie.publisher ? movie.publisher.ref : null,
             }),
@@ -315,7 +315,7 @@ describe("Redux integration", () => {
 
       const session = orm.session(nextState) as ExtendedSession;
       expect(
-        castTo<PublisherProps>(session.Publisher.withId(123)!).movies.count()
+        castTo<PublisherDescriptors>(session.Publisher.withId(123)!).movies.count()
       ).toBe(1);
     });
 

@@ -5,7 +5,7 @@ import { ForeignKey, ManyToMany, attr, Field } from "./fields";
 
 import { m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
 import { DatabaseCreator } from "./db/Database";
-import { Database, OrmState, ModelTableOpts } from "./types";
+import { Database, OrmState, ModelTableOpts, SessionLike } from "./types";
 
 /**
  * ORM instantiation opts.
@@ -194,8 +194,8 @@ Schema extends ModelClassMap,
    * @param  {Object} state  - the state the database manages
    * @return {Session} a new {@link Session} instance
    */
-  session(state?: OrmState<Schema>) {
-    return new Session(this, this.getDatabase(), state);
+  session(state?: OrmState<Schema>): SessionLike<Schema> {
+    return new Session(this, this.getDatabase(), state) as SessionLike<Schema>;
   }
 
   /**
@@ -204,8 +204,8 @@ Schema extends ModelClassMap,
    * @param  {Object} state  - the state the database manages
    * @return {Session} a new {@link Session} instance
    */
-  mutableSession(state?: OrmState<Schema>) {
-    return new Session(this, this.getDatabase(), state, true);
+  mutableSession(state?: OrmState<Schema>): SessionLike<Schema> {
+    return new Session(this, this.getDatabase(), state, true) as SessionLike<Schema>; 
   }
 
   /**
