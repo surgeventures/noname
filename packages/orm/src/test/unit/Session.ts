@@ -1,22 +1,21 @@
-import Model, { ORM } from "../..";
-import { createTestModels, ExtendedSession, isSubclass } from "../helpers";
+import { ORM } from "../..";
+import { createTestModels, isSubclass, Schema } from "../helpers";
 import { CREATE } from "../../constants";
-import { OrmState } from "../../types";
-import { castTo } from "../../hacks";
+import { OrmState, TableState, UpdateSpec } from "../../types";
 
 describe("Session", () => {
-  let orm: ORM;
-  let Book: typeof Model;
-  let Cover: typeof Model;
-  let Genre: typeof Model;
-  let Tag: typeof Model;
-  let Author: typeof Model;
-  let Publisher: typeof Model;
-  let emptyState: OrmState;
+  let orm: ORM<Schema>;
+  let Book: Schema['Book'];
+  let Cover: Schema['Cover'];
+  let Genre: Schema['Genre'];
+  let Tag: Schema['Tag'];
+  let Author: Schema['Author'];
+  let Publisher: Schema['Publisher'];
+  let emptyState: OrmState<Schema>;
 
   beforeEach(() => {
     ({ Book, Cover, Genre, Tag, Author, Publisher } = createTestModels());
-    orm = new ORM();
+    orm = new ORM<Schema>();
     orm.register(Book, Cover, Genre, Tag, Author, Publisher);
     emptyState = orm.getEmptyState();
   });
@@ -29,7 +28,7 @@ describe("Session", () => {
     expect(Cover.session).toBeUndefined();
     expect(Publisher.session).toBeUndefined();
 
-    const session = castTo<ExtendedSession>(orm.session());
+    const session = orm.session();
 
     expect(session.Book.session).toBe(session);
     expect(session.Cover.session).toBe(session);
@@ -40,7 +39,7 @@ describe("Session", () => {
   });
 
   it("exposes models as getter properties", () => {
-    const session = castTo<ExtendedSession>(orm.session());
+    const session = orm.session();
     expect(isSubclass(session.Book, Book)).toBe(true);
     expect(isSubclass(session.Author, Author)).toBe(true);
     expect(isSubclass(session.Cover, Cover)).toBe(true);
@@ -55,27 +54,27 @@ describe("Session", () => {
 
     session.markFullTableScanned(Book.modelName);
     expect(session.fullTableScannedModels).toHaveLength(1);
-    expect(session.fullTableScannedModels[0]).toBe("Book");
+    expect(session.fullTableScannedModels[0]).toBe<keyof Schema>("Book");
 
     session.markFullTableScanned(Book.modelName);
 
-    expect(session.fullTableScannedModels[0]).toBe("Book");
+    expect(session.fullTableScannedModels[0]).toBe<keyof Schema>("Book");
   });
 
   it("marks accessed model instances", () => {
     const session = orm.session();
-    expect(session.accessedModelInstances).toEqual({});
+    expect(session.accessedModelInstances).toEqual<Partial<typeof session.accessedModelInstances>>({});
 
     session.markAccessed(Book.modelName, [0]);
 
-    expect(session.accessedModelInstances).toEqual({
+    expect(session.accessedModelInstances).toEqual<Partial<typeof session.accessedModelInstances>>({
       Book: {
         0: true,
       },
     });
 
     session.markAccessed(Book.modelName, [1]);
-    expect(session.accessedModelInstances).toEqual({
+    expect(session.accessedModelInstances).toEqual<Partial<typeof session.accessedModelInstances>>({
       Book: {
         0: true,
         1: true,
@@ -83,26 +82,27 @@ describe("Session", () => {
     });
   });
 
-  // it("throws when failing to apply updates", () => {
-  //   const session = orm.session();
-  //   session.db = {
-  //     update() {
-  //       return {
-  //         payload: 123,
-  //         status: "failed",
-  //         state: {},
-  //       };
-  //     },
-  //   };
-  //   expect(() => session.applyUpdate({})).toThrow(
-  //     "Applying update failed with status failed. Payload: 123"
-  //   );
-  // });
+  it("throws when failing to apply updates", () => {
+    const session = orm.session();
+    session.db = {
+      ...session.db,
+      update() {
+        return {
+          payload: 123,
+          status: "failed",
+          state: {},
+        } as any;
+      },
+    };
+    expect(() => session.applyUpdate({} as UpdateSpec<Schema>)).toThrow(
+      "Applying update failed with status failed. Payload: 123"
+    );
+  });
 
   describe("gets the next state", () => {
     it("without any updates, the same state is returned", () => {
       const session = orm.session();
-      expect(session.state).toEqual(emptyState);
+      expect(session.state).toEqual<OrmState<Schema>>(emptyState);
     });
 
     it("with updates, a new state is returned", () => {
@@ -119,18 +119,18 @@ describe("Session", () => {
 
       const nextState = session.state;
 
-      expect(nextState).not.toBe(emptyState);
+      expect(nextState).not.toBe<OrmState<Schema>>(emptyState);
 
-      expect(nextState[Author.modelName]).not.toBe(
+      expect(nextState[Author.modelName]).not.toBe<TableState<typeof Author>>(
         emptyState[Author.modelName]
       );
 
       // All other model states should stay equal.
-      expect(nextState[Book.modelName]).toBe(emptyState[Book.modelName]);
-      expect(nextState[Cover.modelName]).toBe(emptyState[Cover.modelName]);
-      expect(nextState[Genre.modelName]).toBe(emptyState[Genre.modelName]);
-      expect(nextState[Tag.modelName]).toBe(emptyState[Tag.modelName]);
-      expect(nextState[Publisher.modelName]).toBe(
+      expect(nextState[Book.modelName]).toBe<TableState<typeof Book>>(emptyState[Book.modelName]);
+      expect(nextState[Cover.modelName]).toBe<TableState<typeof Cover>>(emptyState[Cover.modelName]);
+      expect(nextState[Genre.modelName]).toBe<TableState<typeof Genre>>(emptyState[Genre.modelName]);
+      expect(nextState[Tag.modelName]).toBe<TableState<typeof Tag>>(emptyState[Tag.modelName]);
+      expect(nextState[Publisher.modelName]).toBe<TableState<typeof Publisher>>(
         emptyState[Publisher.modelName]
       );
     });

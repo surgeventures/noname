@@ -260,7 +260,7 @@ export type UpdateStatus = typeof SUCCESS | typeof FAILURE;
  */
 export interface UpdateSpec<Schema extends ModelClassMap, Payload extends {} = {}> {
   action: UpdateType;
-  query: Query<Schema, Payload>;
+  query?: Query<Schema, Payload>;
   table?: keyof Schema;
   payload?: Payload;
 }

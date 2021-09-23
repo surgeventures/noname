@@ -8,7 +8,7 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, ModelFields, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel } from "./types";
+import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, ModelFields, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
 
@@ -67,7 +67,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
   static virtualFields: Record<string, RelationalField> = {};
   static readonly querySetClass = QuerySet;
   static isSetUp: boolean;
-  static _session: Session<any>;
+  static _session: SessionLike<any>;
   _fields: Partial<ModelAttrs<Attrs>>;
   static reducer: <Schema extends AnySchema, ModelClass extends Schema[keyof Schema]>(
     action: ReduxAction,
@@ -194,7 +194,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @private
    * @return {Session} The current {@link Session} instance.
    */
-  static get session(): Session<AnySchema> {
+  static get session(): SessionLike<AnySchema> {
     return this._session;
   }
 

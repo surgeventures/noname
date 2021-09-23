@@ -129,7 +129,7 @@ export type BookDescriptors = {
   publisher: TargetRelationship<Publisher, Relations.ForeignKey>;
 }
 export class Book extends Model<typeof Book, BookDescriptors> {
-  static modelName = "Book";
+  static modelName = "Book" as const;
   static fields = {
     id: attr(),
     name: attr(),
@@ -148,7 +148,7 @@ export type AuthorDescriptors = {
   publishers: TargetRelationship<Publisher, Relations.ManyToMany>;
 }
 export class Author extends Model<typeof Author, AuthorDescriptors> {
-  static modelName = "Author";
+  static modelName = "Author" as const;
   static fields = {
     id: attr(),
     name: attr(),
@@ -167,7 +167,7 @@ export type CoverDescriptors = {
   book: unknown;
 };
 export class Cover extends Model<typeof Cover, CoverDescriptors> {
-  static modelName = "Cover";
+  static modelName = "Cover" as const;
   static fields = {
     id: attr(),
     src: attr(),
@@ -181,7 +181,7 @@ export type GenreProps = {
 };
 
 export class Genre extends Model<typeof Genre, GenreProps> {
-  static modelName = "Genre";
+  static modelName = "Genre" as const;
   static fields = {
     id: attr(),
     name: attr(),
@@ -196,7 +196,7 @@ export type TagDescriptors = {
   books: unknown;
 };
 export class Tag extends Model<typeof Tag, TagDescriptors> {
-  static modelName = "Tag";
+  static modelName = "Tag" as const;
   static options() {
     return {
       idAttribute: "name",
@@ -217,7 +217,7 @@ export type PublisherDescriptors = {
 };
 
 export class Publisher extends Model<typeof Publisher, PublisherDescriptors> {
-  static modelName = "Publisher";
+  static modelName = "Publisher" as const;
   static fields = {
     id: attr(),
     name: attr(),
@@ -236,7 +236,7 @@ export type MovieDescriptors = {
 };
 
 export class Movie extends Model<typeof Movie, MovieDescriptors> {
-  static modelName = "Movie";
+  static modelName = "Movie" as const;
   static fields = {
     id: attr(),
     name: attr(),
