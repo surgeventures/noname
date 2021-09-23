@@ -1,12 +1,12 @@
-// import { ManyToMany } from "../../fields";
+import { ManyToMany } from "../../fields";
 
-// describe("Fields", () => {
-//   describe("ManyToMany", () => {
-//     describe("getDefault", () => {
-//       it("returns empty array", () => {
-//         const m2m = new ManyToMany();
-//         expect(m2m.getDefault()).toEqual([]);
-//       });
-//     });
-//   });
-// });
+describe("Fields", () => {
+  describe("ManyToMany", () => {
+    describe("getDefault", () => {
+      it("returns empty array", () => {
+        const m2m = new ManyToMany('descriptorKey');
+        expect(m2m.getDefault()).toEqual([]);
+      });
+    });
+  });
+});
