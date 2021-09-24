@@ -8,7 +8,7 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, ModelFields, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike } from "./types";
+import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
 
@@ -204,9 +204,9 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    *
    * @return {Object} An instance of the model's `querySetClass`.
    */
-  static getQuerySet(): QuerySet<AnyModel> {
+  static getQuerySet<M extends AnyModel>(): QuerySet<M> {
     const { querySetClass: QuerySetClass } = this;
-    return new QuerySetClass(this);
+    return new (castTo<QuerySetConstructor<M>>(QuerySetClass))(this);
   }
 
   /**

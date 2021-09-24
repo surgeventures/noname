@@ -3,12 +3,8 @@ import { normalizeEntity } from "./utils";
 
 import { UPDATE, DELETE, FILTER, EXCLUDE, ORDER_BY } from "./constants";
 import { AnyModel } from "./Model";
-import { ExtractModelClassType, SessionBoundModelConstructor, ModelId, QueryClause, Row, SessionBoundModel, SortIteratee, SortOrder } from "./types";
+import { ExtractModelClassType, SessionBoundModelConstructor, ModelId, QueryClause, Row, SessionBoundModel, SortIteratee, SortOrder, QuerySetConstructor } from "./types";
 import { castTo } from "./hacks";
-
-type QuerySetConstructor<M extends AnyModel, Payload extends object> = {
-  new (modelClass: ExtractModelClassType<M>, clauses?: QueryClause<Payload>[], opts?: object): QuerySet<M>;
-};
 
 /**
  * This class is used to build and make queries to the database

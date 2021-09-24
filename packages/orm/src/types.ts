@@ -65,6 +65,11 @@ export type SessionBoundModelConstructor<M extends AnyModel> = {
   new (props: Row<M>): SessionBoundModel<M>; 
 }
 
+
+export type QuerySetConstructor<M extends AnyModel, Payload extends object = {}> = {
+  new (modelClass: ExtractModelClassType<M>, clauses?: QueryClause<Payload>[], opts?: object): QuerySet<M>;
+}
+
 /**
  * 
  */

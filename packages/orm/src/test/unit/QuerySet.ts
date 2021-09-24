@@ -1,20 +1,20 @@
 import { Model, QuerySet } from "../..";
-import { castTo } from "../../hacks";
-import { ModelData, TableRow } from "../../types";
+import { Row, SessionBoundModel } from "../../types";
 import {
   createTestModels,
   createTestSessionWithData,
   ExtendedSession,
+  Schema,
 } from "../helpers";
 
 describe("QuerySet tests", () => {
   let session: ExtendedSession;
-  let bookQs: QuerySet;
-  let genreQs: QuerySet;
-  let tagQs: QuerySet;
+  let bookQs: QuerySet<InstanceType<Schema['Book']>>;
+  let genreQs: QuerySet<InstanceType<Schema['Genre']>>;
+  let tagQs: QuerySet<InstanceType<Schema['Tag']>>;
   beforeEach(() => {
     const result = createTestSessionWithData();
-    session = castTo<ExtendedSession>(result.session);
+    session = result.session;
     bookQs = session.Book.getQuerySet();
     genreQs = session.Genre.getQuerySet();
     tagQs = session.Tag.getQuerySet();
@@ -29,14 +29,14 @@ describe("QuerySet tests", () => {
   it("exists works correctly", () => {
     expect(bookQs.exists()).toBe(true);
 
-    const emptyQs = new QuerySet(session.Book, []).filter(() => false);
+    const emptyQs = new QuerySet<InstanceType<ExtendedSession['Book']>>(session.Book, []).filter(() => false);
 
     expect(emptyQs.exists()).toBe(false);
   });
 
   it("at works correctly", () => {
     expect(bookQs.at(0)).toBeInstanceOf(Model);
-    expect(bookQs.toRefArray()[0]).toBe(session.Book.withId(0)!.ref);
+    expect(bookQs.toRefArray()[0]).toBe<Row<InstanceType<ExtendedSession['Book']>>>(session.Book.withId(0)!.ref);
   });
 
   it("at doesn't return a Model instance if index is out of bounds", () => {
@@ -46,36 +46,38 @@ describe("QuerySet tests", () => {
   });
 
   it("first works correctly", () => {
-    expect(bookQs.first()).toEqual(bookQs.at(0));
+    expect(bookQs.first()).toEqual<SessionBoundModel<InstanceType<Schema['Book']>, {}> | undefined>(bookQs.at(0));
   });
 
   it("last works correctly", () => {
     const lastIndex = bookQs.count() - 1;
-    expect(bookQs.last()).toEqual(bookQs.at(lastIndex));
+    expect(bookQs.last()).toEqual<SessionBoundModel<InstanceType<Schema['Book']>, {}> | undefined>(bookQs.at(lastIndex));
   });
 
   it("all works correctly", () => {
     const all = bookQs.all();
 
     // Force evaluation of QuerySets
+    // ERROR: optionals are evaluated to undefined
     bookQs.toRefArray();
     all.toRefArray();
 
-    expect(all).not.toBe(bookQs);
+    expect(all).not.toBe<QuerySet<InstanceType<Schema['Book']>>>(bookQs);
     expect(all.rows).toHaveLength(bookQs.rows.length);
 
     for (let i = 0; i < all.rows.length; i++) {
-      expect(all.rows[i]).toBe(bookQs.rows[i]);
+      expect(all.rows[i]).toBe<Row<InstanceType<Schema['Book']>>>(bookQs.rows[i]);
     }
   });
 
   it("filter works correctly with object argument", () => {
     const filtered = bookQs.filter({ name: "Clean Code" });
     expect(filtered.count()).toBe(1);
-    expect(filtered.first()!.ref).toBe(session.Book.withId(1)!.ref);
+    expect(filtered.first()!.ref).toBe<Row<InstanceType<ExtendedSession['Book']>>>(session.Book.withId(1)!.ref);
   });
 
   it("filter works correctly with object argument, with model instance value", () => {
+    // ERROR: interface says Model | undefined, withId returns Model | null
     const filtered = bookQs.filter({
       author: session.Author.withId(0),
     });
@@ -85,13 +87,13 @@ describe("QuerySet tests", () => {
 
   it("orderBy works correctly with prop argument", () => {
     const ordered = bookQs.orderBy(["releaseYear"]);
-    const idArr = ordered.toRefArray().map((row: TableRow) => row.id);
+    const idArr = ordered.toRefArray().map(row => row.id);
     expect(idArr).toEqual([1, 2, 0]);
   });
 
   it("orderBy works correctly with function argument", () => {
-    const ordered = bookQs.orderBy([(book: ModelData) => book.releaseYear]);
-    const idArr = ordered.toRefArray().map((row: TableRow) => row.id);
+    const ordered = bookQs.orderBy([book => book.releaseYear]);
+    const idArr = ordered.toRefArray().map(row => row.id);
     expect(idArr).toEqual([1, 2, 0]);
   });
 
@@ -99,27 +101,29 @@ describe("QuerySet tests", () => {
     const excluded = bookQs.exclude({ name: "Clean Code" });
     expect(excluded.count()).toBe(2);
 
-    const idArr = excluded.toRefArray().map((row: TableRow) => row.id);
+    const idArr = excluded.toRefArray().map(row => row.id);
     expect(idArr).toEqual([0, 2]);
   });
 
   it("exclude works correctly with object argument, with model instance value", () => {
+    // ERROR: interface says Model | undefined, withId returns Model | null
     const excluded = bookQs.exclude({
       author: session.Author.withId(1),
     });
     expect(excluded.count()).toBe(2);
 
-    const idArr = excluded.toRefArray().map((row: TableRow) => row.id);
+    const idArr = excluded.toRefArray().map(row => row.id);
     expect(idArr).toEqual([0, 2]);
   });
 
   it("exclude works correctly with function argument", () => {
+    // ERROR: Row returns wrongly translated object, should be a plain object
     const excluded = bookQs.exclude(
-      ({ author }: { author: number }) => author === 1
+      ({ author }) => author === 1
     );
     expect(excluded.count()).toBe(2);
 
-    const idArr = excluded.toRefArray().map((row: TableRow) => row.id);
+    const idArr = excluded.toRefArray().map(row => row.id);
     expect(idArr).toEqual([0, 2]);
   });
 
@@ -138,58 +142,13 @@ describe("QuerySet tests", () => {
   });
 
   it("toString returns evaluated models", () => {
-    const firstTwoBooks = bookQs.filter(({ id }: TableRow) =>
-      [0, 1].includes(id)
+    const firstTwoBooks = bookQs.filter(({ id }) =>
+      [0, 1].includes(id as number)
     );
     expect(firstTwoBooks.toString()).toBe(`QuerySet contents:
     - Book: {id: 0, name: Tommi Kaikkonen - an Autobiography, releaseYear: 2050, author: 0, cover: 0, genres: [0, 1], tags: [Technology, Literary], publisher: 1}
     - Book: {id: 1, name: Clean Code, releaseYear: 2008, author: 1, cover: 1, genres: [2], tags: [Technology], publisher: 0}`);
   });
-
-  // it("custom methods works", () => {
-  //   const {
-  //     Book,
-  //     Genre,
-  //     Tag,
-  //     Cover,
-  //     Author,
-  //     Publisher,
-  //     Movie,
-  //   } = createTestModels();
-
-  //   const currentYear = 2015;
-  //   class CustomQuerySet extends QuerySet {
-  //     unreleased() {
-  //       return this.filter((book) => book.releaseYear > currentYear);
-  //     }
-  //   }
-  //   CustomQuerySet.addSharedMethod("unreleased");
-
-  //   Book.querySetClass = CustomQuerySet;
-
-  //   const orm = new ORM();
-  //   orm.register(Book, Genre, Tag, Cover, Author, Publisher, Movie);
-  //   const res = createTestSessionWithData(orm);
-  //   const sess = castTo<ExtendedSession>(res.session);
-
-  //   const customQs = sess.Book.getQuerySet();
-
-  //   expect(customQs).toBeInstanceOf(CustomQuerySet);
-
-  //   const unreleased = customQs.unreleased();
-  //   expect(unreleased.count()).toBe(1);
-
-  //   expect(unreleased.first().ref).toEqual({
-  //     id: 0,
-  //     name: "Tommi Kaikkonen - an Autobiography",
-  //     author: 0,
-  //     cover: 0,
-  //     releaseYear: 2050,
-  //     publisher: 1,
-  //   });
-  //   expect(sess.Book.unreleased().count()).toBe(1);
-  //   expect(sess.Book.filter({ name: "Clean Code" }).count()).toBe(1);
-  // });
 
   it("should throw a custom error when user try to interact with database without a session", () => {
     const { Book } = createTestModels();
