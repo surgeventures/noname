@@ -1,34 +1,35 @@
-import Model, {
+import {
   ORM,
-  Session,
-  Model as OrmModel,
   createReducer,
   createSelector,
+  QuerySet,
+  Model,
 } from "../..";
 import { castTo } from "../../hacks";
-import { ModelId, OrmState, ReduxAction } from "../../types";
+import { ModelId, OrmState, ReduxAction, Row, SessionLike, TableState, Ref } from "../../types";
 import {
+  Schema,
   createTestModels,
-  ExtendedSession,
-  MovieDescriptors,
-  PublisherDescriptors,
+  Publisher,
+  Movie,
 } from "../helpers";
 
 describe("Redux integration", () => {
-  let orm: ORM;
-  let Book: typeof Model;
-  let Cover: typeof Model;
-  let Genre: typeof Model;
-  let Tag: typeof Model;
-  let Author: typeof Model;
-  let Publisher: typeof Model;
-  let Movie: typeof Model;
-  let emptyState: OrmState;
-  let nextState: OrmState;
-  let ormReducer: (
-    state: OrmState | undefined,
-    action: ReduxAction
-  ) => OrmState;
+  let orm: ORM<Schema>;
+  let Book: Schema['Book'];
+  let Cover: Schema['Cover'];
+  let Genre: Schema['Genre'];
+  let Tag: Schema['Tag'];
+  let Author: Schema['Author'];
+  let Publisher: Schema['Publisher'];
+  let Movie: Schema['Movie'];
+  let emptyState: OrmState<Schema>;
+  let nextState: OrmState<Schema>;
+  // ERROR: should not accept not serialized objects
+  let ormReducer: <M extends Schema[keyof Schema]>(
+    state: OrmState<Schema> | undefined,
+    action: ReduxAction<Row<InstanceType<M>>>
+  ) => OrmState<Schema>;
 
   const CREATE_MOVIE = "CREATE_MOVIE";
   const CREATE_PUBLISHER = "CREATE_PUBLISHER";
@@ -39,27 +40,28 @@ describe("Redux integration", () => {
     Cover.reducer = jest.fn();
     Genre.reducer = jest.fn();
     Tag.reducer = jest.fn();
+    Movie.reducer<Schema, Schema['Movie']>({ type: 'asdas', payload: null }, Movie, orm.session())
     Movie.reducer = jest.fn(
-      (action: ReduxAction, Model: typeof OrmModel, _session: Session) => {
+      ((action: ReduxAction<Row<InstanceType<Schema[keyof Schema]>>>, Model: Schema['Movie']) => {
         switch (action.type) {
           case CREATE_MOVIE:
-            Model.create(action.payload);
+            Model.create(action.payload ? action.payload : {} as Row<InstanceType<Schema['Movie']>>);
             break;
           default:
             break;
         }
-      }
+      }) as any
     );
     Publisher.reducer = jest.fn(
-      (action: ReduxAction, Model: typeof OrmModel, _session: Session) => {
+      ((action: ReduxAction<Row<InstanceType<Schema['Publisher']>>>, Model: Schema['Publisher']) => {
         switch (action.type) {
           case CREATE_PUBLISHER:
-            Model.create(action.payload);
+            Model.create(action.payload ? action.payload : {} as Row<InstanceType<Schema['Publisher']>>);
             break;
           default:
             break;
         }
-      }
+      }) as any
     );
   };
 
@@ -73,7 +75,7 @@ describe("Redux integration", () => {
       Movie,
       Publisher,
     } = createTestModels());
-    orm = new ORM();
+    orm = new ORM<Schema>();
     orm.register(Book, Cover, Genre, Tag, Author, Movie, Publisher);
     ormReducer = createReducer(orm);
     createModelReducers();
@@ -104,7 +106,7 @@ describe("Redux integration", () => {
         name: "Let there be a movie",
       },
     });
-    expect(nextState.Movie.itemsById).toEqual({
+    expect(nextState.Movie.itemsById).toEqual<TableState<typeof Movie>['itemsById']>({
       0: {
         id: 0,
         name: "Let there be a movie",
@@ -138,9 +140,9 @@ describe("Redux integration", () => {
     });
 
     it("arbitrary filters", () => {
-      const memoized = jest.fn((selectorSession) =>
+      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
         selectorSession.Movie.filter(
-          (movie: MovieDescriptors) => movie.name === "Getting started with filters"
+          movie => movie.name === "Getting started with filters"
         ).toRefArray()
       );
       const selector = createSelector(orm, memoized);
@@ -162,7 +164,7 @@ describe("Redux integration", () => {
     });
 
     it("id lookups", () => {
-      const memoized = jest.fn((selectorSession) => {
+      const memoized = jest.fn((selectorSession: SessionLike<Schema>) => {
         return selectorSession.Movie.withId(0)
       });
       const selector = createSelector(orm, memoized);
@@ -185,7 +187,7 @@ describe("Redux integration", () => {
     });
 
     it("empty QuerySets", () => {
-      const memoized = jest.fn((selectorSession) =>
+      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
         selectorSession.Movie.all().toModelArray()
       );
       const selector = createSelector(orm, memoized);
@@ -208,8 +210,8 @@ describe("Redux integration", () => {
     });
 
     it("Model updates", () => {
-      const session = orm.session() as ExtendedSession;
-      const memoized = jest.fn((selectorSession) =>
+      const session = orm.session();
+      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
         selectorSession.Movie.withId(0)
       );
       const selector = createSelector(orm, memoized);
@@ -223,7 +225,7 @@ describe("Redux integration", () => {
       selector(session.state);
       expect(memoized).toHaveBeenCalledTimes(1);
 
-      castTo<MovieDescriptors>(movie).name = "Updated name";
+      movie.name = "Updated name";
 
       selector(session.state);
       expect(memoized).toHaveBeenCalledTimes(2);
@@ -231,12 +233,12 @@ describe("Redux integration", () => {
 
     it("Model deletions", () => {
       const session = orm.session();
-      const memoized = jest.fn((selectorSession) =>
+      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
         selectorSession.Movie.withId(0)
       );
       const selector = createSelector(orm, memoized);
 
-      const movie = (session as ExtendedSession).Movie.create({
+      const movie = session.Movie.create({
         name: "Name after creation",
       });
 
@@ -252,15 +254,15 @@ describe("Redux integration", () => {
     });
 
     it("foreign key descriptors", () => {
-      const memoized = jest.fn((selectorSession) =>
+      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
         selectorSession.Movie.all()
           .toModelArray()
           .reduce(
-            (map: Record<ModelId, object>, movie: MovieDescriptors) => ({
+            (map, movie) => ({
               ...map,
-              [movie.id]: movie.publisher ? movie.publisher.ref : null,
+              [movie.id!]: movie.publisher ? movie.publisher.ref : null,
             }),
-            {}
+            {} as Record<ModelId, Ref<Publisher> | null>
           )
       );
       const selector = createSelector(orm, memoized);
@@ -269,7 +271,7 @@ describe("Redux integration", () => {
       expect(selector(emptyState)).toEqual({});
       expect(memoized).toHaveBeenCalledTimes(1);
 
-      nextState = ormReducer(emptyState, {
+      nextState = ormReducer<Schema['Movie']>(emptyState, {
         type: CREATE_MOVIE,
         payload: {
           id: 532,
@@ -284,7 +286,7 @@ describe("Redux integration", () => {
       expect(memoized).toHaveBeenCalledTimes(2);
 
       // random other publisher that should be of no interest
-      nextState = ormReducer(nextState, {
+      nextState = ormReducer<Schema['Publisher']>(nextState, {
         type: CREATE_PUBLISHER,
         payload: {
           id: 999,
@@ -297,7 +299,7 @@ describe("Redux integration", () => {
       });
       expect(memoized).toHaveBeenCalledTimes(2);
 
-      nextState = ormReducer(nextState, {
+      nextState = ormReducer<Schema['Publisher']>(nextState, {
         type: CREATE_PUBLISHER,
         payload: {
           id: 123,
@@ -313,24 +315,28 @@ describe("Redux integration", () => {
       });
       expect(memoized).toHaveBeenCalledTimes(3);
 
-      const session = orm.session(nextState) as ExtendedSession;
+      const session = orm.session(nextState);
       expect(
-        castTo<PublisherDescriptors>(session.Publisher.withId(123)!).movies.count()
+        // Movies is backwards relation key
+        castTo<QuerySet<Movie>>(session.Publisher.withId(123)!.movies).count()
       ).toBe(1);
     });
 
     it("custom Model table options", () => {
-      class CustomizedModel extends OrmModel {
+      type CustomizedModelDescriptors = {
+        name: string;
+      }
+      class CustomizedModel extends Model<typeof CustomizedModel, CustomizedModelDescriptors> {
         static modelName = "CustomizedModel";
       }
 
-      const _orm = new ORM();
-      _orm.register(CustomizedModel);
-      const session = castTo<
-        Session & { CustomizedModel: typeof CustomizedModel }
-      >(_orm.session());
+      type Schema = { CustomizedModel: typeof CustomizedModel };
 
-      const memoized = jest.fn((selectorSession) =>
+      const _orm = new ORM<Schema>();
+      _orm.register(CustomizedModel);
+      const session = _orm.session();
+
+      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
         selectorSession.CustomizedModel.count()
       );
       const selector = createSelector(_orm, memoized);
@@ -342,43 +348,6 @@ describe("Redux integration", () => {
       });
       selector(session.state);
       expect(memoized).toHaveBeenCalledTimes(2);
-    });
-
-    it("input selectors", () => {
-      const _selectorFunc = jest.fn();
-
-      const selector = createSelector(
-        orm,
-        (state: { orm: OrmState }) => state.orm,
-        (state: { selectedUser: object }) => state.selectedUser,
-        _selectorFunc
-      );
-
-      const _state = orm.getEmptyState();
-
-      const appState = {
-        orm: _state,
-        selectedUser: 5,
-      };
-
-      expect(typeof selector).toBe("function");
-
-      selector(appState);
-      expect(_selectorFunc.mock.calls).toHaveLength(1);
-
-      const lastCall =
-        _selectorFunc.mock.calls[_selectorFunc.mock.calls.length - 1];
-      expect(lastCall[0]).toBeInstanceOf(Session);
-      expect(lastCall[0].state).toBe(_state);
-      expect(lastCall[1]).toBe(5);
-
-      selector(appState);
-      expect(_selectorFunc.mock.calls).toHaveLength(1);
-
-      const otherUserState = Object.assign({}, appState, { selectedUser: 0 });
-
-      selector(otherUserState);
-      expect(_selectorFunc.mock.calls).toHaveLength(2);
     });
   });
 });

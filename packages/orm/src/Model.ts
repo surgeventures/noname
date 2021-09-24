@@ -8,7 +8,7 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike } from "./types";
+import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike, SessionBoundModelConstructor } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
 
@@ -69,9 +69,9 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
   static isSetUp: boolean;
   static _session: SessionLike<any>;
   _fields: Partial<ModelAttrs<Attrs>>;
-  static reducer: <Schema extends AnySchema, ModelClass extends Schema[keyof Schema]>(
-    action: ReduxAction,
-    modelClass: ModelClass,
+  static reducer: <Schema extends AnySchema, ModelClassType extends Schema[keyof Schema]>(
+    action: ReduxAction<Row<InstanceType<ModelClassType>>>,
+    modelClass: ModelClassType,
     session: Session<Schema>
   ) => void;
 
@@ -204,9 +204,9 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    *
    * @return {Object} An instance of the model's `querySetClass`.
    */
-  static getQuerySet<M extends AnyModel>(): QuerySet<M> {
+  static getQuerySet<M extends typeof AnyModel>(this: M): QuerySet<InstanceType<M>> {
     const { querySetClass: QuerySetClass } = this;
-    return new (castTo<QuerySetConstructor<M>>(QuerySetClass))(this);
+    return new (castTo<QuerySetConstructor<InstanceType<M>>>(QuerySetClass))(this);
   }
 
   /**
@@ -220,7 +220,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
   /**
    * @see {@link Model.getQuerySet}
    */
-  static get query(): QuerySet<AnyModel> {
+  static get query() {
     return this.getQuerySet();
   }
 
@@ -243,7 +243,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {props} userProps - the new {@link Model}'s properties.
    * @return {Model} a new {@link Model} instance.
    */
-  static create<Fields extends ModelFieldMap, Props extends ModelAttrs<Fields>>(userProps: Partial<Props>) {
+  static create<M extends typeof AnyModel, Fields extends ModelFieldMap, Props extends ModelAttrs<Fields>>(this: M, userProps: Partial<Props>): SessionBoundModel<InstanceType<M>> {
     if (typeof this._session === "undefined") {
       throw new Error(
         [
@@ -298,8 +298,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       payload: props,
     });
 
-    const ThisModel = this;
-    const instance = new ThisModel<typeof ThisModel, Props>(newEntry);
+    const ThisModel = castTo<SessionBoundModelConstructor<InstanceType<M>>>(this);
+    const instance = new ThisModel(newEntry);
     instance._refreshMany2Many(m2mRelations); // eslint-disable-line no-underscore-dangle
     return instance;
   }
@@ -347,7 +347,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @throws If object with id `id` doesn't exist
    * @return {Model|null} {@link Model} instance with id `id`
    */
-  static withId(id: ModelId) {
+  static withId<M extends typeof AnyModel>(this: M, id: ModelId): SessionBoundModel<InstanceType<M>> | null {
     return this.get({
       [this.idAttribute]: id,
     });
@@ -362,7 +362,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    *
    * @since 0.11.0
    */
-  static idExists(id: ModelId) {
+  static idExists(id: ModelId): boolean {
     return this.exists({
       [this.idAttribute]: id,
     });
@@ -375,7 +375,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {*}  props - a key-value that {@link Model} instances should have to be considered as existing.
    * @return {Boolean} a boolean indicating if entity with `props` exists in the state
    */
-  static exists<LookupObj extends {}>(lookupObj: LookupObj) {
+  static exists<LookupObj extends {}>(lookupObj: LookupObj): boolean {
     if (typeof this.session === "undefined") {
       throw new Error(
         [
@@ -398,10 +398,10 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @throws {Error} If more than one entity matches the properties in `lookupObj`.
    * @return {Model} a {@link Model} instance that matches the properties in `lookupObj`.
    */
-  static get<LookupObj extends {}>(lookupObj: LookupObj) {
-    const ThisModel = this;
+  static get<M extends typeof AnyModel, LookupObj extends Row<InstanceType<M>>>(this: M, lookupObj: LookupObj): SessionBoundModel<InstanceType<M>> | null {
+    const ThisModel = castTo<SessionBoundModelConstructor<InstanceType<M>>>(this);
 
-    const rows = this._findDatabaseRows(lookupObj);
+    const rows = this._findDatabaseRows<LookupObj, InstanceType<M>>(lookupObj);
     if (rows.length === 0) {
       return null;
     }
@@ -508,7 +508,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {Model} otherModel - a {@link Model} instance to compare
    * @return {Boolean} a boolean indicating if the {@link Model} instance's are equal.
    */
-  equals<OtherMClass extends typeof AnyModel = typeof AnyModel, OtherAttrs extends ModelFieldMap = ModelFieldMap>(otherModel: Model<OtherMClass, OtherAttrs>) {
+  equals<OtherMClass extends typeof AnyModel = typeof AnyModel, OtherAttrs extends ModelFieldMap = ModelFieldMap>(otherModel: Model<OtherMClass, OtherAttrs>): boolean {
     // eslint-disable-next-line no-underscore-dangle
     return objectShallowEquals(this._fields, otherModel._fields);
   }
@@ -749,39 +749,40 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     return this.getQuerySet().count();
   }
 
-  static at(index: number): SessionBoundModel | undefined {
+  static at<M extends typeof AnyModel>(this: M, index: number): SessionBoundModel<InstanceType<M>> | undefined {
     return this.getQuerySet().at(index);
   }
 
-  static all(): QuerySet {
+  static all<M extends typeof AnyModel>(this: M): QuerySet<InstanceType<M>> {
     return this.getQuerySet().all();
   }
 
-  static first(): SessionBoundModel | undefined {
+  static first<M extends typeof AnyModel>(this: M): SessionBoundModel<InstanceType<M>> | undefined {
     return this.getQuerySet().first();
   }
 
-  static last(): SessionBoundModel | undefined {
+  static last<M extends typeof AnyModel>(this: M): SessionBoundModel<InstanceType<M>> | undefined {
     return this.getQuerySet().last();
   }
 
-  static filter(lookupObj: Partial<Row<AnyModel>> | ((row: Row<AnyModel>) => boolean)): QuerySet {
+  static filter<M extends typeof AnyModel>(this: M, lookupObj: Partial<Row<InstanceType<M>>> | ((row: Row<InstanceType<M>>) => boolean)): QuerySet<InstanceType<M>> {
     return this.getQuerySet().filter(lookupObj);
   }
 
-  static exclude(lookupObj: Partial<Row<AnyModel>> | ((row: Row<AnyModel>) => boolean)): QuerySet {
+  static exclude<M extends typeof AnyModel>(this: M, lookupObj: Partial<Row<InstanceType<M>>> | ((row: Row<InstanceType<M>>) => boolean)): QuerySet<InstanceType<M>> {
     return this.getQuerySet().exclude(lookupObj);
   }
 
-  static orderBy(
-    iteratees: SortIteratee<AnyModel> | ReadonlyArray<SortIteratee<AnyModel>>,
+  static orderBy<M extends typeof AnyModel>(
+    this: M,
+    iteratees: SortIteratee<InstanceType<M>> | ReadonlyArray<SortIteratee<InstanceType<M>>>,
     orders?: SortOrder | ReadonlyArray<SortOrder>
-  ): QuerySet {
+  ): QuerySet<InstanceType<M>> {
     return this.getQuerySet().orderBy(iteratees, orders);
   }
 
   static update(mergeObj: Partial<ModelAttrs>): void {
-    return this.getQuerySet().update(mergeObj);
+    this.getQuerySet().update(mergeObj);
   }
 
   static delete(): void {

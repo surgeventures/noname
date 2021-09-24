@@ -3,7 +3,7 @@ import { ModelClassMap } from './Model';
 
 import { memoize } from "./memoize";
 import ORM from "./ORM";
-import { OrmState, OrmSelector, Selector, ReduxAction } from "./types";
+import { OrmState, OrmSelector, Selector, ReduxAction, Row } from "./types";
 
 /**
  * @module redux
@@ -13,7 +13,7 @@ import { OrmState, OrmSelector, Selector, ReduxAction } from "./types";
  * Calls all models' reducers if they exist.
  * @return {undefined}
  */
-export function defaultUpdater<Schema extends ModelClassMap>(session: Session<Schema>, action: ReduxAction) {
+export function defaultUpdater<Schema extends ModelClassMap>(session: Session<Schema>, action: ReduxAction<Row<InstanceType<Schema[keyof Schema]>>>) {
   session.sessionBoundModels.forEach((modelClass) => {
     if (typeof modelClass.reducer === "function") {
       // This calls this.applyUpdate to update this.state
@@ -32,9 +32,9 @@ export function defaultUpdater<Schema extends ModelClassMap>(session: Session<Sc
  * @return {Function} reducer that will update the ORM state.
  */
 export function createReducer<Schema extends ModelClassMap>(orm: ORM<Schema>, updater = defaultUpdater) {
-  return (state: OrmState<Schema> | undefined, action: ReduxAction): OrmState<Schema> => {
+  return (state: OrmState<Schema> | undefined, action: ReduxAction<Row<InstanceType<Schema[keyof Schema]>>>): OrmState<Schema> => {
     const session = orm.session(state || orm.getEmptyState());
-    updater(session, action);
+    updater<Schema>(session, action);
     return session.state;
   };
 }
@@ -92,8 +92,8 @@ export function createReducer<Schema extends ModelClassMap>(orm: ORM<Schema>, up
  */
 export function createSelector<
 Result,
-Schema extends ModelClassMap,
-O extends ORM<Schema>,
+Schema extends ModelClassMap = any,
+O extends ORM<Schema> = ORM<Schema>,
 Args extends unknown[] = []
 >(
   orm: O,

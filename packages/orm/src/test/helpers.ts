@@ -1,5 +1,5 @@
 import ORM from "../ORM";
-import Model from "../Model";
+import Model, { ModelClassMap } from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
 import { ModelId, Relations, SessionLike, TargetRelationship } from "../types";
 

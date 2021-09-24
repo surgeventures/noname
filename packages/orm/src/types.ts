@@ -393,16 +393,16 @@ export type TableSpec = TableOpts;
  */
 export type SchemaSpec<Schema extends ModelClassMap> = {
   tables: {
-    [K in keyof Schema]: ModelTableOpts<Schema[keyof Schema]>;
+    [K in keyof Schema]: ModelTableOpts<Schema[K]>;
   };
 };
 
 /**
  * 
  */
-export type ReduxAction<T = any> = {
+export type ReduxAction<Payload = {}> = {
   type: string;
-  payload: T;
+  payload: Payload | null;
 };
 
 /**
@@ -436,7 +436,7 @@ export type OrmSelector<
 Result,
 Schema extends ModelClassMap,
 Args extends unknown[]
-> = (session: Session<Schema>, ...args: Args) => Result;
+> = (session: SessionLike<Schema>, ...args: Args) => Result;
 
 /**
  * 
