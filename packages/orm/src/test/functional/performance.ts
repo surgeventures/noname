@@ -1,6 +1,7 @@
 import { Model, ORM, attr, many } from "../..";
 import { castTo } from "../../hacks";
-import { measureMs, nTimes, avg, round, IManyQuerySet } from "../helpers";
+import { Relations, SessionBoundModel, SessionLike, TargetRelationship } from "../../types";
+import { measureMs, nTimes, avg, round } from "../helpers";
 
 const crypto = require("crypto");
 
@@ -22,25 +23,26 @@ const logTime = (
   console.log(out);
 };
 
-const randomName = () => crypto.randomBytes(16).toString("hex");
+const randomName = (): string => crypto.randomBytes(16).toString("hex");
 
 describe("Big Data Test", () => {
-  type ExtendedSession = {
-    Item: typeof Model;
-  };
+  class Item extends Model {
+    static modelName = "Item";
+    static fields = {
+      id: attr(),
+      name: attr(),
+    };
+  }
 
-  let orm: ORM;
+  type Schema = {
+    Item: typeof Item;
+  }
+  type ExtendedSession = SessionLike<Schema>;
+
+  let orm: ORM<Schema>;
   let session: ExtendedSession;
 
   beforeEach(() => {
-    class Item extends Model {
-      static modelName = "Item";
-      static fields = {
-        id: attr(),
-        name: attr(),
-      };
-    }
-
     orm = new ORM();
     orm.register(Item);
     session = castTo<ExtendedSession>(orm.session(orm.getEmptyState()));
@@ -123,39 +125,40 @@ describe("Big Data Test", () => {
 });
 
 describe("Many-to-many relationship performance", () => {
-  type ParentProps = {
-    children: IManyQuerySet<typeof Model & ChildProps>;
+  type ParentDescriptors = {
+    children: TargetRelationship<Child, Relations.ManyToMany>;
+    name: string;
   };
 
-  type ChildProps = {
-    parent: typeof Model & ParentProps;
+  type ChildDescriptors = {
+    parent: typeof Parent;
   };
+  class Parent extends Model<typeof Parent, ParentDescriptors> {
+    static modelName = "Parent" as const;
+    static fields = {
+      id: attr(),
+      name: attr(),
+      children: many("Child", "parent"),
+    };
+  }
 
-  type CustomSession = {
-    Parent: typeof Model & ParentProps;
-    Child: typeof Model & ChildProps;
-  };
+  class Child extends Model<typeof Child, ChildDescriptors> {
+    static modelName = "Child" as const;
+  }
 
-  let orm;
-  let session: CustomSession;
+
+  type Schema = {
+    Child: typeof Child;
+    Parent: typeof Parent;
+  }
+
+  let orm: ORM<Schema>;
+  let session: SessionLike<Schema>;
 
   beforeEach(() => {
-    class Parent extends Model {
-      static modelName = "Parent";
-      static fields = {
-        id: attr(),
-        name: attr(),
-        children: many("Child", "parent"),
-      };
-    }
-
-    class Child extends Model {
-      static modelName = "Child";
-    }
-
-    orm = new ORM();
+    orm = new ORM<Schema>();
     orm.register(Parent, Child);
-    session = castTo<CustomSession>(orm.session(orm.getEmptyState()));
+    session = orm.session(orm.getEmptyState());
   });
 
   const createChildren = (start: number, end: number) => {
@@ -168,7 +171,7 @@ describe("Many-to-many relationship performance", () => {
   };
 
   const assignChildren = (
-    parent: Model & ParentProps,
+    parent: SessionBoundModel<Parent>,
     start: number,
     end: number
   ) => {
@@ -181,18 +184,16 @@ describe("Many-to-many relationship performance", () => {
     const { Parent } = session;
 
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
-    let parent: Model & ParentProps;
+    let parent: SessionBoundModel<Parent>;
     const n = 5;
     const childAmount = 1000;
     createChildren(0, 8000);
 
     const measurements = nTimes(n)
       .map((_value, index) => {
-        parent = castTo<Model & ParentProps>(
-          Parent.create({
-            id: index,
-          })
-        );
+        parent = Parent.create({
+          id: index,
+        });
         return measureMs(() => {
           assignChildren(parent, 0, childAmount);
         });
@@ -217,13 +218,13 @@ describe("Many-to-many relationship performance", () => {
     const queryCount = 500;
     const parent = Parent.create({ id: 1 });
     createChildren(0, 10000);
-    assignChildren(castTo<Model & ParentProps>(parent), 0, 3000);
+    assignChildren(parent, 0, 3000);
 
     const measurements = nTimes(n)
       .map((_value, _index) =>
         measureMs(() => {
           for (let i = 0; i < queryCount; ++i) {
-            castTo<ParentProps>(parent).children.count();
+            parent.children.count();
           }
         })
       )
@@ -248,7 +249,7 @@ describe("Many-to-many relationship performance", () => {
 
     const parent = Parent.create({ id: 1 });
     createChildren(0, removeCount * n);
-    assignChildren(castTo<Model & ParentProps>(parent), 0, removeCount * n);
+    assignChildren(parent, 0, removeCount * n);
 
     const measurements = nTimes(n)
       .map((_value, index) => {
@@ -256,14 +257,14 @@ describe("Many-to-many relationship performance", () => {
         const end = removeCount + start;
         const ms = measureMs(() => {
           for (let i = start; i < end; ++i) {
-            castTo<ParentProps>(parent).children.remove(i);
+            parent.children.remove(i);
           }
         });
         /**
          * reassign children to parent (undo the above code)
          * otherwise the removal will speed up the removal of further children
          */
-        assignChildren(castTo<Model & ParentProps>(parent), start, end);
+        assignChildren(parent, start, end);
         return ms;
       })
       .map((ms: number) => ms / 1000);
