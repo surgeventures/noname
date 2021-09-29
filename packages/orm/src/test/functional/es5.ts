@@ -1,28 +1,29 @@
 import ORM from "../../ORM";
-import Session from "../../Session";
 import Model from "../../Model";
-import { castTo } from "../../hacks";
+import { SessionLike } from "../../types";
 
 describe("ES5 library code", () => {
   describe("With ES6 client code", () => {
-    let orm: ORM;
-    let session: Session;
+    class Book extends Model<typeof Book> {
+      static modelName = "Book";
+    }
+    type Schema = {
+      Book: typeof Book;
+    };
+    let orm: ORM<Schema>;
+    let session: SessionLike<Schema>;
+
     beforeEach(() => {
-      class Book extends Model {
-        static modelName = "Book";
-      }
-      orm = new ORM();
+      orm = new ORM<Schema>();
       orm.register(Book);
       session = orm.session();
     });
-    it("Model CRUD works", () => {
-      let book: Model;
-      expect(() => {
-        type SessionWithBook = {
-          Book: typeof Model;
-        };
 
-        book = castTo<SessionWithBook>(session).Book.create({
+    it("Model CRUD works", () => {
+      let book: typeof Book;
+
+      expect(() => {
+        book = session.Book.create({
           id: 1,
           title: "title",
         });
