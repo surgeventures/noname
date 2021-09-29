@@ -1,36 +1,31 @@
 import deepFreeze from "deep-freeze";
-import { Model, QuerySet, ORM, attr, Session } from "../..";
+import { Model, QuerySet, ORM, attr } from "../..";
+import { AnyModel } from "../../Model";
 import { castTo } from "../../hacks";
-import { OrmState, TableRow } from "../../types";
+import { ModelAttrs, OrmState, Ref, ModelId, SessionBoundModel } from "../../types";
 import {
   Author,
-  AuthorDescriptors,
   BookDescriptors,
   createTestSessionWithData,
   ExtendedSession,
-  MovieDescriptors,
-  Publisher as PublisherType,
-  PublisherDescriptors,
-  GenreProps,
   TagDescriptors,
   Book,
   Movie,
+  Schema,
+  Publisher,
 } from "../helpers";
 
-type WithSetter = {
-  author: Author | number | null;
-};
 
 describe("Immutable session", () => {
   let session: ExtendedSession;
-  let state: OrmState;
+  let state: OrmState<Schema>;
 
   beforeEach(() => {
     // Deep freeze state. This will raise an error if we
     // mutate the state.
 
     const result = createTestSessionWithData();
-    session = castTo<ExtendedSession>(result.session);
+    session = result.session;
     state = result.state;
 
     deepFreeze(state);
@@ -38,7 +33,7 @@ describe("Immutable session", () => {
 
   it("Initial data bootstrapping results in a correct state", () => {
     expect(state).toEqual(
-      expect.objectContaining({
+      expect.objectContaining<OrmState<Schema>>({
         Book: expect.anything(),
         Cover: expect.anything(),
         Genre: expect.anything(),
@@ -47,6 +42,8 @@ describe("Immutable session", () => {
         BookGenres: expect.anything(),
         BookTags: expect.anything(),
         Movie: expect.anything(),
+        Publisher: expect.anything(),
+        TagSubTags: expect.anything(),
       })
     );
 
@@ -79,11 +76,8 @@ describe("Immutable session", () => {
   });
 
   it("Models correctly indicate if id exists", () => {
-    type SessionWithBook = {
-      Book: typeof Model;
-    };
+    const { Book } = session;
 
-    const { Book } = castTo<SessionWithBook>(session);
     expect(Book.idExists(0)).toBe(true);
     expect(Book.idExists(92384)).toBe(false);
     expect(Book.idExists()).toBe(false);
@@ -98,7 +92,7 @@ describe("Immutable session", () => {
       publisher: 0,
     });
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe(book.ref);
+    expect(session.Book.last()!.ref).toBe<Ref<Book>>(book.ref);
   });
 
   it("Model.getId works", () => {
@@ -110,7 +104,7 @@ describe("Immutable session", () => {
   it("Model.create throws if passing duplicate ids to many-to-many field", () => {
     const { Book } = session;
 
-    const newProps = {
+    const newProps: ModelAttrs<BookDescriptors> = {
       name: "New Book",
       author: 0,
       releaseYear: 2015,
@@ -147,15 +141,15 @@ describe("Immutable session", () => {
 
   it("Models correctly update when setting properties", () => {
     const { Book } = session;
-    const book = Book.first();
+    const book = Book.first()!;
     const newName = "New Name";
-    castTo<BookDescriptors>(book).name = newName;
-    expect(castTo<BookDescriptors>(session.Book.first()).name).toBe(newName);
+    book.name = newName;
+    expect(session.Book.first()!.name).toBe(newName);
   });
 
   it("Model.toString works", () => {
     const { Book } = session;
-    const book = Book.first() as Model;
+    const book = Book.first()!;
     expect(book.toString()).toBe(
       "Book: {id: 0, name: Tommi Kaikkonen - an Autobiography, " +
         "releaseYear: 2050, author: 0, cover: 0, genres: [0, 1], tags: [Technology, Literary], publisher: 1}"
@@ -170,6 +164,7 @@ describe("Immutable session", () => {
   it("get returns null if model instance not found", () => {
     const { Book } = session;
     expect(
+      // ERROR: can narrow the type of the object to attributes extending the interface
       Book.get({
         name: "does not exist",
       })
@@ -188,14 +183,15 @@ describe("Immutable session", () => {
 
   it("updating arbitrary fields created during model construction works", () => {
     const { Book } = session;
-    const book = new Book({ someNumber: 123 });
-    expect((book as { [k: string]: any }).someNumber).toBe(123);
-    (book as { [k: string]: any }).someNumber = 321;
-    expect((book as { [k: string]: any }).someNumber).toBe(321);
+    const book = new Book({ someNumber: 123 } as any);
+    expect((book as any).someNumber).toBe(123);
+    (book as any).someNumber = 321;
+    expect((book as any).someNumber).toBe(321);
   });
 
   it("Models correctly create a new instance via upsert when not passing an ID", () => {
     const { Book } = session;
+    // ERROR: upsert should accept the attrs only that extend the interface
     const book = Book.upsert({
       name: "New Book",
       author: 0,
@@ -203,8 +199,8 @@ describe("Immutable session", () => {
       publisher: 0,
     });
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe(book.ref);
-    expect(book).toBeInstanceOf(Book);
+    expect(session.Book.last()!.ref).toBe<Ref<Book>>(book.ref);
+    expect(book).toBeInstanceOf<typeof Book>(Book);
   });
 
   it("Models correctly create a new instance via upsert when passing a non-existant ID", () => {
@@ -217,8 +213,8 @@ describe("Immutable session", () => {
       publisher: 0,
     });
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe(book.ref);
-    expect(book).toBeInstanceOf(Book);
+    expect(session.Book.last()!.ref).toBe<Ref<Book>>(book.ref);
+    expect(book).toBeInstanceOf<typeof Book>(Book);
   });
 
   it("Models correctly update existing instance via upsert", () => {
@@ -230,8 +226,8 @@ describe("Immutable session", () => {
       publisher: 0,
     });
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe(book.ref);
-    expect(castTo<BookDescriptors>(session.Book.last()).releaseYear).toBe(2015);
+    expect(session.Book.last()!.ref).toBe<Ref<Book>>(book.ref);
+    expect(session.Book.last()!.releaseYear).toBe<number>(2015);
 
     const { ref: storedRef } = book;
     const nextBook = Book.upsert({
@@ -240,54 +236,54 @@ describe("Immutable session", () => {
     });
 
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe(nextBook.ref);
-    expect(castTo<BookDescriptors>(session.Book.last()).releaseYear).toBe(2016);
-    expect(session.Book.last()!.ref).not.toBe(storedRef);
-    expect(book.ref).toBe(nextBook.ref);
-    expect(nextBook).toBeInstanceOf(Book);
+    expect(session.Book.last()!.ref).toBe<Ref<Book>>(nextBook.ref);
+    expect(session.Book.last()!.releaseYear).toBe<number>(2016);
+    expect(session.Book.last()!.ref).not.toBe<Ref<Book>>(storedRef);
+    expect(book.ref).toBe<Ref<Book>>(nextBook.ref);
+    expect(nextBook).toBeInstanceOf<typeof Book>(Book);
   });
 
   it("Model updates preserve instance reference if fields are referentially equal", () => {
     const { Movie } = session;
 
-    const movie = Movie.first() as Model;
-    const { name, characters, meta } = castTo<MovieDescriptors>(movie);
+    const movie = Movie.first()!;
+    const { name, characters, meta } = movie;
     const oldRef = movie.ref;
 
     movie.update({ name });
-    expect(oldRef).toBe(movie.ref);
+    expect(oldRef).toBe<Ref<Movie>>(movie.ref);
 
     movie.update({ meta });
-    expect(oldRef).toBe(movie.ref);
+    expect(oldRef).toBe<Ref<Movie>>(movie.ref);
 
     movie.update({ characters });
-    expect(oldRef).toBe(movie.ref);
+    expect(oldRef).toBe<Ref<Movie>>(movie.ref);
   });
 
   it("Model updates change instance reference if string field changes", () => {
     const { Movie } = session;
 
-    const movie = Movie.first() as Model;
+    const movie = Movie.first()!;
     const oldRef = movie.ref;
 
     movie.update({ name: "New name" });
-    expect(oldRef).not.toBe(movie.ref);
+    expect(oldRef).not.toBe<Ref<Movie>>(movie.ref);
   });
 
   it("Model updates change instance reference if object field changes reference", () => {
     const { Movie } = session;
 
-    const movie = Movie.first() as Model;
+    const movie = Movie.first()!;
     const oldRef = movie.ref;
 
     movie.update({ meta: {} });
-    expect(oldRef).not.toBe(movie.ref);
+    expect(oldRef).not.toBe<Ref<Movie>>(movie.ref);
   });
 
   it("Model updates only change instance reference if equals returns false", () => {
     const { Movie } = session;
 
-    const movie = Movie.first() as Model;
+    const movie = Movie.first()!;
     const oldRef = movie.ref;
 
     movie.equals = (_otherModel) => true;
@@ -298,44 +294,44 @@ describe("Immutable session", () => {
       characters: [],
       meta: {},
     });
-    expect(oldRef).toBe(movie.ref);
+    expect(oldRef).toBe<Ref<Movie>>(movie.ref);
 
     const movie2 = Movie.create({
       characters: ["Joker"],
     });
     const oldRef2 = movie2.ref;
-    movie2.equals = function characterAmountsEqual(otherModel) {
+    movie2.equals = function characterAmountsEqual(otherModel: AnyModel) {
       return (
-        this._fields.characters.length === otherModel._fields.characters.length
+        this._fields.characters?.length === (otherModel._fields.characters as string[])?.length
       );
     };
 
     // length of characters array is equal, should not cause change of reference
     movie2.update({ characters: ["Joker"] });
-    expect(oldRef2).toBe(movie2.ref);
+    expect(oldRef2).toBe<Ref<Movie>>(movie2.ref);
 
     // length of characters array has changed, should cause change of reference
     movie2.update({ characters: ["Joker", "Mickey Mouse"] });
-    expect(oldRef2).not.toBe(movie2.ref);
+    expect(oldRef2).not.toBe<Ref<Movie>>(movie2.ref);
     const newRef2 = movie2.ref;
 
     // length of characters array has not changed, should cause change of reference
     movie2.update({ characters: ["Batman", "Catwoman"] });
-    expect(newRef2).toBe(movie2.ref);
+    expect(newRef2).toBe<Ref<Movie>>(movie2.ref);
   });
 
   it("Model updates preserve relations if only other fields are changed", () => {
     const { Book } = session;
 
     const genres = [1, 2];
-    const book = castTo<typeof Book & BookDescriptors>(
-      Book.create({
-        name: "Book name",
-        genres,
-      })
-    );
+    // ERROR: Attrs type is lost
+    const book = Book.create({
+      name: "Book name",
+      genres,
+    });
+
     expect(
-      book.genres
+      book.genres!
         .all()
         .toRefArray()
         .map((genre) => genre.id)
@@ -343,7 +339,7 @@ describe("Immutable session", () => {
     // update with same string, expect relations to be preserved
     book.update({ name: "Updated Book name" });
     expect(
-      book.genres
+      book.genres!
         .all()
         .toRefArray()
         .map((genre) => genre.id)
@@ -354,14 +350,12 @@ describe("Immutable session", () => {
     const { Book, Genre } = session;
 
     const genres = [1, 2];
-    const book = castTo<typeof Book & BookDescriptors>(
-      Book.create({
-        name: "New Book",
-        genres,
-      })
-    );
+    const book = Book.create({
+      name: "New Book",
+      genres,
+    });
     expect(
-      book.genres
+      book.genres!
         .all()
         .toRefArray()
         .map((genre) => genre.id)
@@ -376,17 +370,17 @@ describe("Immutable session", () => {
      * but still caused an update of the genres relation
      */
     expect(
-      book.genres
+      book.genres!
         .all()
         .toRefArray()
-        .map((genre: TableRow) => genre.id)
+        .map(genre => genre.id)
     ).toEqual([1, 2, 3]);
     /* the backward relation must have been updated as well */
     expect(
-      castTo<typeof Genre & GenreProps>(Genre.withId(3)!)
-        .books.all()
+      (Genre.withId(3)!
+        .books as QuerySet<Book>).all()
         .toRefArray()
-        .map((_book: TableRow) => _book.id)
+        .map(_book => _book.id)
         .includes(book.id)
     ).toBeTruthy();
   });
@@ -395,15 +389,16 @@ describe("Immutable session", () => {
     const { Book, Genre, Tag } = session;
 
     // Forward (from many-to-many field declaration)
-    const book = castTo<typeof Book & BookDescriptors>(Book.first()!);
+    const book = Book.first()!;
+    // ERROR: for some reason genres are undefined
     const relatedGenres = book.genres;
     expect(relatedGenres).toBeInstanceOf(QuerySet);
     expect(relatedGenres.modelClass).toBe(Genre);
     expect(relatedGenres.count()).toBe(2);
 
     // Backward
-    const genre = castTo<typeof Genre & GenreProps>(Genre.first()!);
-    const relatedBooks = genre.books;
+    const genre = Genre.first()!;
+    const relatedBooks = genre.books as QuerySet<Book>;
     expect(relatedBooks).toBeInstanceOf(QuerySet);
     expect(relatedBooks.modelClass).toBe(Book);
 
@@ -425,22 +420,22 @@ describe("Immutable session", () => {
 
     // Forward (from many-to-many field declaration)
     const author = Author.get({ name: "Tommi Kaikkonen" })!;
-    const relatedPublishers = castTo<AuthorDescriptors>(author).publishers;
+    const relatedPublishers = author.publishers;
     expect(relatedPublishers).toBeInstanceOf(QuerySet);
     expect(relatedPublishers.modelClass).toBe(Publisher);
     expect(relatedPublishers.count()).toBe(1);
 
     // Backward
     const publisher = Publisher.get({ name: "Technical Publishing" })!;
-    const relatedAuthors = castTo<PublisherDescriptors>(publisher).authors;
+    const relatedAuthors = publisher.authors as QuerySet<Author>;
     expect(relatedAuthors).toBeInstanceOf(QuerySet);
-    expect(relatedAuthors.modelClass).toBe(Author);
+    expect(relatedAuthors.modelClass).toBe<typeof Author>(Author);
     expect(relatedAuthors.count()).toBe(2);
   });
 
   it("adding related many-to-many entities works", () => {
     const { Book, Genre } = session;
-    const book = castTo<typeof Book & BookDescriptors>(Book.withId(0)!);
+    const book = Book.withId(0)!;
     expect(book.genres.count()).toBe(2);
     book.genres.add(Genre.withId(2)!);
     expect(book.genres.count()).toBe(3);
@@ -448,56 +443,54 @@ describe("Immutable session", () => {
 
   it("trying to add existing related many-to-many entities throws", () => {
     const { Book } = session;
-    const book = castTo<typeof Book & BookDescriptors>(Book.withId(0)!);
+    const book = Book.withId(0)!;
 
     const existingId = 1;
     expect(() => book.genres.add(existingId)).toThrow(existingId.toString());
   });
 
-  // it("trying to set many-to-many fields throws", () => {
-  //   const { Book } = session;
-  //   const book = castTo<typeof Book & BookProps>(Book.withId(0)!);
-  //   expect(() => {
-  //     book.genres = "whatever";
-  //   }).toThrow(
-  //     "Tried setting a M2M field. Please use the related QuerySet methods add, remove and clear."
-  //   );
-  // });
+  it("trying to set many-to-many fields throws", () => {
+    const { Book } = session;
+    const book = Book.withId(0)!;
+    expect(() => {
+      book.genres = "whatever";
+    }).toThrow(
+      "Tried setting a M2M field. Please use the related QuerySet methods add, remove and clear."
+    );
+  });
 
   it("updating related many-to-many entities through ids works", () => {
     const { Book, Genre, Author } = session;
-    const tommi = castTo<typeof Author & AuthorDescriptors>(
-      Author.get({ name: "Tommi Kaikkonen" })!
-    );
-    const book = castTo<typeof Book & BookDescriptors>(tommi.books.first()!);
-    expect(book.genres.toRefArray().map((row: TableRow) => row.id)).toEqual([
+    const tommi = Author.get({ name: "Tommi Kaikkonen" })!;
+    const book = tommi.books.first()!;
+    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
       0,
       1,
     ]);
 
-    const deleteGenre = castTo<typeof Genre & GenreProps>(Genre.withId(0));
+    const deleteGenre = Genre.withId(0);
 
     book.update({ genres: [1, 2] });
-    expect(book.genres.toRefArray().map((row: TableRow) => row.id)).toEqual([
+    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
       1,
       2,
     ]);
 
-    expect(deleteGenre!.books.filter({ id: book.id }).exists()).toBe(false);
+    expect((deleteGenre!.books as QuerySet<Book>).filter({ id: book.id }).exists()).toBe(false);
   });
 
   it("updating related many-to-many with not existing entities works", () => {
     const { Book } = session;
-    const book = castTo<typeof Book & BookDescriptors>(Book.first()!);
+    const book = Book.first()!;
 
     book.update({ genres: [0, 99] });
 
     expect(
       session.BookGenres.filter({ fromBookId: book.id })
         .toRefArray()
-        .map((row: TableRow) => row.toGenreId)
+        .map(row => row.toGenreId)
     ).toEqual([0, 99]);
-    expect(book.genres.toRefArray().map((row: TableRow) => row.id)).toEqual([
+    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
       0,
     ]);
 
@@ -506,35 +499,33 @@ describe("Immutable session", () => {
     expect(
       session.BookGenres.filter({ fromBookId: book!.id })
         .toRefArray()
-        .map((row: TableRow) => row.toGenreId)
+        .map(row => row.toGenreId)
     ).toEqual([1, 98]);
-    expect(book.genres.toRefArray().map((row: TableRow) => row.id)).toEqual([
+    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
       1,
     ]);
   });
 
   it("updating non-existing many-to-many entities works", () => {
     const { Genre, Author } = session;
-    const tommi = castTo<typeof Author & AuthorDescriptors>(
-      Author.get({ name: "Tommi Kaikkonen" })!
-    );
-    const book = castTo<typeof Book & BookDescriptors>(tommi.books.first());
-    expect(book.genres.toRefArray().map((row: TableRow) => row.id)).toEqual([
+    const tommi = Author.get({ name: "Tommi Kaikkonen" })!;
+    const book = tommi.books.first();
+    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
       0,
       1,
     ]);
 
-    const deleteGenre = castTo<typeof Genre & GenreProps>(Genre.withId(0)!);
-    const keepGenre = castTo<typeof Genre & GenreProps>(Genre.withId(1)!);
-    const addGenre = castTo<typeof Genre & GenreProps>(Genre.withId(2)!);
+    const deleteGenre = Genre.withId(0)!;
+    const keepGenre = Genre.withId(1)!;
+    const addGenre = Genre.withId(2)!;
 
     book.update({ genres: [addGenre, keepGenre] });
-    expect(book.genres.toRefArray().map((row: TableRow) => row.id)).toEqual([
+    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
       1,
       2,
     ]);
 
-    expect(deleteGenre.books.filter({ id: book.id }).exists()).toBe(false);
+    expect(castTo<QuerySet<Book>>(deleteGenre.books).filter({ id: book.id }).exists()).toBe(false);
   });
 
   it("creating models without many-to-many entities works", () => {
@@ -577,18 +568,18 @@ describe("Immutable session", () => {
 
   it("removing related many-to-many entities works", () => {
     const { Book, Genre } = session;
-    const book = castTo<typeof Book & BookDescriptors>(Book.withId(0)!);
+    const book = Book.withId(0)!;
     expect(book.genres.count()).toBe(2);
     book.genres.remove(Genre.withId(0)!);
 
     expect(
-      castTo<typeof Book & BookDescriptors>(session.Book.withId(0)!).genres.count()
+      session.Book.withId(0)!.genres.count()
     ).toBe(1);
   });
 
   it("trying to remove unexisting related many-to-many entities throws", () => {
     const { Book } = session;
-    const book = castTo<typeof Book & BookDescriptors>(Book.withId(0)!);
+    const book = Book.withId(0)!;
 
     const unexistingId = 2012384;
     expect(() => book.genres.remove(0, unexistingId)).toThrow(
@@ -598,12 +589,12 @@ describe("Immutable session", () => {
 
   it("clearing related many-to-many entities works", () => {
     const { Book } = session;
-    const book = castTo<typeof Book & BookDescriptors>(Book.withId(0)!);
+    const book = Book.withId(0)!;
     expect(book.genres.count()).toBe(2);
     book.genres.clear();
 
     expect(
-      castTo<typeof Book & BookDescriptors>(session.Book.withId(0)!).genres.count()
+      session.Book.withId(0)!.genres.count()
     ).toBe(0);
   });
 
@@ -611,11 +602,11 @@ describe("Immutable session", () => {
     const { Book, Author, Movie, Publisher } = session;
 
     // Forward
-    const book = castTo<Book & BookDescriptors>(Book.first()!);
+    const book = Book.first()!;
     const { author } = book;
     const { author: rawFk } = book.ref;
     expect(author).toBeInstanceOf(Author);
-    expect(author.getId()).toBe(rawFk);
+    expect(author.getId()).toBe<ModelId>(rawFk);
 
     // Backward
     const relatedBooks = author.books;
@@ -625,7 +616,7 @@ describe("Immutable session", () => {
     expect(relatedBooks.modelClass).toBe(Book);
 
     // Forward with 'as' option
-    const movie = castTo<Movie & MovieDescriptors>(Movie.first()!);
+    const movie = Movie.first()!;
     const { publisher, publisherId } = movie;
     expect(publisher).toBeInstanceOf(Publisher);
     expect(publisher.getId()).toBe(publisherId);
@@ -634,96 +625,96 @@ describe("Immutable session", () => {
   it("non-existing foreign key relationship descriptors return null", () => {
     const { Book } = session;
 
-    const book = castTo<Book & BookDescriptors>(Book.first()!);
-    (book as WithSetter).author = 91243424;
+    const book = Book.first()!;
+    // ERROR: trying to reassign the value to other type
+    book.author = 91243424;
     expect(book.author).toBe(null);
 
-    (book as WithSetter).author = null;
+    book.author = null;
     expect(book.author).toBe(null);
   });
 
   it("setting forwards foreign key (many-to-one) field works", () => {
     const { Book, Author, Movie, Publisher } = session;
 
-    const book = castTo<Book & BookDescriptors>(Book.first()!);
-    const newAuthor = castTo<Author & AuthorDescriptors>(Author.withId(2)!);
+    const book = Book.first()!;
+    const newAuthor = Author.withId(2)!;
 
     book.author = newAuthor;
 
-    expect(book.author).toEqual(newAuthor);
-    expect(book.author.ref).toBe(newAuthor.ref);
+    expect(book.author).toEqual<SessionBoundModel<Author>>(newAuthor);
+    expect(book.author.ref).toBe<Ref<Author>>(newAuthor.ref);
 
     // with 'as' option
-    const movie = castTo<typeof Movie & MovieDescriptors>(Movie.first()!);
-    const newPublisher = castTo<PublisherType & PublisherDescriptors>(
-      Publisher.withId(0)!
-    );
+    const movie = Movie.first()!;
+    const newPublisher = Publisher.withId(0)!;
     movie.publisher = newPublisher;
 
     expect(movie.publisherId).toEqual(0);
-    expect(movie.publisher).toEqual(newPublisher);
-    expect(movie.publisher.ref).toBe(newPublisher.ref);
+    expect(movie.publisher).toEqual<SessionBoundModel<Publisher>>(newPublisher);
+    expect(movie.publisher.ref).toBe<Ref<Publisher>>(newPublisher.ref);
   });
 
-  // it("trying to set backwards foreign key (reverse many-to-one) field throws", () => {
-  //   const { Book } = session;
+  it("trying to set backwards foreign key (reverse many-to-one) field throws", () => {
+    const { Book } = session;
 
-  //   const book = Book.first()!;
-  //   expect(() => {
-  //     (book as WithSetter).author.books = "whatever";
-  //   }).toThrow("Can't mutate a reverse many-to-one relation.");
-  // });
+    const book = Book.first()!;
+    expect(() => {
+      book.author!.books = "whatever";
+    }).toThrow("Can't mutate a reverse many-to-one relation.");
+  });
 
   it("one-to-one relationship descriptors work", () => {
     const { Book, Cover } = session;
 
     // Forward
-    const book = castTo<Book & BookDescriptors>(Book.first()!);
+    const book = Book.first()!;
     const { cover } = book;
     const { cover: rawFk } = book.ref;
     expect(cover).toBeInstanceOf(Cover);
-    expect(cover.getId()).toBe(rawFk);
+    expect(cover!.getId()).toBe(rawFk);
 
     // Backward
-    const relatedBook = cover.book;
+    const relatedBook = cover!.book as SessionBoundModel<Book>;
     expect(relatedBook).toBeInstanceOf(Book);
     expect(relatedBook.getId()).toBe(book.getId());
   });
 
-  // it("trying to set backwards one-to-one field throws", () => {
-  //   const { Book } = session;
+  it("trying to set backwards one-to-one field throws", () => {
+    const { Book } = session;
 
-  //   const book = castTo<Book & BookProps>(Book.first()!);
-  //   expect(() => {
-  //     book.cover.book = "whatever";
-  //   }).toThrow("Can't mutate a reverse one-to-one relation.");
-  // });
+    const book = Book.first()!;
+    expect(() => {
+      book.cover!.book = "whatever";
+    }).toThrow("Can't mutate a reverse one-to-one relation.");
+  });
 
   it("applying no updates returns the same state reference", () => {
-    const book = castTo<Book & BookDescriptors>(session.Book.first()!);
+    const book = session.Book.first()!;
+    // eslint-disable-next-line no-self-assign
     book.name = book.name;
 
-    expect(session.state).toBe(state);
+    expect(session.state).toBe<OrmState<Schema>>(state);
   });
 
   it("Model works with default value", () => {
     let returnId = 1;
 
-    class DefaultFieldModel extends Model {
+    class DefaultFieldModel extends Model<typeof DefaultFieldModel, { id: ModelId }> {
       static modelName = "DefaultFieldModel";
       static fields = {
         id: attr({ getDefault: () => returnId }),
       };
     }
 
-    const _orm = new ORM();
+    type Schema = {
+      DefaultFieldModel: typeof DefaultFieldModel;
+    }
+
+    const _orm = new ORM<Schema>();
     _orm.register(DefaultFieldModel);
 
-    const sess = castTo<
-      Session & {
-        DefaultFieldModel: typeof DefaultFieldModel;
-      }
-    >(_orm.session(_orm.getEmptyState()));
+    const sess = _orm.session(_orm.getEmptyState());
     sess.DefaultFieldModel.create({});
 
     expect(sess.DefaultFieldModel.idExists(1)).toBe(true);

@@ -49,14 +49,13 @@ type ModelClass<M extends AnyModel> = ReturnType<M["getClass"]>;
  */
 export type SessionBoundModel<
   M extends AnyModel = AnyModel,
-  InstanceProps extends object = {}
 > = Omit<M, "ref"> &
   {
     [K in keyof ModelFields<M>]: ModelFields<M>[K] extends AnyModel
       ? SessionBoundModel<ModelFields<M>[K]>
       : ModelFields<M>[K];
   } &
-  InstanceProps & { ref: Ref<M> };
+  { ref: Ref<M> };
 
 /**
  * 

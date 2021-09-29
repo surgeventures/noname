@@ -28,7 +28,7 @@ import { castTo } from "./hacks";
  * mutate the previous instances.
  */
 export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType extends ExtractModelClassType<MClass> = ExtractModelClassType<MClass>> {
-  private modelClass: MClassType;
+  public modelClass: MClassType;
   private clauses: QueryClause[];
   rows: Row<MClass>[];
   private _opts?: {};
@@ -314,7 +314,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
     this._evaluated = false;
   }
 
-  add: <M extends AnyModel>(...entities: (ModelId | M)[]) => void;
-  remove: <M extends AnyModel>(...entities: (ModelId | M)[]) => void;
+  add: <M extends SessionBoundModel>(...entities: (ModelId | M)[]) => void;
+  remove: <M extends SessionBoundModel>(...entities: (ModelId | M)[]) => void;
   clear: () => void;
 }

@@ -146,6 +146,7 @@ export type AuthorDescriptors = {
   id: ModelId;
   name: string;
   publishers: TargetRelationship<Publisher, Relations.ManyToMany>;
+  books: unknown;
 }
 export class Author extends Model<typeof Author, AuthorDescriptors> {
   static modelName = "Author" as const;
@@ -229,8 +230,8 @@ export type MovieDescriptors = {
   name: string;
   rating: number;
   hasPremiered: boolean;
-  characters: string;
-  meta: string;
+  characters: string[];
+  meta: {};
   publisherId: ModelId | undefined;
   publisher: TargetRelationship<Publisher, Relations.ForeignKey>;
 };

@@ -362,7 +362,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    *
    * @since 0.11.0
    */
-  static idExists(id: ModelId): boolean {
+  static idExists(id?: ModelId): boolean {
     return this.exists({
       [this.idAttribute]: id,
     });
