@@ -1,34 +1,35 @@
-import { castTo } from "../../hacks";
 import ORM from "../../ORM";
-import { OrmState } from "../../types";
-import { createTestSessionWithData, ExtendedSession } from "../helpers";
+import { ModelAttrs, OrmState } from "../../types";
+import { BookDescriptors, createTestSessionWithData, ExtendedSession, Schema } from "../helpers";
 
 describe("Multiple concurrent sessions", () => {
   let session: ExtendedSession;
-  let orm: ORM;
-  let state: OrmState;
+  let orm: ORM<Schema>;
+  let state: OrmState<Schema>;
 
   beforeEach(() => {
     const result = createTestSessionWithData();
-    session = castTo<ExtendedSession>(result.session);
+    session = result.session;
     orm = result.orm;
     state = result.state;
   });
 
   it("separate sessions can manage separate data stores", () => {
-    const firstSession: ExtendedSession = session;
-    const secondSession = castTo<ExtendedSession>(orm.session(state));
+    const firstSession = session;
+    const secondSession = orm.session(state);
 
     expect(firstSession.Book.count()).toBe(3);
     expect(secondSession.Book.count()).toBe(3);
 
-    const newBookProps = {
+    // ERROR: ModelAttrs got broken
+    const newBookProps: ModelAttrs<BookDescriptors> = {
       name: "New Book",
       author: 0,
       releaseYear: 2015,
       genres: [0, 1],
     };
 
+    // ERROR: create should infer the type of fields from the model itself
     firstSession.Book.create(newBookProps);
 
     expect(firstSession.Book.count()).toBe(4);
@@ -36,8 +37,8 @@ describe("Multiple concurrent sessions", () => {
   });
 
   it("separate sessions have different session bound models", () => {
-    const firstSession = castTo<ExtendedSession>(orm.session());
-    const secondSession = castTo<ExtendedSession>(orm.session());
+    const firstSession = orm.session();
+    const secondSession = orm.session();
 
     expect(firstSession.Book).not.toBe(secondSession.Book);
     expect(firstSession.Author).not.toBe(secondSession.Author);
