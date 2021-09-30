@@ -421,6 +421,8 @@ describe("Many to many relationships", () => {
       type UserModelDescriptors = {
         id: ModelId;
         name: string;
+        links: unknown;
+        teams: unknown;
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> {
         static modelName = "UserModel" as const;
@@ -450,6 +452,7 @@ describe("Many to many relationships", () => {
         id: ModelId;
         name: string;
         users: TargetRelationship<User, Relations.ManyToMany>;
+        links: unknown;
       }
       class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> {
         static modelName = "TeamModel" as const;
@@ -488,13 +491,13 @@ describe("Many to many relationships", () => {
       validateRelationState(session);
 
       expect(
-        User.withId("u0")!
-          .links.toRefArray()
+        castTo<QuerySet<User2TeamModel>>(UserModel.withId("u0")!
+          .links).toRefArray()
           .map(row => row.name)
       ).toEqual(["link0"]);
       expect(
-        User.withId("u1")!
-          .links.toRefArray()
+        castTo<QuerySet<User2TeamModel>>(UserModel.withId("u1")!
+          .links).toRefArray()
           .map(row => row.name)
       ).toEqual(["link1", "link2"]);
     });
@@ -662,8 +665,7 @@ describe("Many to many relationships", () => {
   describe("self-referencing many field with modelName as toModelName", () => {
     type UserDescriptors = {
       id: ModelId;
-      //@ts-ignore
-      subscribed: TargetRelationship<User, Relations.ManyToMany>;
+      subscribed: unknown;
       subscribers: unknown;
     };
 
@@ -707,20 +709,19 @@ describe("Many to many relationships", () => {
         user1 = session.User.withId("u1")!;
         user2 = session.User.withId("u2")!;
 
-        // ERROR: Not accessable properties in SessionBoundModel
         expect(
-          user0
-            .subscribed.toRefArray()
+          castTo<QuerySet<User>>(user0
+            .subscribed).toRefArray()
             .map(row => row.id)
         ).toEqual(["u2"]);
         expect(
-          user1
-            .subscribed.toRefArray()
+          castTo<QuerySet<User>>(user1
+            .subscribed).toRefArray()
             .map(row => row.id)
         ).toEqual(["u0", "u2"]);
         expect(
-          user2
-            .subscribed.toRefArray()
+          castTo<QuerySet<User>>(user2
+            .subscribed).toRefArray()
             .map(row => row.id)
         ).toEqual(["u1"]);
 
@@ -729,9 +730,12 @@ describe("Many to many relationships", () => {
     });
 
     it("add forward many-many field", () => {
-      user0.subscribed.add(user2);
-      user1.subscribed.add(user0, user2);
-      user2.subscribed.add(user1);
+      castTo<QuerySet<User>>(user0
+        .subscribed).add(user2);
+      castTo<QuerySet<User>>(user1
+        .subscribed).add(user0, user2);
+      castTo<QuerySet<User>>(user2
+        .subscribed).add(user1);
       validateRelationState();
     });
 
@@ -743,9 +747,12 @@ describe("Many to many relationships", () => {
     });
 
     it("add backward many-many field", () => {
-      user0.subscribers.add(user1);
-      user1.subscribers.add(user2);
-      user2.subscribers.add(user0, user1);
+      castTo<QuerySet<User>>(user0
+        .subscribers).add(user1);
+      castTo<QuerySet<User>>(user1
+        .subscribers).add(user2);
+      castTo<QuerySet<User>>(user2
+        .subscribers).add(user0, user1);
       validateRelationState();
     });
 
