@@ -2,10 +2,9 @@ import deepFreeze from "deep-freeze";
 import { Model, QuerySet, ORM, attr } from "../..";
 import { AnyModel } from "../../Model";
 import { castTo } from "../../hacks";
-import { ModelAttrs, OrmState, Ref, ModelId, SessionBoundModel } from "../../types";
+import { OrmState, Ref, ModelId, SessionBoundModel } from "../../types";
 import {
   Author,
-  BookDescriptors,
   createTestSessionWithData,
   ExtendedSession,
   TagDescriptors,
@@ -104,15 +103,13 @@ describe("Immutable session", () => {
   it("Model.create throws if passing duplicate ids to many-to-many field", () => {
     const { Book } = session;
 
-    const newProps: ModelAttrs<BookDescriptors> = {
+    expect(() => Book.create({
       name: "New Book",
       author: 0,
       releaseYear: 2015,
       genres: [0, 0],
       publisher: 0,
-    };
-
-    expect(() => Book.create(newProps)).toThrow("Book.genres");
+    })).toThrow("Book.genres");
   });
 
   it("Models are correctly deleted", () => {
@@ -231,7 +228,7 @@ describe("Immutable session", () => {
 
     const { ref: storedRef } = book;
     const nextBook = Book.upsert({
-      [Book.idAttribute]: book.getId(),
+      [Book.idAttribute as 'id']: book.getId(),
       releaseYear: 2016,
     });
 
@@ -539,7 +536,7 @@ describe("Immutable session", () => {
     const { Book } = session;
     [null, undefined, 353, "a string"].forEach((value) => {
       expect(() => {
-        Book.create({ id: 457656121, genres: value });
+        Book.create({ id: 457656121, genres: value as any });
       }).toThrow(
         `Failed to resolve many-to-many relationship: Book[genres] must be an array (passed: ${value})`
       );
@@ -559,7 +556,7 @@ describe("Immutable session", () => {
     const book = Book.create({ id: 457656121 });
     [null, undefined, 353, "a string"].forEach((value) => {
       expect(() => {
-        book.update({ genres: value });
+        book.update({ genres: value as any });
       }).toThrow(
         `Failed to resolve many-to-many relationship: Book[genres] must be an array (passed: ${value})`
       );
@@ -700,7 +697,7 @@ describe("Immutable session", () => {
   it("Model works with default value", () => {
     let returnId = 1;
 
-    class DefaultFieldModel extends Model<typeof DefaultFieldModel, { id: ModelId }> {
+    class DefaultFieldModel extends Model<typeof DefaultFieldModel, { id?: ModelId }> {
       static modelName = "DefaultFieldModel";
       static fields = {
         id: attr({ getDefault: () => returnId }),

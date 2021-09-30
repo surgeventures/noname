@@ -1,6 +1,6 @@
 import ORM from "../../ORM";
-import { ModelAttrs, OrmState } from "../../types";
-import { BookDescriptors, createTestSessionWithData, ExtendedSession, Schema } from "../helpers";
+import { OrmState } from "../../types";
+import { createTestSessionWithData, ExtendedSession, Schema } from "../helpers";
 
 describe("Multiple concurrent sessions", () => {
   let session: ExtendedSession;
@@ -21,16 +21,12 @@ describe("Multiple concurrent sessions", () => {
     expect(firstSession.Book.count()).toBe(3);
     expect(secondSession.Book.count()).toBe(3);
 
-    // ERROR: ModelAttrs got broken
-    const newBookProps: ModelAttrs<BookDescriptors> = {
+    firstSession.Book.create({
       name: "New Book",
       author: 0,
       releaseYear: 2015,
       genres: [0, 1],
-    };
-
-    // ERROR: create should infer the type of fields from the model itself
-    firstSession.Book.create(newBookProps);
+    });
 
     expect(firstSession.Book.count()).toBe(4);
     expect(secondSession.Book.count()).toBe(3);

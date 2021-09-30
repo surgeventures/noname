@@ -8,7 +8,7 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike, SessionBoundModelConstructor } from "./types";
+import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike, ModelConstructor, ModelFields, MappedRow } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
 
@@ -36,7 +36,7 @@ function getByIdQuery(modelInstance: AnyModel): Query<AnySchema, Record<string, 
   };
 }
 
-type ModelFieldss = {
+type __TemporaryModelFields = {
   id: Attribute;
   [key: string]: Field;
 };
@@ -61,14 +61,14 @@ type ModelFieldss = {
  */
 export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Attrs extends ModelFieldMap = ModelFieldMap> {
   static modelName: string;
-  static fields: ModelFieldss = {
+  static fields: __TemporaryModelFields = {
     id: attr(),
   };
   static virtualFields: Record<string, RelationalField> = {};
   static readonly querySetClass = QuerySet;
   static isSetUp: boolean;
   static _session: SessionLike<any>;
-  _fields: Partial<ModelAttrs<Attrs>>;
+  _fields: ModelAttrs<Attrs>;
   static reducer: <Schema extends AnySchema, ModelClassType extends Schema[keyof Schema]>(
     action: ReduxAction<Row<InstanceType<ModelClassType>>>,
     modelClass: ModelClassType,
@@ -80,11 +80,11 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * Don't use this to create a new record; Use the static method {@link Model#create}.
    * @param  {Object} props - the properties to instantiate with
    */
-  constructor(props: Partial<ModelAttrs<Attrs>>) {
+  constructor(props: ModelAttrs<Attrs>) {
     this._initFields(props);
   }
 
-  _initFields(props?: Partial<ModelAttrs<Attrs>>): void {
+  _initFields(props?: ModelAttrs<Attrs>): void {
     const propsObj = Object(props) as ModelAttrs<Attrs>;
     this._fields = { ...propsObj };
 
@@ -243,7 +243,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {props} userProps - the new {@link Model}'s properties.
    * @return {Model} a new {@link Model} instance.
    */
-  static create<M extends typeof AnyModel, Fields extends ModelFieldMap, Props extends ModelAttrs<Fields>>(this: M, userProps: Partial<Props>): SessionBoundModel<InstanceType<M>> {
+  static create<M extends typeof AnyModel>(this: M, userProps: MappedRow<InstanceType<M>>): SessionBoundModel<InstanceType<M>> {
     if (typeof this._session === "undefined") {
       throw new Error(
         [
@@ -253,9 +253,9 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         ].join("")
       );
     }
-    const props: Partial<Props> = { ...userProps };
+    const props: MappedRow<InstanceType<M>> = { ...userProps };
 
-    const m2mRelations: Record<string, ModelId[]> = {} as Record<string, ModelId[]>;
+    const m2mRelations: Record<string, (AnyModel | ModelId)[]> = {} as Record<string, (AnyModel | ModelId)[]>;
 
     const declaredFieldNames = Object.keys(this.fields);
     const declaredVirtualFieldNames = Object.keys(this.virtualFields);
@@ -266,7 +266,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       const valuePassed = userProps.hasOwnProperty(key);
       if (!(field instanceof ManyToMany)) {
         if (valuePassed) {
-          const value = (userProps[key] as unknown) as AnyModel;
+          const value = (userProps[key as keyof MappedRow<InstanceType<M>>] as unknown) as AnyModel;
           (props as any)[key] = normalizeEntity(value);
         } else if ((field as Attribute).getDefault) {
           (props as any)[key] = (field as Attribute).getDefault!();
@@ -274,8 +274,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       } else if (valuePassed) {
         // If a value is supplied for a ManyToMany field,
         // discard them from props and save for later processing.
-        m2mRelations[key] = userProps[key] as ModelId[];
-        delete props[key];
+        m2mRelations[key] = (userProps[key as keyof MappedRow<InstanceType<M>>] as unknown) as (AnyModel | ModelId)[];
+        delete props[key as keyof MappedRow<InstanceType<M>>];
       }
     });
 
@@ -286,19 +286,19 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         if (userProps.hasOwnProperty(key) && field instanceof ManyToMany) {
           // If a value is supplied for a ManyToMany field,
           // discard them from props and save for later processing.
-          m2mRelations[key] = userProps[key] as ModelId[];
-          delete props[key];
+          m2mRelations[key] = (userProps[key as keyof MappedRow<InstanceType<M>>] as unknown) as (AnyModel | ModelId)[];
+          delete props[key as keyof MappedRow<InstanceType<M>>];
         }
       }
     });
 
-    const newEntry = this.session.applyUpdate<Partial<Props>>({
+    const newEntry = this.session.applyUpdate<MappedRow<InstanceType<M>>>({
       action: CREATE,
       table: this.modelName,
       payload: props,
     });
 
-    const ThisModel = castTo<SessionBoundModelConstructor<InstanceType<M>>>(this);
+    const ThisModel = castTo<ModelConstructor<InstanceType<M>>>(this);
     const instance = new ThisModel(newEntry);
     instance._refreshMany2Many(m2mRelations); // eslint-disable-line no-underscore-dangle
     return instance;
@@ -313,7 +313,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {props} userProps - the required {@link Model}'s properties.
    * @return {Model} a {@link Model} instance.
    */
-  static upsert<Fields extends ModelFieldMap, Props extends ModelAttrs<Fields>>(userProps: Partial<Props>) {
+  static upsert<M extends typeof AnyModel>(this: M, userProps: MappedRow<InstanceType<M>>): SessionBoundModel<InstanceType<M>> {
     if (typeof this.session === "undefined") {
       throw new Error(
         [
@@ -326,7 +326,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
 
     const { idAttribute } = this;
     if (userProps.hasOwnProperty(idAttribute)) {
-      const id = userProps[idAttribute] as string;
+      const id = (userProps[idAttribute as keyof MappedRow<InstanceType<M>>] as unknown) as string;
       if (this.idExists(id)) {
         const model = this.withId(id)!;
         model.update(userProps);
@@ -399,7 +399,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @return {Model} a {@link Model} instance that matches the properties in `lookupObj`.
    */
   static get<M extends typeof AnyModel, LookupObj extends Row<InstanceType<M>>>(this: M, lookupObj: LookupObj): SessionBoundModel<InstanceType<M>> | null {
-    const ThisModel = castTo<SessionBoundModelConstructor<InstanceType<M>>>(this);
+    const ThisModel = castTo<ModelConstructor<InstanceType<M>>>(this);
 
     const rows = this._findDatabaseRows<LookupObj, InstanceType<M>>(lookupObj);
     if (rows.length === 0) {
@@ -485,7 +485,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       .map((fieldName) => {
         const field = ThisModel.fields[fieldName];
         if (field instanceof ManyToMany) {
-          const ids: ModelId[] = (castTo<ModelFieldss>(this)[fieldName] as unknown as QuerySet<this>)
+          const ids: ModelId[] = (castTo<__TemporaryModelFields>(this)[fieldName] as unknown as QuerySet<this>)
             .toModelArray()
             .map((model) => model.getId());
           return `${fieldName}: [${ids.join(", ")}]`;

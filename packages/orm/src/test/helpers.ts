@@ -1,7 +1,8 @@
 import ORM from "../ORM";
-import Model, { ModelClassMap } from "../Model";
+import Model, { AnyModel, ModelClassMap } from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
-import { ModelId, Relations, SessionLike, TargetRelationship } from "../types";
+import { MappedRow, ModelId, Relations, SessionBoundModel, SessionLike, TargetRelationship } from "../types";
+import { QuerySet } from "..";
 
 /**
  * These utils create a database schema for testing.
@@ -118,15 +119,15 @@ const MOVIES_INITIAL = [
 ];
 
 export type BookDescriptors = {
-  id: ModelId;
-  name: string;
-  releaseYear: number;
-  author: TargetRelationship<Author, Relations.ForeignKey>;
-  cover: TargetRelationship<Cover, Relations.OneToOne>;
-  genres: TargetRelationship<Genre, Relations.ManyToMany>;
+  id?: ModelId;
+  name?: string;
+  releaseYear?: number;
+  author?: TargetRelationship<Author, Relations.ForeignKey>;
+  cover?: TargetRelationship<Cover, Relations.OneToOne>;
+  genres?: TargetRelationship<Genre, Relations.ManyToMany>;
   // @ts-ignore
-  tags: TargetRelationship<Tag, Relations.ManyToMany>;
-  publisher: TargetRelationship<Publisher, Relations.ForeignKey>;
+  tags?: TargetRelationship<Tag, Relations.ManyToMany>;
+  publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
 }
 export class Book extends Model<typeof Book, BookDescriptors> {
   static modelName = "Book" as const;
@@ -163,9 +164,9 @@ export class Author extends Model<typeof Author, AuthorDescriptors> {
 
 
 export type CoverDescriptors = {
-  id: ModelId;
+  id?: ModelId;
   src: string;
-  book: unknown;
+  book?: unknown;
 };
 export class Cover extends Model<typeof Cover, CoverDescriptors> {
   static modelName = "Cover" as const;
@@ -189,6 +190,8 @@ export class Genre extends Model<typeof Genre, GenreProps> {
   };
 }
 
+type X = QuerySet<Genre, typeof Genre> extends QuerySet ? true : false;
+
 export type TagDescriptors = {
   id: ModelId;
   name: string;
@@ -211,10 +214,10 @@ export class Tag extends Model<typeof Tag, TagDescriptors> {
 }
 
 export type PublisherDescriptors = {
-  id: ModelId;
-  name: string;
-  authors: unknown;
-  movies: unknown;
+  id?: ModelId;
+  name?: string;
+  authors?: unknown;
+  movies?: unknown;
 };
 
 export class Publisher extends Model<typeof Publisher, PublisherDescriptors> {
@@ -226,14 +229,14 @@ export class Publisher extends Model<typeof Publisher, PublisherDescriptors> {
 }
 
 export type MovieDescriptors = {
-  id: ModelId;
-  name: string;
-  rating: number;
-  hasPremiered: boolean;
-  characters: string[];
-  meta: {};
-  publisherId: ModelId | undefined;
-  publisher: TargetRelationship<Publisher, Relations.ForeignKey>;
+  id?: ModelId;
+  name?: string;
+  rating?: number;
+  hasPremiered?: boolean;
+  characters?: string[];
+  meta?: {};
+  publisherId?: ModelId;
+  publisher?: TargetRelationship<Publisher, Relations.ManyToMany>;
 };
 
 export class Movie extends Model<typeof Movie, MovieDescriptors> {
@@ -252,6 +255,11 @@ export class Movie extends Model<typeof Movie, MovieDescriptors> {
     }),
   };
 }
+
+type Test = SessionBoundModel<Movie>;
+
+const obj = {} as Test;
+obj.publisher
 
 export function createTestModels() {
   const MyBook = class extends Book {};

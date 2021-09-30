@@ -9,12 +9,12 @@ import {
 } from "../helpers";
 
 type UserDescriptors = {
-  id: ModelId;
-  name: string;
+  id?: ModelId;
+  name?: string;
   //@ts-ignore
-  subscribed: TargetRelationship<User, Relations.ManyToMany>;
-  subscribers: unknown;
-  teams: unknown;
+  subscribed?: TargetRelationship<User, Relations.ManyToMany>;
+  subscribers?: unknown;
+  teams?: unknown;
 };
 
 class User extends Model<typeof User, UserDescriptors> {
@@ -27,9 +27,9 @@ class User extends Model<typeof User, UserDescriptors> {
 }
 
 type TeamDescriptors = {
-  id: ModelId;
-  name: string;
-  users: TargetRelationship<User, Relations.ManyToMany>;
+  id?: ModelId;
+  name?: string;
+  users?: TargetRelationship<User, Relations.ManyToMany>;
 };
 
 class Team extends Model<typeof Team, TeamDescriptors> {
@@ -142,10 +142,9 @@ describe("Many to many relationships", () => {
       session.User.create({ name: "user1" });
       session.User.create({ name: "user2" });
 
-      // ERROR: you can pass models for instances creation
       session.Team.create({
         name: "team0",
-        users: [session.User.first(), session.User.last()],
+        users: [session.User.first()!, session.User.last()!],
       });
       session.Team.create({ name: "team1" });
 
@@ -162,9 +161,9 @@ describe("Many to many relationships", () => {
       session.Team.create({ name: "team0" });
       session.Team.create({ name: "team1" });
 
-      session.User.create({ name: "user0", teams: [session.Team.first()] });
+      session.User.create({ name: "user0", teams: [session.Team.first()!] });
       session.User.create({ name: "user1" });
-      session.User.create({ name: "user2", teams: [session.Team.first()] });
+      session.User.create({ name: "user2", teams: [session.Team.first()!] });
 
       validateRelationState();
     });
@@ -421,8 +420,8 @@ describe("Many to many relationships", () => {
       type UserModelDescriptors = {
         id: ModelId;
         name: string;
-        links: unknown;
-        teams: unknown;
+        links?: unknown;
+        teams?: unknown;
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> {
         static modelName = "UserModel" as const;
@@ -433,10 +432,10 @@ describe("Many to many relationships", () => {
       }
 
       type User2TeamModelDescriptors = {
-        id: ModelId;
+        id?: ModelId;
         name: string;
-        user: TargetRelationship<User, Relations.ForeignKey>;
-        team: TargetRelationship<Team, Relations.ForeignKey>;
+        user?: TargetRelationship<User, Relations.ForeignKey>;
+        team?: TargetRelationship<Team, Relations.ForeignKey>;
       }
       class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> {
         static modelName = "User2TeamModel" as const;
@@ -451,8 +450,8 @@ describe("Many to many relationships", () => {
       type TeamModelDescriptors = {
         id: ModelId;
         name: string;
-        users: TargetRelationship<User, Relations.ManyToMany>;
-        links: unknown;
+        users?: TargetRelationship<User, Relations.ManyToMany>;
+        links?: unknown;
       }
       class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> {
         static modelName = "TeamModel" as const;
@@ -665,8 +664,8 @@ describe("Many to many relationships", () => {
   describe("self-referencing many field with modelName as toModelName", () => {
     type UserDescriptors = {
       id: ModelId;
-      subscribed: unknown;
-      subscribers: unknown;
+      subscribed?: unknown;
+      subscribers?: unknown;
     };
 
     class User extends Model<typeof User, UserDescriptors> {

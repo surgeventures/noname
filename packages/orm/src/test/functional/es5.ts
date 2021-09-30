@@ -1,10 +1,14 @@
 import ORM from "../../ORM";
 import Model from "../../Model";
-import { SessionLike } from "../../types";
+import { ModelId, SessionBoundModel, SessionLike } from "../../types";
 
 describe("ES5 library code", () => {
   describe("With ES6 client code", () => {
-    class Book extends Model<typeof Book> {
+    type BookDescriptors = {
+      id: ModelId;
+      title: string;
+    }
+    class Book extends Model<typeof Book, BookDescriptors> {
       static modelName = "Book";
     }
     type Schema = {
@@ -20,7 +24,7 @@ describe("ES5 library code", () => {
     });
 
     it("Model CRUD works", () => {
-      let book: typeof Book;
+      let book: SessionBoundModel<Book>;
 
       expect(() => {
         book = session.Book.create({

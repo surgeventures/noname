@@ -1,6 +1,6 @@
 import { Model, ORM, attr, many } from "../..";
 import { castTo } from "../../hacks";
-import { Relations, SessionBoundModel, SessionLike, TargetRelationship } from "../../types";
+import { ModelId, Relations, SessionBoundModel, SessionLike, TargetRelationship } from "../../types";
 import { measureMs, nTimes, avg, round } from "../helpers";
 
 const crypto = require("crypto");
@@ -26,7 +26,11 @@ const logTime = (
 const randomName = (): string => crypto.randomBytes(16).toString("hex");
 
 describe("Big Data Test", () => {
-  class Item extends Model {
+  type ItemDescriptors = {
+    id: ModelId;
+    name: string;
+  }
+  class Item extends Model<typeof Item, ItemDescriptors> {
     static modelName = "Item";
     static fields = {
       id: attr(),
@@ -126,12 +130,15 @@ describe("Big Data Test", () => {
 
 describe("Many-to-many relationship performance", () => {
   type ParentDescriptors = {
-    children: TargetRelationship<Child, Relations.ManyToMany>;
-    name: string;
+    id: ModelId;
+    children?: TargetRelationship<Child, Relations.ManyToMany>;
+    name?: string;
   };
 
   type ChildDescriptors = {
-    parent: typeof Parent;
+    id: ModelId;
+    name: string;
+    parent?: typeof Parent;
   };
   class Parent extends Model<typeof Parent, ParentDescriptors> {
     static modelName = "Parent" as const;
@@ -176,7 +183,7 @@ describe("Many-to-many relationship performance", () => {
     end: number
   ) => {
     for (let i = start; i < end; ++i) {
-      parent.children.add(i);
+      parent.children?.add(i);
     }
   };
 
@@ -224,7 +231,7 @@ describe("Many-to-many relationship performance", () => {
       .map((_value, _index) =>
         measureMs(() => {
           for (let i = 0; i < queryCount; ++i) {
-            parent.children.count();
+            parent.children?.count();
           }
         })
       )
@@ -257,7 +264,7 @@ describe("Many-to-many relationship performance", () => {
         const end = removeCount + start;
         const ms = measureMs(() => {
           for (let i = start; i < end; ++i) {
-            parent.children.remove(i);
+            parent.children?.remove(i);
           }
         });
         /**

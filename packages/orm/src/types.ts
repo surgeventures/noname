@@ -49,19 +49,38 @@ type ModelClass<M extends AnyModel> = ReturnType<M["getClass"]>;
  */
 export type SessionBoundModel<
   M extends AnyModel = AnyModel,
-> = Omit<M, "ref"> &
-  {
-    [K in keyof ModelFields<M>]: ModelFields<M>[K] extends AnyModel
-      ? SessionBoundModel<ModelFields<M>[K]>
-      : ModelFields<M>[K];
-  } &
-  { ref: Ref<M> };
+> = M & ModelFields<M>;
+
+
+/**
+ * Checks the interfaces regardless optional arguments
+ */
+type Temporary<M extends AnyModel> = ConstructorParameters<
+ ModelClass<M>
+> extends [infer U]
+ ? U extends ModelAttrs<infer Z>
+   ? Z
+   : never 
+ : never;
+
+/**
+ * Extracts the first generic argument from the derived class.
+ */
+export type MappedRow<M extends AnyModel> = {
+  [K in keyof Temporary<M>]: Exclude<Temporary<M>[K], undefined> extends QuerySet
+    ? (SessionBoundModel<Exclude<Temporary<M>[K], undefined> extends QuerySet<infer MClass> ? MClass : never> | ModelId)[]
+    : Exclude<Temporary<M>[K], undefined> extends AnyModel
+    ? Temporary<M>[K] | ModelId
+    : IsUnknown<Exclude<Temporary<M>[K], undefined>> extends true
+      ? (SessionBoundModel | ModelId)[]
+      : Temporary<M>[K];
+}; 
 
 /**
  * 
  */
-export type SessionBoundModelConstructor<M extends AnyModel> = {
-  new (props: Row<M>): SessionBoundModel<M>; 
+export type ModelConstructor<MClass extends AnyModel = AnyModel, Props extends MappedRow<MClass> = MappedRow<MClass>> = {
+  new (props: Props): SessionBoundModel<MClass>; 
 }
 
 
@@ -161,6 +180,12 @@ type IsAny<T> = (
     ? [keyof T] extends [never] ? false : true
     : false
 );
+
+/**
+ * 
+ */
+type IsUnknown<T> = unknown extends T ? IsAny<T> extends true ? false : true : false;
+
 /**
  * 
  */

@@ -3,7 +3,7 @@ import { normalizeEntity } from "./utils";
 
 import { UPDATE, DELETE, FILTER, EXCLUDE, ORDER_BY } from "./constants";
 import { AnyModel } from "./Model";
-import { ExtractModelClassType, SessionBoundModelConstructor, ModelId, QueryClause, Row, SessionBoundModel, SortIteratee, SortOrder, QuerySetConstructor } from "./types";
+import { ExtractModelClassType, ModelConstructor, ModelId, QueryClause, Row, SessionBoundModel, SortIteratee, SortOrder, QuerySetConstructor } from "./types";
 import { castTo } from "./hacks";
 
 /**
@@ -83,7 +83,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
   toModelArray(): SessionBoundModel<MClass>[] {
     const { modelClass } = this;
     return this._evaluate().map((props) => {
-      const ModelClass = castTo<SessionBoundModelConstructor<MClass>>(modelClass);
+      const ModelClass = castTo<ModelConstructor<MClass>>(modelClass);
       return new ModelClass(props);
     });
   }
@@ -123,7 +123,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
 
     const rows = this._evaluate();
     if (index >= 0 && index < rows.length) {
-      const ModelClass = castTo<SessionBoundModelConstructor<MClass>>(modelClass);
+      const ModelClass = castTo<ModelConstructor<MClass>>(modelClass);
       return new ModelClass(rows[index]);
     }
 

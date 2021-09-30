@@ -45,7 +45,7 @@ describe("Redux integration", () => {
       ((action: ReduxAction<Row<InstanceType<Schema[keyof Schema]>>>, Model: Schema['Movie']) => {
         switch (action.type) {
           case CREATE_MOVIE:
-            Model.create(action.payload ? action.payload : {} as Row<InstanceType<Schema['Movie']>>);
+            Model.create(action.payload || {});
             break;
           default:
             break;
@@ -56,7 +56,7 @@ describe("Redux integration", () => {
       ((action: ReduxAction<Row<InstanceType<Schema['Publisher']>>>, Model: Schema['Publisher']) => {
         switch (action.type) {
           case CREATE_PUBLISHER:
-            Model.create(action.payload ? action.payload : {} as Row<InstanceType<Schema['Publisher']>>);
+            Model.create(action.payload || {});
             break;
           default:
             break;
