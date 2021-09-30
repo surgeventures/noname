@@ -296,7 +296,7 @@ export type RelationalFieldOpts = {
   to: string;
   relatedName?: string;
   through?: string;
-  throughFields?: { from: string; to: string };
+  throughFields?: { from: string; to: string } | [string, string];
   as?: string;
 };
 
