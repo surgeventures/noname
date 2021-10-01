@@ -161,7 +161,6 @@ describe("Immutable session", () => {
   it("get returns null if model instance not found", () => {
     const { Book } = session;
     expect(
-      // ERROR: can narrow the type of the object to attributes extending the interface
       Book.get({
         name: "does not exist",
       })

@@ -398,10 +398,10 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @throws {Error} If more than one entity matches the properties in `lookupObj`.
    * @return {Model} a {@link Model} instance that matches the properties in `lookupObj`.
    */
-  static get<M extends typeof AnyModel, LookupObj extends Row<InstanceType<M>>>(this: M, lookupObj: LookupObj): SessionBoundModel<InstanceType<M>> | null {
+  static get<M extends typeof AnyModel>(this: M, lookupObj: Partial<Row<InstanceType<M>>>): SessionBoundModel<InstanceType<M>> | null {
     const ThisModel = castTo<ModelConstructor<InstanceType<M>>>(this);
 
-    const rows = this._findDatabaseRows<LookupObj, InstanceType<M>>(lookupObj);
+    const rows = this._findDatabaseRows<Partial<Row<InstanceType<M>>>, InstanceType<M>>(lookupObj);
     if (rows.length === 0) {
       return null;
     }
