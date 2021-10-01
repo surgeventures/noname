@@ -618,7 +618,6 @@ describe("Immutable session", () => {
     const { Book } = session;
 
     const book = Book.first()!;
-    // ERROR: trying to reassign the value to other type
     book.author = 91243424 as any;
     expect(book.author).toBe(null);
 

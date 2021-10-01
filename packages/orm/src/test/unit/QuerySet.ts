@@ -58,7 +58,6 @@ describe("QuerySet tests", () => {
     const all = bookQs.all();
 
     // Force evaluation of QuerySets
-    // ERROR: optionals are evaluated to undefined
     bookQs.toRefArray();
     all.toRefArray();
 
