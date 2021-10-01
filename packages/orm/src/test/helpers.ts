@@ -144,10 +144,10 @@ export class Book extends Model<typeof Book, BookDescriptors> {
 }
 
 export type AuthorDescriptors = {
-  id: ModelId;
+  id?: ModelId;
   name: string;
-  publishers: TargetRelationship<Publisher, Relations.ManyToMany>;
-  books: unknown;
+  publishers?: TargetRelationship<Publisher, Relations.ManyToMany>;
+  books?: unknown;
 }
 export class Author extends Model<typeof Author, AuthorDescriptors> {
   static modelName = "Author" as const;
@@ -177,9 +177,9 @@ export class Cover extends Model<typeof Cover, CoverDescriptors> {
 }
 
 export type GenreProps = {
-  id: ModelId;
+  id?: ModelId;
   name: string;
-  books: unknown;
+  books?: unknown;
 };
 
 export class Genre extends Model<typeof Genre, GenreProps> {
@@ -190,14 +190,12 @@ export class Genre extends Model<typeof Genre, GenreProps> {
   };
 }
 
-type X = QuerySet<Genre, typeof Genre> extends QuerySet ? true : false;
-
 export type TagDescriptors = {
-  id: ModelId;
+  id?: ModelId;
   name: string;
-  subTags: unknown; // Should be TargetRelationship<Tag, Relations.ManyToMany>
-  parentTags: unknown; // Verify the structure - should be TargetRelationship<Tag, Relations.ManyToMany>
-  books: unknown;
+  subTags?: unknown; // Should be TargetRelationship<Tag, Relations.ManyToMany>
+  parentTags?: unknown; // Verify the structure - should be TargetRelationship<Tag, Relations.ManyToMany>
+  books?: unknown;
 };
 export class Tag extends Model<typeof Tag, TagDescriptors> {
   static modelName = "Tag" as const;

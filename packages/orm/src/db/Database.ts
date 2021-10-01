@@ -44,26 +44,26 @@ function query<Schema extends ModelClassMap>(tables: TableMap<Schema>, querySpec
 
 function update<Schema extends ModelClassMap>(
   tables: TableMap<Schema>,
-  updateSpec: UpdateSpec<Schema, Row<Schema[keyof Schema]>>,
+  updateSpec: UpdateSpec<Schema, Row<InstanceType<Schema[keyof Schema]>>>,
   tx: Transaction,
   state: OrmState<Schema>
-): { status: typeof SUCCESS; state: OrmState<Schema>; payload: Row<Schema[keyof Schema]> } {
+  ): { status: typeof SUCCESS; state: OrmState<Schema>; payload: Row<InstanceType<Schema[keyof Schema]>> | Row<InstanceType<Schema[keyof Schema]>>[] } {
   const { action, payload } = updateSpec;
 
   let tableName: keyof Schema;
   let nextTableState: TableState<Schema[keyof Schema]>;
-  let resultPayload: Row<Schema[keyof Schema]>;
+  let resultPayload: Row<InstanceType<Schema[keyof Schema]>> | Row<InstanceType<Schema[keyof Schema]>>[];
 
   if (action === CREATE) {
     tableName = updateSpec.table!;
     const table = tables[tableName];
     const currTableState = state[tableName];
-    const result = table.insert(tx, currTableState, payload);
+    const result = table.insert(tx, currTableState, payload || {} as Row<InstanceType<Schema[keyof Schema]>>);
     nextTableState = result.state;
     resultPayload = result.created;
   } else {
     const { query: querySpec } = updateSpec;
-    ({ table: tableName } = querySpec);
+    ({ table: tableName } = querySpec!);
     const { rows } = query(tables, querySpec!, state);
 
     const table = tables[tableName];
@@ -74,10 +74,10 @@ function update<Schema extends ModelClassMap>(
         tx,
         currTableState,
         rows,
-        payload
+        payload || {}
       );
       // return updated rows
-      resultPayload = query(tables, querySpec, state).rows;
+      resultPayload = query(tables, querySpec!, state).rows;
     } else if (action === DELETE) {
       nextTableState = table.delete(tx, currTableState, rows);
       // return original rows that we just deleted

@@ -8,6 +8,7 @@ import { AnyModel } from "../Model";
 import { FILTER, EXCLUDE, ORDER_BY, DEFAULT_TABLE_OPTIONS } from "../constants";
 import { clauseFiltersByAttribute, clauseReducesResultSetSize } from "../utils";
 import { QueryClause, TableOpts, Row, TableState, Transaction, ModelId } from "../types";
+import { castTo } from "../hacks";
 
 // Input is the current max id and the new id passed to the create action.
 // Both may be undefined. The current max id in the case that this is the first Model
@@ -46,7 +47,7 @@ function idSequencer(
 /**
  * Handles the underlying data structure for a {@link Model} class.
  */
-export default class Table<MClass extends typeof AnyModel> {
+export default class Table<MClassType extends typeof AnyModel> {
   readonly idAttribute: string;
 
   /**
@@ -67,27 +68,27 @@ export default class Table<MClass extends typeof AnyModel> {
    * @return {Object|undefined} A reference to the raw object in the state or
    *                            `undefined` if not found.
    */
-  accessId(branch: TableState<MClass>, id: ModelId) {
+  accessId(branch: TableState<MClassType>, id: ModelId) {
     return branch.itemsById[id];
   }
 
-  idExists(branch: TableState<MClass>, id: ModelId) {
+  idExists(branch: TableState<MClassType>, id: ModelId) {
     return branch.itemsById.hasOwnProperty(id);
   }
 
-  accessIdList(branch: TableState<MClass>) {
+  accessIdList(branch: TableState<MClassType>) {
     return branch.items;
   }
 
-  accessList(branch: TableState<MClass>) {
+  accessList(branch: TableState<MClassType>) {
     return branch.items.map((id) => this.accessId(branch, id));
   }
 
-  getMaxId(branch: TableState<MClass>) {
+  getMaxId(branch: TableState<MClassType>) {
     return this.getMeta(branch, "maxId");
   }
 
-  setMaxId(tx: Transaction, branch: TableState<MClass>, newMaxId: number) {
+  setMaxId(tx: Transaction, branch: TableState<MClassType>, newMaxId: number) {
     return this.setMeta(tx, branch, "maxId", newMaxId);
   }
 
@@ -95,7 +96,7 @@ export default class Table<MClass extends typeof AnyModel> {
     return id + 1;
   }
 
-  query(branch: TableState<MClass>, clauses: QueryClause[]): Row<MClass>[] {
+  query(branch: TableState<MClassType>, clauses: QueryClause[]): Row<InstanceType<MClassType>>[] {
     if (clauses.length === 0) {
       return this.accessList(branch);
     }
@@ -114,10 +115,10 @@ export default class Table<MClass extends typeof AnyModel> {
       return 3;
     });
 
-    const initialArray: Row<MClass>[] = [];
+    const initialArray: Row<InstanceType<MClassType>>[] = [];
 
-    const reducer = (rows: Row<MClass>[], clause: QueryClause): Row<MClass>[] => {
-      const { type, payload } = clause;
+    const reducer = (rows: Row<InstanceType<MClassType>>[], clause: QueryClause): Row<InstanceType<MClassType>>[] => {
+      const { type, payload = {} } = clause;
       if (rows === initialArray) {
         if (clauseFiltersByAttribute(clause, idAttribute)) {
           const id = (payload as Record<string, any>)[idAttribute];
@@ -131,10 +132,10 @@ export default class Table<MClass extends typeof AnyModel> {
 
       switch (type) {
         case FILTER: {
-          return filter<Row<MClass>>(rows, payload);
+          return filter<Row<InstanceType<MClassType>>>(rows, payload);
         }
         case EXCLUDE: {
-          return reject<Row<MClass>>(rows, payload);
+          return reject<Row<InstanceType<MClassType>>>(rows, payload);
         }
         case ORDER_BY: {
           const [iteratees, orders] = payload as [string[], string[]];
@@ -152,7 +153,7 @@ export default class Table<MClass extends typeof AnyModel> {
    * Returns the default state for the data structure.
    * @return {Object} The default state for this {@link Backend} instance's data structure
    */
-  getEmptyState(): TableState<MClass> {
+  getEmptyState(): TableState<MClassType> {
     return {
       items: [],
       itemsById: {},
@@ -160,17 +161,17 @@ export default class Table<MClass extends typeof AnyModel> {
     };
   }
 
-  setMeta(tx: Transaction, branch: TableState<MClass>, key: string, value: any): TableState<MClass> {
+  setMeta(tx: Transaction, branch: TableState<MClassType>, key: string, value: any): TableState<MClassType> {
     const { batchToken, withMutations } = tx;
     if (withMutations) {
       const res = ops.mutable.setIn(["meta", key], value, branch);
-      return res as TableState<MClass>;
+      return res as TableState<MClassType>;
     }
 
-    return ops.batch.setIn(batchToken, ["meta", key], value, branch) as TableState<MClass>;
+    return ops.batch.setIn(batchToken, ["meta", key], value, branch) as TableState<MClassType>;
   }
 
-  getMeta(branch: TableState<MClass>, key: keyof TableState<MClass>['meta']) {
+  getMeta(branch: TableState<MClassType>, key: keyof TableState<MClassType>['meta']) {
     return branch.meta[key];
   }
 
@@ -183,7 +184,7 @@ export default class Table<MClass extends typeof AnyModel> {
    *                  `state` is the new table state and `created` is the
    *                  row that was created.
    */
-  insert(tx: Transaction, branch: TableState<MClass>, entry: Row<MClass>): { state: TableState<MClass>; created: Row<MClass> } {
+  insert(tx: Transaction, branch: TableState<MClassType>, entry: Row<InstanceType<MClassType>>): { state: TableState<MClassType>; created: Row<InstanceType<MClassType>> } {
     const { batchToken, withMutations } = tx;
 
     const hasId = entry.hasOwnProperty(this.idAttribute);
@@ -193,13 +194,13 @@ export default class Table<MClass extends typeof AnyModel> {
     // This will not affect string id's.
     const [newMaxId, id] = idSequencer(
       this.getMaxId(branch),
-      entry[this.idAttribute]
+      castTo<any>(entry)[this.idAttribute]
     );
     workingState = this.setMaxId(tx, branch, newMaxId);
 
     const finalEntry = hasId
       ? entry
-      : ops.batch.set(batchToken, this.idAttribute, id, entry) as Row<MClass>;
+      : ops.batch.set(batchToken, this.idAttribute, id, entry) as Row<InstanceType<MClassType>>;
 
     if (withMutations) {
       ops.mutable.push(id, workingState.items);
@@ -221,7 +222,7 @@ export default class Table<MClass extends typeof AnyModel> {
         ),
       },
       workingState
-    ) as TableState<MClass>;
+    ) as TableState<MClassType>;
 
     return {
       state: nextState,
@@ -239,7 +240,7 @@ export default class Table<MClass extends typeof AnyModel> {
    * @param  {Object} mergeObj - The object to merge with each row.
    * @return {Object}
    */
-  update(tx: Transaction, branch: TableState<MClass>, rows: Row<MClass>[], mergeObj: object): TableState<MClass> {
+  update(tx: Transaction, branch: TableState<MClassType>, rows: Row<InstanceType<MClassType>>[], mergeObj: object): TableState<MClassType> {
     const { batchToken, withMutations } = tx;
 
     const mapFunction = (row: object) => {
@@ -255,7 +256,7 @@ export default class Table<MClass extends typeof AnyModel> {
       const result = mapFunction(row);
       return (set as SetFunc)(result[this.idAttribute], result, map);
     }, branch.itemsById);
-    return ops.batch.set(batchToken, "itemsById", newMap, branch) as TableState<MClass>;
+    return ops.batch.set(batchToken, "itemsById", newMap, branch) as TableState<MClassType>;
   }
   
   /**
@@ -265,12 +266,12 @@ export default class Table<MClass extends typeof AnyModel> {
    * @param  {Object[]} rows - rows to update
    * @return {Object} the data structure without ids in `idsToDelete`.
    */
-  delete(tx: Transaction, branch: TableState<MClass>, rows: Row<MClass>[]): TableState<MClass> {
+  delete(tx: Transaction, branch: TableState<MClassType>, rows: Row<InstanceType<MClassType>>[]): TableState<MClassType> {
     const { batchToken, withMutations } = tx;
 
     const arr = branch.items;
 
-    const idsToDelete = rows.map((row) => row[this.idAttribute]);
+    const idsToDelete = rows.map((row) => castTo<any>(row)[this.idAttribute] as string);
     if (withMutations) {
       idsToDelete.forEach((id) => {
         const idx = arr.indexOf(id);
@@ -294,6 +295,6 @@ export default class Table<MClass extends typeof AnyModel> {
         itemsById: ops.batch.omit(batchToken, idsToDelete, branch.itemsById),
       },
       branch
-    ) as TableState<MClass>;
+    ) as TableState<MClassType>;
   }
 }

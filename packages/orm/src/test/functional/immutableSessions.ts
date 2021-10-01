@@ -412,7 +412,7 @@ describe("Immutable session", () => {
 
     // Forward (from many-to-many field declaration)
     const author = Author.get({ name: "Tommi Kaikkonen" })!;
-    const relatedPublishers = author.publishers;
+    const relatedPublishers = author.publishers!;
     expect(relatedPublishers).toBeInstanceOf(QuerySet);
     expect(relatedPublishers.modelClass).toBe<typeof Publisher>(Publisher);
     expect(relatedPublishers.count()).toBe(1);
@@ -480,7 +480,7 @@ describe("Immutable session", () => {
     expect(
       session.BookGenres.filter({ fromBookId: book.id })
         .toRefArray()
-        .map(row => row.toGenreId)
+        .map(row => castTo<{ toGenreId: ModelId }>(row).toGenreId)
     ).toEqual([0, 99]);
     expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       0,
@@ -491,7 +491,7 @@ describe("Immutable session", () => {
     expect(
       session.BookGenres.filter({ fromBookId: book!.id })
         .toRefArray()
-        .map(row => row.toGenreId)
+        .map(row => castTo<{ toGenreId: ModelId }>(row).toGenreId)
     ).toEqual([1, 98]);
     expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       1,

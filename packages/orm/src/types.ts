@@ -152,7 +152,7 @@ Relation extends Relations
   export type Row<M extends AnyModel> = ConstructorParameters<
   ModelClass<M>
   > extends [infer U]
-  ? U
+  ? {[K in keyof U]: U[K]}
   : never;
   
   /**
@@ -318,8 +318,8 @@ export interface Transaction {
 export interface Database<Schema extends ModelClassMap> {
   describe(modelName: keyof Schema): Table<Schema[keyof Schema]>;
   getEmptyState(): OrmState<Schema>;
-  query<M extends AnyModel, Payload extends object = {}>(query: Query<Schema, Payload>, state: OrmState<Schema>): { rows: Row<M>[] };
-  update<Payload extends object = {}>(
+  query<Payload extends object = {}>(query: Query<Schema, Payload>, state: OrmState<Schema>): { rows: Row<InstanceType<Schema[keyof Schema]>>[] };
+  update<Payload extends object = object>(
     updateSpec: UpdateSpec<Schema>,
     tx: Transaction,
     state: OrmState<Schema>
