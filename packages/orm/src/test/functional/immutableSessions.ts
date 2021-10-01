@@ -415,7 +415,7 @@ describe("Immutable session", () => {
     const author = Author.get({ name: "Tommi Kaikkonen" })!;
     const relatedPublishers = author.publishers;
     expect(relatedPublishers).toBeInstanceOf(QuerySet);
-    expect(relatedPublishers.modelClass).toBe(Publisher);
+    expect(relatedPublishers.modelClass).toBe<typeof Publisher>(Publisher);
     expect(relatedPublishers.count()).toBe(1);
 
     // Backward

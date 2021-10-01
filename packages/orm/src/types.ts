@@ -49,7 +49,7 @@ type ModelClass<M extends AnyModel> = ReturnType<M["getClass"]>;
  */
 export type SessionBoundModel<
   M extends AnyModel = AnyModel,
-> = M & ModelFields<M>;
+> = M & Temporary<M>;
 
 
 /**
