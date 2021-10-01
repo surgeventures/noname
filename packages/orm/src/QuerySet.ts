@@ -314,7 +314,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
     this._evaluated = false;
   }
 
-  add: <M extends SessionBoundModel>(...entities: (ModelId | M)[]) => void;
-  remove: <M extends SessionBoundModel>(...entities: (ModelId | M)[]) => void;
+  add: <QSet extends QuerySet>(this: QSet, ...entities: (ModelId | (QSet extends QuerySet<infer MClass> ? SessionBoundModel<MClass> : never))[]) => void;
+  remove: <QSet extends QuerySet>(this: QSet, ...entities: (ModelId | (QSet extends QuerySet<infer MClass> ? SessionBoundModel<MClass> : never))[]) => void;
   clear: () => void;
 }

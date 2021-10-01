@@ -116,7 +116,6 @@ describe("QuerySet tests", () => {
   });
 
   it("exclude works correctly with function argument", () => {
-    // ERROR: Row returns wrongly translated object, should be a plain object
     const excluded = bookQs.exclude(
       ({ author }) => author === 1
     );
