@@ -329,7 +329,7 @@ describe("Immutable session", () => {
         .all()
         .toRefArray()
         .map((genre) => genre.id)
-    ).toEqual([1, 2]);
+    ).toEqual<ModelId[]>([1, 2]);
     // update with same string, expect relations to be preserved
     book.update({ name: "Updated Book name" });
     expect(
@@ -337,7 +337,7 @@ describe("Immutable session", () => {
         .all()
         .toRefArray()
         .map((genre) => genre.id)
-    ).toEqual([1, 2]);
+    ).toEqual<ModelId[]>([1, 2]);
   });
 
   it("Model updates change relations if only relations are updated", () => {
@@ -353,7 +353,7 @@ describe("Immutable session", () => {
         .all()
         .toRefArray()
         .map((genre) => genre.id)
-    ).toEqual([1, 2]);
+    ).toEqual<ModelId[]>([1, 2]);
 
     // mutate array by appending element without changing reference
     genres.push(3);
@@ -368,7 +368,7 @@ describe("Immutable session", () => {
         .all()
         .toRefArray()
         .map(genre => genre.id)
-    ).toEqual([1, 2, 3]);
+    ).toEqual<ModelId[]>([1, 2, 3]);
     /* the backward relation must have been updated as well */
     expect(
       (Genre.withId(3)!
@@ -384,8 +384,7 @@ describe("Immutable session", () => {
 
     // Forward (from many-to-many field declaration)
     const book = Book.first()!;
-    // ERROR: for some reason genres are undefined
-    const relatedGenres = book.genres;
+    const relatedGenres = book.genres!;
     expect(relatedGenres).toBeInstanceOf(QuerySet);
     expect(relatedGenres.modelClass).toBe(Genre);
     expect(relatedGenres.count()).toBe(2);
@@ -397,14 +396,14 @@ describe("Immutable session", () => {
     expect(relatedBooks.modelClass).toBe(Book);
 
     // Forward (from many-to-many field declaration with idAttribute is name)
-    const relatedTags = book.tags;
+    const relatedTags = book.tags!;
     expect(relatedTags).toBeInstanceOf(QuerySet);
     expect(relatedTags.modelClass).toBe(Tag);
     expect(relatedTags.count()).toBe(2);
 
     // Backward
-    const tag = castTo<typeof Tag & TagDescriptors>(Tag.first()!);
-    const tagRelatedBooks = tag.books;
+    const tag = Tag.first()!;
+    const tagRelatedBooks = tag.books as QuerySet<Book>;
     expect(tagRelatedBooks).toBeInstanceOf(QuerySet);
     expect(tagRelatedBooks.modelClass).toBe(Book);
   });
