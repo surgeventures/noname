@@ -1,6 +1,6 @@
 import ORM from "../../ORM";
 import Model from "../../Model";
-import { ModelId, SessionBoundModel, SessionLike } from "../../types";
+import { ModelId, ModelInstance, SessionLike } from "../../types";
 
 describe("ES5 library code", () => {
   describe("With ES6 client code", () => {
@@ -24,7 +24,7 @@ describe("ES5 library code", () => {
     });
 
     it("Model CRUD works", () => {
-      let book: SessionBoundModel<Book>;
+      let book: ModelInstance<Book>;
 
       expect(() => {
         book = session.Book.create({

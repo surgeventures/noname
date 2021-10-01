@@ -1,7 +1,7 @@
 import ORM from "../ORM";
 import Model from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
-import { ModelId, Relations, SessionBoundModel, SessionLike, TargetRelationship } from "../types";
+import { ModelId, Relations, ModelInstance, SessionLike, TargetRelationship } from "../types";
 import { QuerySet } from "..";
 
 /**
@@ -254,7 +254,7 @@ export class Movie extends Model<typeof Movie, MovieDescriptors> {
   };
 }
 
-type Test = SessionBoundModel<Movie>;
+type Test = ModelInstance<Movie>;
 
 const obj = {} as Test;
 obj.publisher

@@ -8,7 +8,7 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike, ModelConstructor, MappedRow, Ref } from "./types";
+import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, ModelInstance, SessionLike, ModelConstructor, MappedRow, Ref } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
 
@@ -243,7 +243,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {props} userProps - the new {@link Model}'s properties.
    * @return {Model} a new {@link Model} instance.
    */
-  static create<M extends typeof AnyModel>(this: M, userProps: MappedRow<InstanceType<M>>): SessionBoundModel<InstanceType<M>> {
+  static create<M extends typeof AnyModel>(this: M, userProps: MappedRow<InstanceType<M>>): ModelInstance<InstanceType<M>> {
     if (typeof this._session === "undefined") {
       throw new Error(
         [
@@ -313,7 +313,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {props} userProps - the required {@link Model}'s properties.
    * @return {Model} a {@link Model} instance.
    */
-  static upsert<M extends typeof AnyModel>(this: M, userProps: MappedRow<InstanceType<M>>): SessionBoundModel<InstanceType<M>> {
+  static upsert<M extends typeof AnyModel>(this: M, userProps: MappedRow<InstanceType<M>>): ModelInstance<InstanceType<M>> {
     if (typeof this.session === "undefined") {
       throw new Error(
         [
@@ -347,7 +347,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @throws If object with id `id` doesn't exist
    * @return {Model|null} {@link Model} instance with id `id`
    */
-  static withId<M extends typeof AnyModel>(this: M, id: ModelId): SessionBoundModel<InstanceType<M>> | null {
+  static withId<M extends typeof AnyModel>(this: M, id: ModelId): ModelInstance<InstanceType<M>> | null {
     return this.get({
       [this.idAttribute]: id,
     });
@@ -398,7 +398,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @throws {Error} If more than one entity matches the properties in `lookupObj`.
    * @return {Model} a {@link Model} instance that matches the properties in `lookupObj`.
    */
-  static get<M extends typeof AnyModel>(this: M, lookupObj: Partial<Row<InstanceType<M>>>): SessionBoundModel<InstanceType<M>> | null {
+  static get<M extends typeof AnyModel>(this: M, lookupObj: Partial<Row<InstanceType<M>>>): ModelInstance<InstanceType<M>> | null {
     const ThisModel = castTo<ModelConstructor<InstanceType<M>>>(this);
 
     const rows = this._findDatabaseRows<Partial<Row<InstanceType<M>>>, InstanceType<M>>(lookupObj);
@@ -749,7 +749,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     return this.getQuerySet().count();
   }
 
-  static at<M extends typeof AnyModel>(this: M, index: number): SessionBoundModel<InstanceType<M>> | undefined {
+  static at<M extends typeof AnyModel>(this: M, index: number): ModelInstance<InstanceType<M>> | undefined {
     return this.getQuerySet().at(index);
   }
 
@@ -757,11 +757,11 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     return this.getQuerySet().all();
   }
 
-  static first<M extends typeof AnyModel>(this: M): SessionBoundModel<InstanceType<M>> | undefined {
+  static first<M extends typeof AnyModel>(this: M): ModelInstance<InstanceType<M>> | undefined {
     return this.getQuerySet().first();
   }
 
-  static last<M extends typeof AnyModel>(this: M): SessionBoundModel<InstanceType<M>> | undefined {
+  static last<M extends typeof AnyModel>(this: M): ModelInstance<InstanceType<M>> | undefined {
     return this.getQuerySet().last();
   }
 

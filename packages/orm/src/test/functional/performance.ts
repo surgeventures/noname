@@ -1,6 +1,6 @@
 import { Model, ORM, attr, many } from "../..";
 import { castTo } from "../../hacks";
-import { ModelId, Relations, SessionBoundModel, SessionLike, TargetRelationship } from "../../types";
+import { ModelId, Relations, ModelInstance, SessionLike, TargetRelationship } from "../../types";
 import { measureMs, nTimes, avg, round } from "../helpers";
 
 const crypto = require("crypto");
@@ -179,7 +179,7 @@ describe("Many-to-many relationship performance", () => {
   };
 
   const assignChildren = (
-    parent: SessionBoundModel<Parent>,
+    parent: ModelInstance<Parent>,
     start: number,
     end: number
   ) => {
@@ -192,7 +192,7 @@ describe("Many-to-many relationship performance", () => {
     const { Parent } = session;
 
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
-    let parent: SessionBoundModel<Parent>;
+    let parent: ModelInstance<Parent>;
     const n = 5;
     const childAmount = 1000;
     createChildren(0, 8000);

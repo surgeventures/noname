@@ -2,7 +2,7 @@ import deepFreeze from "deep-freeze";
 import { Model, QuerySet, ORM, attr } from "../..";
 import { AnyModel } from "../../Model";
 import { castTo } from "../../hacks";
-import { OrmState, Ref, ModelId, SessionBoundModel } from "../../types";
+import { OrmState, Ref, ModelId, ModelInstance } from "../../types";
 import {
   Author,
   createTestSessionWithData,
@@ -633,7 +633,7 @@ describe("Immutable session", () => {
 
     book.author = newAuthor;
 
-    expect(book.author).toEqual<SessionBoundModel<Author>>(newAuthor);
+    expect(book.author).toEqual<ModelInstance<Author>>(newAuthor);
     expect(book.author.ref).toBe<Ref<Author>>(newAuthor.ref);
 
     // with 'as' option
@@ -642,7 +642,7 @@ describe("Immutable session", () => {
     movie.publisher = newPublisher;
 
     expect(movie.publisherId).toEqual(0);
-    expect(movie.publisher).toEqual<SessionBoundModel<Publisher>>(newPublisher);
+    expect(movie.publisher).toEqual<ModelInstance<Publisher>>(newPublisher);
     expect(movie.publisher.ref).toBe<Ref<Publisher>>(newPublisher.ref);
   });
 
@@ -666,7 +666,7 @@ describe("Immutable session", () => {
     expect(cover!.getId()).toBe(rawFk);
 
     // Backward
-    const relatedBook = cover!.book as SessionBoundModel<Book>;
+    const relatedBook = cover!.book as ModelInstance<Book>;
     expect(relatedBook).toBeInstanceOf(Book);
     expect(relatedBook.getId()).toBe(book.getId());
   });

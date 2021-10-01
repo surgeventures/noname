@@ -10,7 +10,6 @@ import {
   UpdateSpec,
   ModelId,
   WithForEach,
-  SessionBoundModel,
   Row
 } from "./types";
 import { clauseFiltersByAttribute } from "./utils";
@@ -73,7 +72,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
         get: () => SessionBoundModel,
       });
 
-      const result = castTo<SessionBoundModel<Schema[keyof Schema]>>(SessionBoundModel);
+      const result = castTo<Schema[keyof Schema]>(SessionBoundModel);
       result.connect(this);
       return result;
     });
@@ -146,8 +145,10 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
     return payload;
   }
 
-  query(querySpec: Query<Schema>) {
-    const result = this.db.query<Schema[keyof Schema]>(querySpec, this.state);
+  query(querySpec: Query<Schema>): {
+    rows: Row<InstanceType<Schema[keyof Schema]>>[];
+} {
+    const result = this.db.query(querySpec, this.state);
 
     this._markAccessedByQuery(querySpec, result);
 
@@ -164,13 +165,13 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
     return { batchToken, withMutations };
   }
 
-  _markAccessedByQuery(querySpec: Query<Schema, Record<string, ModelId>>, result: { rows: Row<Schema[keyof Schema]>[] }) {
+  _markAccessedByQuery(querySpec: Query<Schema, Record<string, ModelId>>, result: { rows: Row<InstanceType<Schema[keyof Schema]>>[] }) {
     const { table, clauses } = querySpec;
     const { rows } = result;
 
     const { idAttribute } = castTo<Schema>(this)[table];
     const accessedIds = new Set<ModelId>(
-      rows.map((row) => row[idAttribute] as ModelId)
+      rows.map((row) => castTo<any>(row)[idAttribute] as ModelId)
     );
 
     const anyClauseFilteredById = clauses.some(
@@ -182,7 +183,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
          * we previously knew which row we wanted to access,
          * so there was no need to scan the entire table
          */
-        const id = clause.payload[idAttribute];
+        const id = clause.payload![idAttribute];
         accessedIds.add(id);
         return true;
       }

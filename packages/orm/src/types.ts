@@ -47,7 +47,7 @@ export type ModelClass<M extends AnyModel> = ReturnType<M["getClass"]>;
 /**
  * Extracts the first generic argument from the derived class.
  */
-export type SessionBoundModel<
+export type ModelInstance<
   M extends AnyModel = AnyModel,
 > = M & Temporary<M>;
 
@@ -68,11 +68,11 @@ type Temporary<M extends AnyModel> = ConstructorParameters<
  */
 export type MappedRow<M extends AnyModel> = {
   [K in keyof Temporary<M>]: Exclude<Temporary<M>[K], undefined> extends QuerySet
-    ? (SessionBoundModel<Exclude<Temporary<M>[K], undefined> extends QuerySet<infer MClass> ? MClass : never> | ModelId)[]
+    ? (ModelInstance<Exclude<Temporary<M>[K], undefined> extends QuerySet<infer MClass> ? MClass : never> | ModelId)[]
     : Exclude<Temporary<M>[K], undefined> extends AnyModel
     ? Temporary<M>[K] | ModelId
     : IsUnknown<Exclude<Temporary<M>[K], undefined>> extends true
-      ? (SessionBoundModel | ModelId)[]
+      ? (ModelInstance | ModelId)[]
       : Temporary<M>[K];
 }; 
 
@@ -80,7 +80,7 @@ export type MappedRow<M extends AnyModel> = {
  * 
  */
 export type ModelConstructor<MClass extends AnyModel = AnyModel, Props extends MappedRow<MClass> = MappedRow<MClass>> = {
-  new (props: Props): SessionBoundModel<MClass>; 
+  new (props: Props): ModelInstance<MClass>; 
 }
 
 
@@ -95,9 +95,9 @@ export type TargetRelationship<
 M extends AnyModel,
 Relation extends Relations
 > = Relation extends Relations.OneToOne
-? SessionBoundModel<M>
+? ModelInstance<M>
 : Relation extends Relations.ForeignKey
-? SessionBoundModel<M>
+? ModelInstance<M>
 : Relation extends Relations.ManyToMany
   ? QuerySet<M>
   : never;
@@ -109,7 +109,7 @@ Relation extends Relations
   M extends AnyModel,
   Relation extends Relations
   > = Relation extends Relations.OneToOne
-  ? SessionBoundModel<M>
+  ? ModelInstance<M>
   : Relation extends Relations.ForeignKey
   ? QuerySet<M>
   : Relation extends Relations.ManyToMany

@@ -3,7 +3,7 @@ import { normalizeEntity } from "./utils";
 
 import { UPDATE, DELETE, FILTER, EXCLUDE, ORDER_BY } from "./constants";
 import { AnyModel } from "./Model";
-import { ExtractModelClassType, ModelConstructor, ModelId, QueryClause, Row, SessionBoundModel, SortIteratee, SortOrder, QuerySetConstructor } from "./types";
+import { ExtractModelClassType, ModelConstructor, ModelId, QueryClause, Row, ModelInstance, SortIteratee, SortOrder, QuerySetConstructor } from "./types";
 import { castTo } from "./hacks";
 
 /**
@@ -80,7 +80,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
    * Returns an array of {@link Model} instances represented by the QuerySet.
    * @return {Model[]} model instances represented by the QuerySet
    */
-  toModelArray(): SessionBoundModel<MClass>[] {
+  toModelArray(): ModelInstance<MClass>[] {
     const { modelClass } = this;
     return this._evaluate().map((props) => {
       const ModelClass = castTo<ModelConstructor<MClass>>(modelClass);
@@ -118,7 +118,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
    *                           `index` in the {@link QuerySet} instance,
    *                           or undefined if the index is out of bounds.
    */
-  at(index: number): SessionBoundModel<MClass> | undefined {
+  at(index: number): ModelInstance<MClass> | undefined {
     const { modelClass } = this;
 
     const rows = this._evaluate();
@@ -134,7 +134,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
    * Returns the {@link Model} instance at index 0 in the {@link QuerySet} instance.
    * @return {Model}
    */
-  first(): SessionBoundModel<MClass> | undefined {
+  first(): ModelInstance<MClass> | undefined {
     return this.at(0);
   }
 
@@ -142,7 +142,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
    * Returns the {@link Model} instance at index `QuerySet.count() - 1`
    * @return {Model}
    */
-  last(): SessionBoundModel<MClass> | undefined {
+  last(): ModelInstance<MClass> | undefined {
     const rows = this._evaluate();
     return this.at(rows.length - 1);
   }
@@ -314,7 +314,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
     this._evaluated = false;
   }
 
-  add: <QSet extends QuerySet>(this: QSet, ...entities: (ModelId | (QSet extends QuerySet<infer MClass> ? SessionBoundModel<MClass> : never))[]) => void;
-  remove: <QSet extends QuerySet>(this: QSet, ...entities: (ModelId | (QSet extends QuerySet<infer MClass> ? SessionBoundModel<MClass> : never))[]) => void;
+  add: <QSet extends QuerySet>(this: QSet, ...entities: (ModelId | (QSet extends QuerySet<infer MClass> ? ModelInstance<MClass> : never))[]) => void;
+  remove: <QSet extends QuerySet>(this: QSet, ...entities: (ModelId | (QSet extends QuerySet<infer MClass> ? ModelInstance<MClass> : never))[]) => void;
   clear: () => void;
 }

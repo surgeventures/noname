@@ -1,7 +1,7 @@
 import { Model, QuerySet, ORM, attr, many, fk } from "../..";
 import { castTo } from "../../hacks";
 import { AnyModel, ModelClassMap } from "../../Model";
-import { ModelId, Relations, SessionLike, TargetRelationship, SessionBoundModel, Ref } from "../../types";
+import { ModelId, Relations, SessionLike, TargetRelationship, ModelInstance, Ref } from "../../types";
 import {
   createTestSessionWithData,
   ExtendedSession,
@@ -52,9 +52,9 @@ describe("Many to many relationships", () => {
     
     type CustomSession = SessionLike<Schema>;
     let session: CustomSession;
-    let teamFirst: SessionBoundModel<Team>;
-    let userFirst: SessionBoundModel<User>;
-    let userLast: SessionBoundModel<User>;
+    let teamFirst: ModelInstance<Team>;
+    let userFirst: ModelInstance<User>;
+    let userLast: ModelInstance<User>;
     let orm: ORM<Schema>;
     let validateRelationState: () => void;
 
@@ -683,9 +683,9 @@ describe("Many to many relationships", () => {
 
     let orm: ORM<Schema>;
     let session: SessionLike<Schema>;
-    let user0: SessionBoundModel<User>;
-    let user1: SessionBoundModel<User>;
-    let user2: SessionBoundModel<User>;
+    let user0: ModelInstance<User>;
+    let user1: ModelInstance<User>;
+    let user2: ModelInstance<User>;
     let validateRelationState: () => void;
 
     beforeEach(() => {
