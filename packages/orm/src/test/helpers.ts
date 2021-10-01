@@ -1,7 +1,7 @@
 import ORM from "../ORM";
-import Model, { AnyModel, ModelClassMap } from "../Model";
+import Model from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
-import { MappedRow, ModelId, Relations, SessionBoundModel, SessionLike, TargetRelationship } from "../types";
+import { ModelId, Relations, SessionBoundModel, SessionLike, TargetRelationship } from "../types";
 import { QuerySet } from "..";
 
 /**
@@ -236,7 +236,7 @@ export type MovieDescriptors = {
   characters?: string[];
   meta?: {};
   publisherId?: ModelId;
-  publisher?: TargetRelationship<Publisher, Relations.ManyToMany>;
+  publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
 };
 
 export class Movie extends Model<typeof Movie, MovieDescriptors> {

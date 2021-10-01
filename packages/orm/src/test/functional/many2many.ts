@@ -85,20 +85,20 @@ describe("Many to many relationships", () => {
         userLast = session.User.last()!;
 
         expect(
-          teamFirst.users.toRefArray()
+          teamFirst.users?.toRefArray()
             .map(row => row.id)
         ).toEqual([
           userFirst.id,
           userLast.id,
         ]);
         expect(
-          userFirst
-            .teams.toRefArray()
+          castTo<QuerySet<Team>>(userFirst
+            .teams).toRefArray()
             .map(row => row.id)
         ).toEqual([teamFirst.id]);
         expect(
-          userLast
-            .teams.toRefArray()
+          castTo<QuerySet<Team>>(userLast
+            .teams).toRefArray()
             .map(row => row.id)
         ).toEqual([teamFirst.id]);
 
@@ -107,7 +107,7 @@ describe("Many to many relationships", () => {
     });
 
     it("add forward many-many field", () => {
-      teamFirst.users.add(
+      teamFirst.users?.add(
         userFirst,
         userLast
       );
@@ -120,8 +120,8 @@ describe("Many to many relationships", () => {
     });
 
     it("add backward many-many field", () => {
-      userFirst.teams.add(teamFirst);
-      userLast.teams.add(teamFirst);
+      castTo<QuerySet<Team>>(userFirst.teams).add(teamFirst);
+      castTo<QuerySet<Team>>(userLast.teams).add(teamFirst);
       validateRelationState();
     });
 
@@ -253,7 +253,7 @@ describe("Many to many relationships", () => {
 
         // Backward
         const team = Team.get({ name: "team0" })!;
-        const relatedUsers = team.users;
+        const relatedUsers = team.users as QuerySet<User>;
         expect(relatedUsers).toBeInstanceOf(QuerySet);
         expect(relatedUsers.modelClass).toBe(User);
         expect(relatedUsers.count()).toBe(2);
@@ -262,8 +262,8 @@ describe("Many to many relationships", () => {
           relatedUsers.toRefArray().map(row => row.id)
         ).toEqual(["u0", "u1"]);
         expect(
-          Team.withId("t2")!
-            .users.toRefArray()
+          castTo<QuerySet<User>>(Team.withId("t2")!
+            .users).toRefArray()
             .map(row => row.id)
         ).toEqual(["u1"]);
 
@@ -271,8 +271,8 @@ describe("Many to many relationships", () => {
           relatedTeams.toRefArray().map(row => row.id)
         ).toEqual([team.id]);
         expect(
-          User.withId("u1")!
-            .teams.toRefArray()
+          castTo<QuerySet<Team>>(User.withId("u1")!
+            .teams).toRefArray()
             .map(row => row.id)
         ).toEqual(["t0", "t2"]);
 

@@ -10,8 +10,8 @@ import Model from "../../Model";
 describe("Table", () => {
   describe("prototype methods", () => {
     type TestDescriptors = {
-      id: ModelId;
-      data: string;
+      id?: ModelId;
+      data?: string;
     };
     class Test extends Model<typeof Test, TestDescriptors> {}
 

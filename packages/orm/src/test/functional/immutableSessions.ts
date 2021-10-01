@@ -7,7 +7,6 @@ import {
   Author,
   createTestSessionWithData,
   ExtendedSession,
-  TagDescriptors,
   Book,
   Movie,
   Schema,
@@ -429,9 +428,9 @@ describe("Immutable session", () => {
   it("adding related many-to-many entities works", () => {
     const { Book, Genre } = session;
     const book = Book.withId(0)!;
-    expect(book.genres.count()).toBe(2);
-    book.genres.add(Genre.withId(2)!);
-    expect(book.genres.count()).toBe(3);
+    expect(book.genres?.count()).toBe(2);
+    book.genres?.add(Genre.withId(2)!);
+    expect(book.genres?.count()).toBe(3);
   });
 
   it("trying to add existing related many-to-many entities throws", () => {
@@ -439,24 +438,24 @@ describe("Immutable session", () => {
     const book = Book.withId(0)!;
 
     const existingId = 1;
-    expect(() => book.genres.add(existingId)).toThrow(existingId.toString());
+    expect(() => book.genres?.add(existingId)).toThrow(existingId.toString());
   });
 
   it("trying to set many-to-many fields throws", () => {
     const { Book } = session;
     const book = Book.withId(0)!;
     expect(() => {
-      book.genres = "whatever";
+      book.genres = "whatever" as any;
     }).toThrow(
       "Tried setting a M2M field. Please use the related QuerySet methods add, remove and clear."
     );
   });
 
   it("updating related many-to-many entities through ids works", () => {
-    const { Book, Genre, Author } = session;
+    const { Genre, Author } = session;
     const tommi = Author.get({ name: "Tommi Kaikkonen" })!;
-    const book = tommi.books.first()!;
-    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
+    const book = castTo<QuerySet<Book>>(tommi.books).first()!;
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       0,
       1,
     ]);
@@ -464,7 +463,7 @@ describe("Immutable session", () => {
     const deleteGenre = Genre.withId(0);
 
     book.update({ genres: [1, 2] });
-    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       1,
       2,
     ]);
@@ -483,7 +482,7 @@ describe("Immutable session", () => {
         .toRefArray()
         .map(row => row.toGenreId)
     ).toEqual([0, 99]);
-    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       0,
     ]);
 
@@ -494,7 +493,7 @@ describe("Immutable session", () => {
         .toRefArray()
         .map(row => row.toGenreId)
     ).toEqual([1, 98]);
-    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       1,
     ]);
   });
@@ -502,8 +501,8 @@ describe("Immutable session", () => {
   it("updating non-existing many-to-many entities works", () => {
     const { Genre, Author } = session;
     const tommi = Author.get({ name: "Tommi Kaikkonen" })!;
-    const book = tommi.books.first();
-    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
+    const book = castTo<QuerySet<Book>>(tommi.books).first()!;
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       0,
       1,
     ]);
@@ -513,7 +512,7 @@ describe("Immutable session", () => {
     const addGenre = Genre.withId(2)!;
 
     book.update({ genres: [addGenre, keepGenre] });
-    expect(book.genres.toRefArray().map(row => row.id)).toEqual([
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       1,
       2,
     ]);
@@ -562,11 +561,11 @@ describe("Immutable session", () => {
   it("removing related many-to-many entities works", () => {
     const { Book, Genre } = session;
     const book = Book.withId(0)!;
-    expect(book.genres.count()).toBe(2);
-    book.genres.remove(Genre.withId(0)!);
+    expect(book.genres?.count()).toBe(2);
+    book.genres?.remove(Genre.withId(0)!);
 
     expect(
-      session.Book.withId(0)!.genres.count()
+      session.Book.withId(0)!.genres?.count()
     ).toBe(1);
   });
 
@@ -575,7 +574,7 @@ describe("Immutable session", () => {
     const book = Book.withId(0)!;
 
     const unexistingId = 2012384;
-    expect(() => book.genres.remove(0, unexistingId)).toThrow(
+    expect(() => book.genres?.remove(0, unexistingId)).toThrow(
       unexistingId.toString()
     );
   });
@@ -583,11 +582,11 @@ describe("Immutable session", () => {
   it("clearing related many-to-many entities works", () => {
     const { Book } = session;
     const book = Book.withId(0)!;
-    expect(book.genres.count()).toBe(2);
-    book.genres.clear();
+    expect(book.genres?.count()).toBe(2);
+    book.genres?.clear();
 
     expect(
-      session.Book.withId(0)!.genres.count()
+      session.Book.withId(0)!.genres?.count()
     ).toBe(0);
   });
 
@@ -599,10 +598,10 @@ describe("Immutable session", () => {
     const { author } = book;
     const { author: rawFk } = book.ref;
     expect(author).toBeInstanceOf(Author);
-    expect(author.getId()).toBe<ModelId>(rawFk);
+    expect(author?.getId()).toBe<ModelId>(rawFk);
 
     // Backward
-    const relatedBooks = author.books;
+    const relatedBooks = author!.books as QuerySet<Book>;
     expect(relatedBooks).toBeInstanceOf(QuerySet);
     relatedBooks._evaluate();
     expect(relatedBooks.rows).toContain(book.ref);
@@ -612,7 +611,7 @@ describe("Immutable session", () => {
     const movie = Movie.first()!;
     const { publisher, publisherId } = movie;
     expect(publisher).toBeInstanceOf(Publisher);
-    expect(publisher.getId()).toBe(publisherId);
+    expect(publisher!.getId()).toBe(publisherId);
   });
 
   it("non-existing foreign key relationship descriptors return null", () => {
@@ -620,10 +619,10 @@ describe("Immutable session", () => {
 
     const book = Book.first()!;
     // ERROR: trying to reassign the value to other type
-    book.author = 91243424;
+    book.author = 91243424 as any;
     expect(book.author).toBe(null);
 
-    book.author = null;
+    book.author = null as any;
     expect(book.author).toBe(null);
   });
 

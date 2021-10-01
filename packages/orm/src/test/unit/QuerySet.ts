@@ -46,12 +46,12 @@ describe("QuerySet tests", () => {
   });
 
   it("first works correctly", () => {
-    expect(bookQs.first()).toEqual<SessionBoundModel<InstanceType<Schema['Book']>, {}> | undefined>(bookQs.at(0));
+    expect(bookQs.first()).toEqual<SessionBoundModel<InstanceType<Schema['Book']>> | undefined>(bookQs.at(0));
   });
 
   it("last works correctly", () => {
     const lastIndex = bookQs.count() - 1;
-    expect(bookQs.last()).toEqual<SessionBoundModel<InstanceType<Schema['Book']>, {}> | undefined>(bookQs.at(lastIndex));
+    expect(bookQs.last()).toEqual<SessionBoundModel<InstanceType<Schema['Book']>> | undefined>(bookQs.at(lastIndex));
   });
 
   it("all works correctly", () => {

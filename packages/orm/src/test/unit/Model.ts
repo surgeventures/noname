@@ -120,11 +120,11 @@ describe("Model", () => {
   describe("Instance methods", () => {
     type TestDescriptors = {
       id: ModelId;
-      name: string;
-      number: number;
-      boolean: boolean;
-      array: any[];
-      object: {};
+      name?: string;
+      number?: number;
+      boolean?: boolean;
+      array?: any[];
+      object?: {};
     }
     type Schema = {
       UnitTestModel: ReturnType<typeof getTestModelClass>; 
