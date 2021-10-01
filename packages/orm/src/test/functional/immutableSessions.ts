@@ -187,7 +187,6 @@ describe("Immutable session", () => {
 
   it("Models correctly create a new instance via upsert when not passing an ID", () => {
     const { Book } = session;
-    // ERROR: upsert should accept the attrs only that extend the interface
     const book = Book.upsert({
       name: "New Book",
       author: 0,
@@ -320,7 +319,6 @@ describe("Immutable session", () => {
     const { Book } = session;
 
     const genres = [1, 2];
-    // ERROR: Attrs type is lost
     const book = Book.create({
       name: "Book name",
       genres,
