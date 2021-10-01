@@ -42,7 +42,7 @@ export type ExtractModelClassType<T> = T extends Model<infer U> ? U : T;
 /**
  * Extracts the first generic argument from the derived class.
  */
-type ModelClass<M extends AnyModel> = ReturnType<M["getClass"]>;
+export type ModelClass<M extends AnyModel> = ReturnType<M["getClass"]>;
 
 /**
  * Extracts the first generic argument from the derived class.
@@ -91,83 +91,77 @@ export type QuerySetConstructor<M extends AnyModel, Payload extends object = {}>
 /**
  * 
  */
-export type Ref<M extends AnyModel> = {
-    [K in keyof ModelFields<M>]: ModelFields<M>[K] extends QuerySet
-      ? never
-      : ModelFields<M>[K] extends AnyModel
-      ? ModelId | undefined
-      : ModelFields<M>[K];
-  };
-
-/**
- * 
- */
 export type TargetRelationship<
+M extends AnyModel,
+Relation extends Relations
+> = Relation extends Relations.OneToOne
+? SessionBoundModel<M>
+: Relation extends Relations.ForeignKey
+? SessionBoundModel<M>
+: Relation extends Relations.ManyToMany
+  ? QuerySet<M>
+  : never;
+
+  /**
+ * 
+   */
+  export type SourceRelationship<
   M extends AnyModel,
   Relation extends Relations
-> = Relation extends Relations.OneToOne
+  > = Relation extends Relations.OneToOne
   ? SessionBoundModel<M>
   : Relation extends Relations.ForeignKey
-  ? SessionBoundModel<M>
+  ? QuerySet<M>
   : Relation extends Relations.ManyToMany
   ? QuerySet<M>
   : never;
+  
+  /**
+   * Extracts the first generic argument from the derived class.
+   */
+  type ModelField = QuerySet | AnyModel | Serializable;
+  
+  /**
+   * 
+   */
+  type BackwardsModelField = unknown;
+  
+  /**
+   * Extracts the first generic argument from the derived class.
+   */
+  export type ModelFieldMap = {
+    id?: ModelId;
+    [K: string]: ModelField | BackwardsModelField;
+  };
+  
+  /**
+   * 
+   */
+  export type Ref<M extends AnyModel> = Row<M>;
 
-/**
- * 
- */
-export type SourceRelationship<
-  M extends AnyModel,
-  Relation extends Relations
-> = Relation extends Relations.OneToOne
-  ? SessionBoundModel<M>
-  : Relation extends Relations.ForeignKey
-  ? QuerySet<M>
-  : Relation extends Relations.ManyToMany
-  ? QuerySet<M>
-  : never;
-
-/**
- * Extracts the first generic argument from the derived class.
- */
-type ModelField = QuerySet | AnyModel | Serializable;
-
-/**
- * 
- */
-type BackwardsModelField = unknown;
-
-/**
- * Extracts the first generic argument from the derived class.
- */
-export type ModelFieldMap = {
-  id?: ModelId;
-  [K: string]: ModelField | BackwardsModelField;
-};
-
-/**
- * 
- */
-export type ModelFields<M extends AnyModel> = ConstructorParameters<
-  ModelClass<M>
-> extends [infer U]
-  ? U
-  : never;
-
-/**
- * 
- */
-export type Row<M extends AnyModel> = ModelFields<M> extends ModelAttrs<infer Fields>
+  /**
+   * 
+   */
+  export type ModelFields<M extends AnyModel> = Row<M> extends ModelAttrs<infer Fields>
   ? Fields
   : never;
-
-/**
- * 
- */
-export type ModelAttrs<Attrs extends ModelFieldMap = ModelFieldMap> = {
-  [K in keyof Attrs]: Attrs[K] extends QuerySet
+  
+  /**
+   * 
+   */
+  export type Row<M extends AnyModel> = ConstructorParameters<
+  ModelClass<M>
+  > extends [infer U]
+  ? U
+  : never;
+  
+  /**
+   * 
+   */
+  export type ModelAttrs<Attrs extends ModelFieldMap = ModelFieldMap> = {
+    [K in keyof Attrs]: Exclude<Attrs[K], undefined> extends QuerySet
     ? never
-    : Attrs[K] extends AnyModel
+    : Exclude<Attrs[K], undefined> extends AnyModel
     ? ModelId | undefined
     : Attrs[K];
 };
@@ -177,7 +171,7 @@ export type ModelAttrs<Attrs extends ModelFieldMap = ModelFieldMap> = {
  */
 type IsAny<T> = (
   unknown extends T
-    ? [keyof T] extends [never] ? false : true
+  ? [keyof T] extends [never] ? false : true
     : false
 );
 

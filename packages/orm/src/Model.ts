@@ -8,7 +8,7 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike, ModelConstructor, ModelFields, MappedRow } from "./types";
+import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionLike, ModelConstructor, MappedRow, Ref } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
 
@@ -430,7 +430,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @return {*} The id value of the current instance.
    */
   getId(): ModelId {
-    return this._fields[this.getClass().idAttribute as keyof ModelAttrs<Attrs>] as unknown as ModelId;
+    return this._fields[this.getClass().idAttribute] as ModelId;
   }
 
   /**
@@ -439,12 +439,12 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    *
    * @return {Object} a reference to the plain JS object in the store
    */
-  get ref(): Row<this>[] {
+  get ref(): Ref<this> {
     const ThisModel = this.getClass();
 
     // eslint-disable-next-line no-underscore-dangle
-    return ThisModel._findDatabaseRows({
-      [ThisModel.idAttribute]: this.getId(),
+    return ThisModel._findDatabaseRows<this>({
+      [ThisModel.idAttribute as 'id']: this.getId(),
     })[0];
   }
 
@@ -456,8 +456,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @return {Boolean} a boolean indicating if entity with `props` exists in the state
    * @private
    */
-  static _findDatabaseRows<LookupObj extends {} = {}, M extends AnyModel = AnyModel>(lookupObj: LookupObj): Row<M>[] {
-    const querySpec: Query<ModelClassMap, LookupObj> = {
+  static _findDatabaseRows<M extends AnyModel = AnyModel>(lookupObj: MappedRow<M>): Row<M>[] {
+    const querySpec: Query<ModelClassMap, MappedRow<M>> = {
       table: this.modelName,
       clauses: [],
     };
@@ -469,7 +469,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         },
       ];
     }
-    return this.session.query(querySpec).rows as Row<M>[];
+    return this.session.query(querySpec).rows;
   }
 
   /**

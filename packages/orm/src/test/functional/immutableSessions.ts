@@ -598,7 +598,7 @@ describe("Immutable session", () => {
     const { author } = book;
     const { author: rawFk } = book.ref;
     expect(author).toBeInstanceOf(Author);
-    expect(author?.getId()).toBe<ModelId>(rawFk);
+    expect(author?.getId()).toBe<ModelId>(rawFk!);
 
     // Backward
     const relatedBooks = author!.books as QuerySet<Book>;
