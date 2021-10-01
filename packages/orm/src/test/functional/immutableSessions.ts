@@ -280,7 +280,7 @@ describe("Immutable session", () => {
     const movie = Movie.first()!;
     const oldRef = movie.ref;
 
-    movie.equals = (_otherModel) => true;
+    movie.equals = () => true;
     movie.update({
       name: "New name",
       rating: 10,

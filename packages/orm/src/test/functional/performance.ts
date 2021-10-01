@@ -20,6 +20,7 @@ const logTime = (
       .join(", ");
     out += ` on average (${measurementSeconds} each)`;
   }
+  // eslint-disable-next-line no-console
   console.log(out);
 };
 

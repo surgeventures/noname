@@ -534,7 +534,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {Object} userMergeObj - an object that will be merged with this instance.
    * @return {undefined}
    */
-  update(userMergeObj: Partial<ModelAttrs<Attrs>>): void {
+  update<M extends AnyModel = AnyModel>(this: M, userMergeObj: Partial<MappedRow<M>>): void {
     const ThisModel = this.getClass();
     if (typeof ThisModel.session === "undefined") {
       throw new Error(
@@ -563,7 +563,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
 
         if (field instanceof ForeignKey || field instanceof OneToOne) {
           // update one-one/fk relations
-          mergeObj[mergeKey] = normalizeEntity(mergeObj[mergeKey] as AnyModel) as any;
+          mergeObj[mergeKey] = normalizeEntity(mergeObj[mergeKey] as M) as any;
         } else if (field instanceof ManyToMany) {
           // field is forward relation
           m2mRelations[mergeKey] = mergeObj[mergeKey] as ModelId[];
