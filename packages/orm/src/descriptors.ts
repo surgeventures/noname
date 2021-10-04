@@ -1,6 +1,6 @@
 import { castTo } from "./hacks";
-import Model, { ModelClassMap } from "./Model";
-import { ModelData, ModelId, ModelAttrs, AnyObject } from "./types";
+import Model, { AnyModel, ModelClassMap } from "./Model";
+import { ModelData, ModelId, ModelAttrs } from "./types";
 import { normalizeEntity } from "./utils";
 
 /**
@@ -47,13 +47,13 @@ export function forwardsManyToOneDescriptor(
 ) {
   return {
     get() {
-      const thisModel = castTo<Model>(this);
+      const thisModel = castTo<AnyModel>(this);
       const DeclaredToModel = castTo<ModelClassMap>(
         thisModel.getClass().session
       )[declaredToModelName];
-      const { [fieldName]: toId } = thisModel._fields;
+      const { [fieldName as 'id']: toId } = thisModel._fields;
 
-      return DeclaredToModel.withId(toId);
+      return DeclaredToModel.withId(toId!);
     },
     set(value: any) {
       const thisModel = castTo<Model>(this);
@@ -183,7 +183,7 @@ export function manyToManyDescriptor(
       const referencedOtherIds = new Set(
         throughQs
           .toRefArray()
-          .map((obj: ModelAttrs<AnyObject>) => obj[otherReferencingField])
+          .map((obj: ModelAttrs) => obj[otherReferencingField])
       );
 
       /**

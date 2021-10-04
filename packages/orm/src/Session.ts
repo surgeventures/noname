@@ -1,5 +1,5 @@
 import { BatchToken, getBatchToken } from "immutable-ops";
-import { ModelClassMap} from "./Model";
+import { AnyModel, ModelClassMap} from "./Model";
 
 import { SUCCESS, UPDATE, DELETE } from "./constants";
 import ORM from "./ORM";
@@ -129,9 +129,9 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
    * @param {Object} update - the update object. Must have keys
    *                          `type`, `payload`.
    */
-  applyUpdate<Payload extends {}>(updateSpec: UpdateSpec<Schema, Payload>): Payload {
+  applyUpdate<MClass extends AnyModel>(updateSpec: UpdateSpec<Schema, Partial<Row<MClass>>>): Row<MClass> {
     const tx = this._getTransaction(updateSpec);
-    const result = this.db.update<Payload>(updateSpec, tx, this.state);
+    const result = this.db.update<Row<MClass>>(updateSpec, tx, this.state);
     const { status, state, payload } = result;
 
     if (status !== SUCCESS) {

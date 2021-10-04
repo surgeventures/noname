@@ -6,6 +6,7 @@ import { ForeignKey, ManyToMany, attr, Field } from "./fields";
 import { m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
 import { DatabaseCreator } from "./db/Database";
 import { Database, OrmState, ModelTableOpts, SessionLike } from "./types";
+import { castTo } from "./hacks";
 
 /**
  * ORM instantiation opts.
@@ -160,7 +161,7 @@ Schema extends ModelClassMap,
 
   generateSchemaSpec() {
     const models = this.getModelClasses();
-    const tables = models.reduce<Record<keyof Schema, ModelTableOpts<Schema[keyof Schema]>>>((spec, modelClass) => {
+    const tables = models.reduce<{ [K in keyof Schema]: ModelTableOpts<Schema[K]> }>((spec, modelClass) => {
       const tableName = modelClass.modelName;
       const tableSpec = modelClass._getTableOpts(); // eslint-disable-line no-underscore-dangle
       spec[tableName as keyof Schema] = Object.assign(
@@ -169,7 +170,7 @@ Schema extends ModelClassMap,
         tableSpec
       ) as ModelTableOpts<Schema[keyof Schema]>;
       return spec;
-    }, {} as Record<keyof Schema, ModelTableOpts<Schema[keyof Schema]>>);
+    }, {} as { [K in keyof Schema]: ModelTableOpts<Schema[K]> });
     return { tables };
   }
 
@@ -255,7 +256,7 @@ Schema extends ModelClassMap,
       field,
       fieldName,
       model,
-      orm: this,
+      orm: castTo<ORM<ModelClassMap>>(this),
     }).run();
   }
 }

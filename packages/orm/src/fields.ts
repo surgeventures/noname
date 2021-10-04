@@ -17,6 +17,7 @@ import {
   reverseFieldName,
   reverseFieldErrorMessage,
 } from "./utils";
+import { castTo } from "./hacks";
 
 /**
  * Contains the logic for how fields on {@link Model}s work
@@ -30,7 +31,7 @@ import {
  */
 
 type FieldInstallerTemplateOptions<Schema extends ModelClassMap> = {
-  field: RelationalField;
+  field: Field;
   fieldName: string;
   model: Schema[keyof Schema];
   orm: ORM<Schema>;
@@ -42,7 +43,7 @@ type FieldInstallerTemplateOptions<Schema extends ModelClassMap> = {
  * @private
  */
 abstract class FieldInstallerTemplate<Schema extends ModelClassMap = ModelClassMap> {
-  field: RelationalField;
+  field: Field;
   fieldName: string;
   model: Schema[keyof Schema];
   orm: ORM<Schema>;
@@ -61,13 +62,13 @@ abstract class FieldInstallerTemplate<Schema extends ModelClassMap = ModelClassM
      * to be able to make better informed decisions
      */
     if (this.field.references(this.model)) {
-      this.field.toModelName = "this";
+      castTo<RelationalField>(this.field).toModelName = "this";
     }
   }
 
   get toModel() {
     if (typeof this._toModel === "undefined") {
-      const { toModelName } = this.field;
+      const { toModelName } = this.field as RelationalField;
       if (!toModelName) {
         this._toModel = null;
       } else if (toModelName === "this") {
@@ -144,7 +145,7 @@ class DefaultFieldInstaller extends FieldInstallerTemplate {
   installForwardsVirtualField() {
     this.model.virtualFields[
       this.fieldName
-    ] = this.field.createForwardsVirtualField(
+    ] = castTo<RelationalField>(this.field).createForwardsVirtualField(
       this.fieldName,
       this.model,
       this.toModel!,
@@ -184,7 +185,7 @@ class DefaultFieldInstaller extends FieldInstallerTemplate {
   installBackwardsVirtualField() {
     this.toModel!.virtualFields[
       this.backwardsFieldName
-    ] = this.field.createBackwardsVirtualField(
+    ] = castTo<RelationalField>(this.field).createBackwardsVirtualField(
       this.fieldName,
       this.model,
       this.toModel!,
@@ -311,7 +312,7 @@ export abstract class RelationalField extends Field {
   toModelName: string;
   relatedName?: string;
   through?: string;
-  throughFields: { from: string; to: string };
+  throughFields?: { from: string; to: string } | [string, string];
   as?: string;
   toModel: typeof AnyModel;
 
@@ -509,7 +510,7 @@ export class ManyToMany extends RelationalField {
     throughModel: typeof AnyModel
   ): { from: string; to: string } {
     if (this.throughFields) {
-      const [fieldAName, fieldBName] = this.throughFields as unknown as [string, string];
+      const [fieldAName, fieldBName] = this.throughFields as [string, string];
       const fieldA = throughModel.fields[fieldAName];
       return {
         to: fieldA.references(toModel) ? fieldAName : fieldBName,

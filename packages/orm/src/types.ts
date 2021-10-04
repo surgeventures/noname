@@ -37,7 +37,7 @@ export enum Relations {
 /**
  * Extracts the first generic argument from the derived class.
  */
-export type ExtractModelClassType<T> = T extends Model<infer U> ? U : T;
+export type ExtractModelClassType<T> = T extends Model<infer U, any> ? U : T;
 
 /**
  * Extracts the first generic argument from the derived class.
@@ -55,7 +55,7 @@ export type ModelInstance<
 /**
  * Checks the interfaces regardless optional arguments
  */
-type Temporary<M extends AnyModel> = ConstructorParameters<
+export type Temporary<M extends AnyModel> = ConstructorParameters<
  ModelClass<M>
 > extends [infer U]
  ? U extends ModelAttrs<infer Z>
@@ -79,13 +79,13 @@ export type MappedRow<M extends AnyModel> = {
 /**
  * 
  */
-export type ModelConstructor<MClass extends AnyModel = AnyModel, Props extends MappedRow<MClass> = MappedRow<MClass>> = {
-  new (props: Props): ModelInstance<MClass>; 
+export type ModelConstructor<MClass extends AnyModel = AnyModel> = {
+  new (props: Row<MClass>): ModelInstance<MClass>; 
 }
 
 
 export type QuerySetConstructor<M extends AnyModel, Payload extends object = {}> = {
-  new (modelClass: ExtractModelClassType<M>, clauses?: QueryClause<Payload>[], opts?: object): QuerySet<M>;
+  new (modelClass: typeof AnyModel, clauses?: QueryClause<Payload>[], opts?: object): QuerySet<M>;
 }
 
 /**
@@ -122,16 +122,11 @@ Relation extends Relations
   type ModelField = QuerySet | AnyModel | Serializable;
   
   /**
-   * 
-   */
-  type BackwardsModelField = unknown;
-  
-  /**
    * Extracts the first generic argument from the derived class.
    */
   export type ModelFieldMap = {
     id?: ModelId;
-    [K: string]: ModelField | BackwardsModelField;
+    [K: string]: ModelField;
   };
   
   /**
@@ -152,7 +147,9 @@ Relation extends Relations
   export type Row<M extends AnyModel> = ConstructorParameters<
   ModelClass<M>
   > extends [infer U]
-  ? {[K in keyof U]: U[K]}
+  ? U extends ModelAttrs
+   ? U
+   : never
   : never;
   
   /**

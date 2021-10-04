@@ -60,7 +60,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
   toString(): string {
     this._evaluate();
     const contents = this.rows
-      .map(({ id }) => this.modelClass.withId(id!)!.toString())
+      .map(({ id }) => this.modelClass.withId<typeof AnyModel>(id!)!.toString())
       .join("\n    - ");
     return `QuerySet contents:\n    - ${contents}`;
   }
@@ -300,7 +300,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
     const { session, modelName: table } = this.modelClass;
 
     this.toModelArray().forEach(
-      (model) => model._onDelete() // eslint-disable-line no-underscore-dangle
+      (model) => model // eslint-disable-line no-underscore-dangle
     );
 
     session.applyUpdate({

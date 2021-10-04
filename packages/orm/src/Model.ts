@@ -253,7 +253,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         ].join("")
       );
     }
-    const props: MappedRow<InstanceType<M>> = { ...userProps };
+    const props: Record<string, AnyModel | ModelId | (AnyModel | ModelId)[]> = { ...userProps };
 
     const m2mRelations: Record<string, (AnyModel | ModelId)[]> = {} as Record<string, (AnyModel | ModelId)[]>;
 
@@ -275,7 +275,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         // If a value is supplied for a ManyToMany field,
         // discard them from props and save for later processing.
         m2mRelations[key] = (userProps[key as keyof MappedRow<InstanceType<M>>] as unknown) as (AnyModel | ModelId)[];
-        delete props[key as keyof MappedRow<InstanceType<M>>];
+        delete props[key];
       }
     });
 
@@ -287,15 +287,15 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
           // If a value is supplied for a ManyToMany field,
           // discard them from props and save for later processing.
           m2mRelations[key] = (userProps[key as keyof MappedRow<InstanceType<M>>] as unknown) as (AnyModel | ModelId)[];
-          delete props[key as keyof MappedRow<InstanceType<M>>];
+          delete props[key];
         }
       }
     });
 
-    const newEntry = this.session.applyUpdate<MappedRow<InstanceType<M>>>({
+    const newEntry = this.session.applyUpdate<InstanceType<M>>({
       action: CREATE,
       table: this.modelName,
-      payload: props,
+      payload: castTo<Row<InstanceType<M>>>(props),
     });
 
     const ThisModel = castTo<ModelConstructor<InstanceType<M>>>(this);
@@ -350,7 +350,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
   static withId<M extends typeof AnyModel>(this: M, id: ModelId): ModelInstance<InstanceType<M>> | null {
     return this.get({
       [this.idAttribute]: id,
-    });
+    } as unknown as Partial<Row<InstanceType<M>>>);
   }
 
   /**
@@ -401,7 +401,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
   static get<M extends typeof AnyModel>(this: M, lookupObj: Partial<Row<InstanceType<M>>>): ModelInstance<InstanceType<M>> | null {
     const ThisModel = castTo<ModelConstructor<InstanceType<M>>>(this);
 
-    const rows = this._findDatabaseRows<Partial<Row<InstanceType<M>>>, InstanceType<M>>(lookupObj);
+    const rows = this._findDatabaseRows<InstanceType<M>>(lookupObj);
     if (rows.length === 0) {
       return null;
     }
@@ -439,13 +439,14 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    *
    * @return {Object} a reference to the plain JS object in the store
    */
+  //@ts-ignore
   get ref(): Ref<this> {
     const ThisModel = this.getClass();
 
     // eslint-disable-next-line no-underscore-dangle
     return ThisModel._findDatabaseRows<this>({
       [ThisModel.idAttribute as 'id']: this.getId(),
-    })[0];
+    } as Row<this>)[0];
   }
 
   /**
@@ -456,8 +457,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @return {Boolean} a boolean indicating if entity with `props` exists in the state
    * @private
    */
-  static _findDatabaseRows<M extends AnyModel = AnyModel>(lookupObj: MappedRow<M>): Row<M>[] {
-    const querySpec: Query<ModelClassMap, MappedRow<M>> = {
+  static _findDatabaseRows<M extends AnyModel = AnyModel>(lookupObj: Partial<Row<M>>): Row<M>[] {
+    const querySpec: Query<ModelClassMap, Partial<Row<M>>> = {
       table: this.modelName,
       clauses: [],
     };
@@ -469,7 +470,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         },
       ];
     }
-    return this.session.query(querySpec).rows;
+    return this.session.query(querySpec).rows as Row<M>[];
   }
 
   /**
@@ -582,7 +583,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     const mergedFields = {
       ...this._fields,
       ...mergeObj,
-    };
+    } as Row<M>;
 
     const updatedModel = new ThisModel(this._fields);
     updatedModel._initFields(mergedFields); // eslint-disable-line no-underscore-dangle
@@ -613,7 +614,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       ThisModel.session.applyUpdate({
         action: UPDATE,
         query: getByIdQuery(this),
-        payload: mergeObj,
+        payload: castTo<Row<M>>(mergeObj),
       });
     }
   }
@@ -691,9 +692,9 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       let toField: string;
 
       if (!reverse) {
-        ({ from: fromField, to: toField } = field.throughFields);
+        ({ from: fromField, to: toField } = field.throughFields as { from: string; to: string });
       } else {
-        ({ from: toField, to: fromField } = field.throughFields);
+        ({ from: toField, to: fromField } = field.throughFields as { from: string; to: string });
       }
 
       const currentIds = ThroughModel.filter(

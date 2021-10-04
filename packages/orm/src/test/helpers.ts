@@ -1,7 +1,7 @@
 import ORM from "../ORM";
-import Model from "../Model";
+import Model, { AnyModel } from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
-import { ModelId, Relations, ModelInstance, SessionLike, TargetRelationship } from "../types";
+import { ModelAttrs, ModelFieldMap, ModelId, Relations, SessionLike, TargetRelationship } from "../types";
 import { QuerySet } from "..";
 
 /**
@@ -147,7 +147,7 @@ export type AuthorDescriptors = {
   id?: ModelId;
   name: string;
   publishers?: TargetRelationship<Publisher, Relations.ManyToMany>;
-  books?: unknown;
+  books?: QuerySet;
 }
 export class Author extends Model<typeof Author, AuthorDescriptors> {
   static modelName = "Author" as const;
@@ -166,7 +166,7 @@ export class Author extends Model<typeof Author, AuthorDescriptors> {
 export type CoverDescriptors = {
   id?: ModelId;
   src: string;
-  book?: unknown;
+  book?: AnyModel;
 };
 export class Cover extends Model<typeof Cover, CoverDescriptors> {
   static modelName = "Cover" as const;
@@ -179,7 +179,7 @@ export class Cover extends Model<typeof Cover, CoverDescriptors> {
 export type GenreProps = {
   id?: ModelId;
   name: string;
-  books?: unknown;
+  books?: QuerySet;
 };
 
 export class Genre extends Model<typeof Genre, GenreProps> {
@@ -193,9 +193,9 @@ export class Genre extends Model<typeof Genre, GenreProps> {
 export type TagDescriptors = {
   id?: ModelId;
   name: string;
-  subTags?: unknown; // Should be TargetRelationship<Tag, Relations.ManyToMany>
-  parentTags?: unknown; // Verify the structure - should be TargetRelationship<Tag, Relations.ManyToMany>
-  books?: unknown;
+  subTags?: QuerySet; // Should be TargetRelationship<Tag, Relations.ManyToMany>
+  parentTags?: QuerySet; // Verify the structure - should be TargetRelationship<Tag, Relations.ManyToMany>
+  books?: QuerySet;
 };
 export class Tag extends Model<typeof Tag, TagDescriptors> {
   static modelName = "Tag" as const;
@@ -214,8 +214,8 @@ export class Tag extends Model<typeof Tag, TagDescriptors> {
 export type PublisherDescriptors = {
   id?: ModelId;
   name?: string;
-  authors?: unknown;
-  movies?: unknown;
+  authors?: QuerySet;
+  movies?: QuerySet;
 };
 
 export class Publisher extends Model<typeof Publisher, PublisherDescriptors> {
@@ -253,11 +253,6 @@ export class Movie extends Model<typeof Movie, MovieDescriptors> {
     }),
   };
 }
-
-type Test = ModelInstance<Movie>;
-
-const obj = {} as Test;
-obj.publisher
 
 export function createTestModels() {
   const MyBook = class extends Book {};
