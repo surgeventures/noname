@@ -76,7 +76,6 @@ describe("QuerySet tests", () => {
   });
 
   it("filter works correctly with object argument, with model instance value", () => {
-    // ERROR: interface says Model | undefined, withId returns Model | null
     const filtered = bookQs.filter({
       author: session.Author.withId(0),
     });

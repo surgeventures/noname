@@ -49,7 +49,7 @@ export type ModelClass<M extends AnyModel> = ReturnType<M["getClass"]>;
  */
 export type ModelInstance<
   M extends AnyModel = AnyModel,
-> = M & Temporary<M>;
+> = M & Temporary<M> & {[key: string]: any};
 
 
 /**
@@ -68,11 +68,11 @@ export type Temporary<M extends AnyModel> = ConstructorParameters<
  */
 export type MappedRow<M extends AnyModel> = {
   [K in keyof Temporary<M>]: Exclude<Temporary<M>[K], undefined> extends QuerySet
-    ? (ModelInstance<Exclude<Temporary<M>[K], undefined> extends QuerySet<infer MClass> ? MClass : never> | ModelId)[]
+    ? (ModelInstance<Exclude<Temporary<M>[K], undefined> extends QuerySet<infer MClass> ? MClass : never> | ModelId | null)[]
     : Exclude<Temporary<M>[K], undefined> extends AnyModel
-    ? Temporary<M>[K] | ModelId
+    ? Temporary<M>[K] | ModelId | null
     : IsUnknown<Exclude<Temporary<M>[K], undefined>> extends true
-      ? (ModelInstance | ModelId)[]
+      ? (ModelInstance | ModelId | null)[]
       : Temporary<M>[K];
 }; 
 

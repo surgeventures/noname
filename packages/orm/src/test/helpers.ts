@@ -1,7 +1,7 @@
 import ORM from "../ORM";
 import Model, { AnyModel } from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
-import { ModelAttrs, ModelFieldMap, ModelId, Relations, SessionLike, TargetRelationship } from "../types";
+import { ModelId, Relations, SessionLike, TargetRelationship } from "../types";
 import { QuerySet } from "..";
 
 /**

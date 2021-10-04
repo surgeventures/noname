@@ -3,7 +3,7 @@ import { normalizeEntity } from "./utils";
 
 import { UPDATE, DELETE, FILTER, EXCLUDE, ORDER_BY } from "./constants";
 import { AnyModel } from "./Model";
-import { ExtractModelClassType, ModelConstructor, ModelId, QueryClause, Row, ModelInstance, SortIteratee, SortOrder, QuerySetConstructor } from "./types";
+import { ExtractModelClassType, ModelConstructor, ModelId, QueryClause, Row, ModelInstance, SortIteratee, SortOrder, QuerySetConstructor, MappedRow } from "./types";
 import { castTo } from "./hacks";
 
 /**
@@ -161,7 +161,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
    * @param  {Object} lookupObj - the properties to match objects with. Can also be a function.
    * @return {QuerySet} a new {@link QuerySet} instance with objects that passed the filter.
    */
-  filter(lookupObj: Partial<Row<MClass>> | ((row: Row<MClass>) => boolean)): QuerySet<MClass> {
+  filter(lookupObj: Partial<MappedRow<MClass>> | ((row: MappedRow<MClass>) => boolean)): QuerySet<MClass> {
     /**
      * allow foreign keys to be specified as model instances,
      * transform model instances to their primary keys
@@ -189,7 +189,7 @@ export default class QuerySet<MClass extends AnyModel = AnyModel, MClassType ext
    * @param  {Object} lookupObj - the properties to unmatch objects with. Can also be a function.
    * @return {QuerySet} a new {@link QuerySet} instance with objects that did not pass the filter.
    */
-  exclude(lookupObj: Partial<Row<MClass>> | ((row: Row<MClass>) => boolean)): QuerySet<MClass> {
+  exclude(lookupObj: Partial<MappedRow<MClass>> | ((row: MappedRow<MClass>) => boolean)): QuerySet<MClass> {
     /**
      * allow foreign keys to be specified as model instances,
      * transform model instances to their primary keys

@@ -651,7 +651,7 @@ describe("Immutable session", () => {
 
     const book = Book.first()!;
     expect(() => {
-      book.author!.books = "whatever";
+      book.author!.books = "whatever" as any;
     }).toThrow("Can't mutate a reverse many-to-one relation.");
   });
 
@@ -676,7 +676,7 @@ describe("Immutable session", () => {
 
     const book = Book.first()!;
     expect(() => {
-      book.cover!.book = "whatever";
+      book.cover!.book = "whatever" as any;
     }).toThrow("Can't mutate a reverse one-to-one relation.");
   });
 

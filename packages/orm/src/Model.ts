@@ -253,7 +253,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         ].join("")
       );
     }
-    const props: Record<string, AnyModel | ModelId | (AnyModel | ModelId)[]> = { ...userProps };
+    const props: Record<string, AnyModel | ModelId | null | (AnyModel | ModelId | null)[]> = { ...userProps };
 
     const m2mRelations: Record<string, (AnyModel | ModelId)[]> = {} as Record<string, (AnyModel | ModelId)[]>;
 
@@ -766,11 +766,11 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     return this.getQuerySet().last();
   }
 
-  static filter<M extends typeof AnyModel>(this: M, lookupObj: Partial<Row<InstanceType<M>>> | ((row: Row<InstanceType<M>>) => boolean)): QuerySet<InstanceType<M>> {
+  static filter<M extends typeof AnyModel>(this: M, lookupObj: Partial<MappedRow<InstanceType<M>>> | ((row: MappedRow<InstanceType<M>>) => boolean)): QuerySet<InstanceType<M>> {
     return this.getQuerySet().filter(lookupObj);
   }
 
-  static exclude<M extends typeof AnyModel>(this: M, lookupObj: Partial<Row<InstanceType<M>>> | ((row: Row<InstanceType<M>>) => boolean)): QuerySet<InstanceType<M>> {
+  static exclude<M extends typeof AnyModel>(this: M, lookupObj: Partial<MappedRow<InstanceType<M>>> | ((row: MappedRow<InstanceType<M>>) => boolean)): QuerySet<InstanceType<M>> {
     return this.getQuerySet().exclude(lookupObj);
   }
 

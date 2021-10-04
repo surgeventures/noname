@@ -1,4 +1,4 @@
-import { Model, ORM, attr, many } from "../..";
+import { Model, ORM, attr, many, QuerySet } from "../..";
 import { castTo } from "../../hacks";
 import { ModelId, Relations, ModelInstance, SessionLike, TargetRelationship } from "../../types";
 import { measureMs, nTimes, avg, round } from "../helpers";
@@ -139,7 +139,7 @@ describe("Many-to-many relationship performance", () => {
   type ChildDescriptors = {
     id: ModelId;
     name: string;
-    parent?: typeof Parent;
+    parent?: QuerySet;
   };
   class Parent extends Model<typeof Parent, ParentDescriptors> {
     static modelName = "Parent" as const;

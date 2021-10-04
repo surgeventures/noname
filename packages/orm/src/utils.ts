@@ -76,13 +76,11 @@ function normalizeEntity(
   if (
     entity !== null &&
     typeof entity !== "undefined" &&
-    typeof entity !== "string" &&
-    typeof entity !== "number" &&
     typeof (entity as AnyModel).getId === "function"
   ) {
     return (entity as AnyModel).getId();
   }
-  return entity;
+  return entity as ModelId;
 }
 
 function reverseFieldErrorMessage(

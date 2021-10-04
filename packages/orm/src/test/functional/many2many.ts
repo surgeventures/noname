@@ -13,8 +13,8 @@ type UserDescriptors = {
   name?: string;
   //@ts-ignore
   subscribed?: TargetRelationship<User, Relations.ManyToMany>;
-  subscribers?: unknown;
-  teams?: unknown;
+  subscribers?: QuerySet;
+  teams?: QuerySet;
 };
 
 class User extends Model<typeof User, UserDescriptors> {
@@ -284,7 +284,7 @@ describe("Many to many relationships", () => {
       type UserModelDescriptors = {
         id: ModelId;
         name: string;
-        teams: unknown;
+        teams: QuerySet;
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> {
         static modelName = "User" as const;
@@ -420,8 +420,8 @@ describe("Many to many relationships", () => {
       type UserModelDescriptors = {
         id: ModelId;
         name: string;
-        links?: unknown;
-        teams?: unknown;
+        links?: QuerySet;
+        teams?: QuerySet;
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> {
         static modelName = "UserModel" as const;
@@ -451,7 +451,7 @@ describe("Many to many relationships", () => {
         id: ModelId;
         name: string;
         users?: TargetRelationship<User, Relations.ManyToMany>;
-        links?: unknown;
+        links?: QuerySet;
       }
       class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> {
         static modelName = "TeamModel" as const;
@@ -664,8 +664,8 @@ describe("Many to many relationships", () => {
   describe("self-referencing many field with modelName as toModelName", () => {
     type UserDescriptors = {
       id: ModelId;
-      subscribed?: unknown;
-      subscribers?: unknown;
+      subscribed?: QuerySet;
+      subscribers?: QuerySet;
     };
 
     class User extends Model<typeof User, UserDescriptors> {
