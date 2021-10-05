@@ -488,7 +488,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         if (field instanceof ManyToMany) {
           const ids: ModelId[] = (castTo<__TemporaryModelFields>(this)[fieldName] as unknown as QuerySet<this>)
             .toModelArray()
-            .map((model) => model.getId());
+            .map((model) => castTo<any>(model).getId());
           return `${fieldName}: [${ids.join(", ")}]`;
         }
         const val = this._fields[fieldName as keyof Attrs];
