@@ -204,9 +204,9 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    *
    * @return {Object} An instance of the model's `querySetClass`.
    */
-  static getQuerySet<M extends typeof AnyModel>(this: M): QuerySet<InstanceType<M>> {
+  static getQuerySet<M extends typeof AnyModel>(this: M): QuerySet<M> {
     const { querySetClass: QuerySetClass } = this;
-    return new (castTo<QuerySetConstructor<InstanceType<M>>>(QuerySetClass))(this);
+    return new (castTo<QuerySetConstructor<M>>(QuerySetClass))(this);
   }
 
   /**
@@ -486,7 +486,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       .map((fieldName) => {
         const field = ThisModel.fields[fieldName];
         if (field instanceof ManyToMany) {
-          const ids: ModelId[] = (castTo<__TemporaryModelFields>(this)[fieldName] as unknown as QuerySet<this>)
+          const ids: ModelId[] = (castTo<__TemporaryModelFields>(this)[fieldName] as unknown as QuerySet<MClass>)
             .toModelArray()
             .map((model) => castTo<any>(model).getId());
           return `${fieldName}: [${ids.join(", ")}]`;
@@ -754,7 +754,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     return this.getQuerySet().at(index);
   }
 
-  static all<M extends typeof AnyModel>(this: M): QuerySet<InstanceType<M>> {
+  static all<M extends typeof AnyModel>(this: M): QuerySet<M> {
     return this.getQuerySet().all();
   }
 
@@ -766,11 +766,11 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     return this.getQuerySet().last();
   }
 
-  static filter<M extends typeof AnyModel>(this: M, lookupObj: Partial<MappedRow<InstanceType<M>>> | ((row: MappedRow<InstanceType<M>>) => boolean)): QuerySet<InstanceType<M>> {
+  static filter<M extends typeof AnyModel>(this: M, lookupObj: Partial<MappedRow<InstanceType<M>>> | ((row: MappedRow<InstanceType<M>>) => boolean)): QuerySet<M> {
     return this.getQuerySet().filter(lookupObj);
   }
 
-  static exclude<M extends typeof AnyModel>(this: M, lookupObj: Partial<MappedRow<InstanceType<M>>> | ((row: MappedRow<InstanceType<M>>) => boolean)): QuerySet<InstanceType<M>> {
+  static exclude<M extends typeof AnyModel>(this: M, lookupObj: Partial<MappedRow<InstanceType<M>>> | ((row: MappedRow<InstanceType<M>>) => boolean)): QuerySet<M> {
     return this.getQuerySet().exclude(lookupObj);
   }
 
@@ -778,7 +778,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     this: M,
     iteratees: SortIteratee<InstanceType<M>> | ReadonlyArray<SortIteratee<InstanceType<M>>>,
     orders?: SortOrder | ReadonlyArray<SortOrder>
-  ): QuerySet<InstanceType<M>> {
+  ): QuerySet<M> {
     return this.getQuerySet().orderBy(iteratees, orders);
   }
 

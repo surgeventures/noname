@@ -1,7 +1,7 @@
 import { Model, QuerySet, ORM, attr, many, fk } from "../..";
 import { castTo } from "../../hacks";
 import { AnyModel, ModelClassMap } from "../../Model";
-import { ModelId, Relations, SessionLike, TargetRelationship, ModelInstance, Ref } from "../../types";
+import { ModelId, Relations, SessionLike, TargetRelationship, ModelInstance, Ref, SourceRelationship } from "../../types";
 import {
   createTestSessionWithData,
   ExtendedSession,
@@ -11,19 +11,24 @@ import {
 type UserDescriptors = {
   id?: ModelId;
   name?: string;
-  //@ts-ignore
-  subscribed?: TargetRelationship<User, Relations.ManyToMany>;
-  subscribers?: QuerySet;
-  teams?: QuerySet;
+  subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
+  subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
+  teams?: SourceRelationship<typeof Team, Relations.ManyToMany>;
 };
 
-class User extends Model<typeof User, UserDescriptors> {
+class User extends Model<typeof User, UserDescriptors> implements UserDescriptors {
   static modelName = "User" as const;
   static fields = {
     id: attr(),
     name: attr(),
     subscribed: many("User", "subscribers"),
   };
+
+  id?: ModelId;
+  name?: string;
+  subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
+  subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
+  teams?: SourceRelationship<typeof Team, Relations.ManyToMany>;
 }
 
 type TeamDescriptors = {
@@ -32,13 +37,17 @@ type TeamDescriptors = {
   users?: TargetRelationship<User, Relations.ManyToMany>;
 };
 
-class Team extends Model<typeof Team, TeamDescriptors> {
+class Team extends Model<typeof Team, TeamDescriptors> implements TeamDescriptors {
   static modelName = "Team" as const;
   static fields = {
     id: attr(),
     name: attr(),
     users: many("User", "teams"),
   };
+
+  id?: ModelId;
+  name?: string;
+  users?: TargetRelationship<User, Relations.ManyToMany>;
 }
 
 describe("Many to many relationships", () => {
@@ -92,13 +101,13 @@ describe("Many to many relationships", () => {
           userLast.id,
         ]);
         expect(
-          castTo<QuerySet<Team>>(userFirst
-            .teams).toRefArray()
+          userFirst.teams!
+            .toRefArray()
             .map(row => row.id)
         ).toEqual([teamFirst.id]);
         expect(
-          castTo<QuerySet<Team>>(userLast
-            .teams).toRefArray()
+          userLast.teams!
+            .toRefArray()
             .map(row => row.id)
         ).toEqual([teamFirst.id]);
 
@@ -120,8 +129,8 @@ describe("Many to many relationships", () => {
     });
 
     it("add backward many-many field", () => {
-      castTo<QuerySet<Team>>(userFirst.teams).add(teamFirst);
-      castTo<QuerySet<Team>>(userLast.teams).add(teamFirst);
+      userFirst.teams!.add(teamFirst);
+      userLast.teams!.add(teamFirst);
       validateRelationState();
     });
 
@@ -246,14 +255,14 @@ describe("Many to many relationships", () => {
 
         // Forward (from many-to-many field declaration)
         const user = User.get({ name: "user0" });
-        const relatedTeams = user!.teams as QuerySet<Team>;
+        const relatedTeams = user!.teams as QuerySet<typeof Team>;
         expect(relatedTeams).toBeInstanceOf(QuerySet);
         expect(relatedTeams.modelClass).toBe(Team);
         expect(relatedTeams.count()).toBe(1);
 
         // Backward
         const team = Team.get({ name: "team0" })!;
-        const relatedUsers = team.users as QuerySet<User>;
+        const relatedUsers = team.users as QuerySet<typeof User>;
         expect(relatedUsers).toBeInstanceOf(QuerySet);
         expect(relatedUsers.modelClass).toBe(User);
         expect(relatedUsers.count()).toBe(2);
@@ -262,7 +271,7 @@ describe("Many to many relationships", () => {
           relatedUsers.toRefArray().map(row => row.id)
         ).toEqual(["u0", "u1"]);
         expect(
-          castTo<QuerySet<User>>(Team.withId("t2")!
+          castTo<QuerySet<typeof User>>(Team.withId("t2")!
             .users).toRefArray()
             .map(row => row.id)
         ).toEqual(["u1"]);
@@ -271,7 +280,7 @@ describe("Many to many relationships", () => {
           relatedTeams.toRefArray().map(row => row.id)
         ).toEqual([team.id]);
         expect(
-          castTo<QuerySet<Team>>(User.withId("u1")!
+          castTo<QuerySet<typeof Team>>(User.withId("u1")!
             .teams).toRefArray()
             .map(row => row.id)
         ).toEqual(["t0", "t2"]);
@@ -284,14 +293,18 @@ describe("Many to many relationships", () => {
       type UserModelDescriptors = {
         id: ModelId;
         name: string;
-        teams: QuerySet;
+        teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
       }
-      class UserModel extends Model<typeof UserModel, UserModelDescriptors> {
+      class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
         static modelName = "User" as const;
         static fields = {
           id: attr(),
           name: attr(),
         };
+
+        id: ModelId;
+        name: string;
+        teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
       }
 
       type User2TeamModelDescriptors = {
@@ -299,21 +312,26 @@ describe("Many to many relationships", () => {
         user: TargetRelationship<User, Relations.ForeignKey>;
         team: TargetRelationship<Team, Relations.ForeignKey>;
       }
-      class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> {
+      class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> implements User2TeamModelDescriptors {
         static modelName = "User2Team" as const;
         static fields = {
           id: attr(),
           user: fk("User"),
           team: fk("Team"),
         };
+
+        id: ModelId;
+        user: TargetRelationship<User, Relations.ForeignKey>;
+        team: TargetRelationship<Team, Relations.ForeignKey>;
       }
 
       type TeamModelDescriptors = {
         id: ModelId;
         name: string;
         users: TargetRelationship<User, Relations.ManyToMany>;
+        teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
       }
-      class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> {
+      class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> implements TeamModelDescriptors {
         static modelName = "Team" as const;
         static fields = {
           id: attr(),
@@ -324,6 +342,11 @@ describe("Many to many relationships", () => {
             relatedName: "teams",
           }),
         };
+
+        id: ModelId;
+        name: string;
+        users: TargetRelationship<User, Relations.ManyToMany>;
+        teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
       }
 
       type Schema = {
@@ -352,13 +375,18 @@ describe("Many to many relationships", () => {
       type UserModelDescriptors = {
         id: ModelId;
         name: string;
+        teams: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
       }
-      class UserModel extends Model<typeof UserModel, UserModelDescriptors> {
+      class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
         static modelName = "User" as const;
         static fields = {
           id: attr(),
           name: attr(),
         };
+
+        id: ModelId;
+        name: string;
+        teams: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
       }
 
       type User2TeamModelDescriptors = {
@@ -366,13 +394,17 @@ describe("Many to many relationships", () => {
         user: TargetRelationship<User, Relations.ForeignKey>;
         team: TargetRelationship<Team, Relations.ForeignKey>;
       }
-      class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> {
+      class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> implements User2TeamModelDescriptors {
         static modelName = "User2Team" as const;
         static fields = {
           id: attr(),
           user: fk("User"),
           team: fk("Team"),
         };
+
+        id: ModelId;
+        user: TargetRelationship<User, Relations.ForeignKey>;
+        team: TargetRelationship<Team, Relations.ForeignKey>;
       }
 
       type TeamModelDescriptors = {
@@ -381,7 +413,7 @@ describe("Many to many relationships", () => {
         users: TargetRelationship<User, Relations.ManyToMany>;
       }
 
-      class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> {
+      class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> implements TeamModelDescriptors {
         static modelName = "Team" as const;
         static fields = {
           id: attr(),
@@ -393,6 +425,10 @@ describe("Many to many relationships", () => {
             throughFields: ["user", "team"],
           }),
         };
+
+        id: ModelId;
+        name: string;
+        users: TargetRelationship<User, Relations.ManyToMany>;
       }
 
       type Schema = {
@@ -420,15 +456,20 @@ describe("Many to many relationships", () => {
       type UserModelDescriptors = {
         id: ModelId;
         name: string;
-        links?: QuerySet;
-        teams?: QuerySet;
+        links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
+        teams?: SourceRelationship<typeof TeamModel, Relations.ManyToMany>;
       }
-      class UserModel extends Model<typeof UserModel, UserModelDescriptors> {
+      class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
         static modelName = "UserModel" as const;
         static fields = {
           id: attr(),
           name: attr(),
         };
+
+        id: ModelId;
+        name: string;
+        links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
+        teams?: SourceRelationship<typeof TeamModel, Relations.ManyToMany>;
       }
 
       type User2TeamModelDescriptors = {
@@ -437,7 +478,7 @@ describe("Many to many relationships", () => {
         user?: TargetRelationship<User, Relations.ForeignKey>;
         team?: TargetRelationship<Team, Relations.ForeignKey>;
       }
-      class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> {
+      class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> implements User2TeamModelDescriptors {
         static modelName = "User2TeamModel" as const;
         static fields = {
           id: attr(),
@@ -445,15 +486,20 @@ describe("Many to many relationships", () => {
           team: fk("TeamModel", "links"),
           name: attr(),
         };
+
+        id?: ModelId;
+        name: string;
+        user?: TargetRelationship<User, Relations.ForeignKey>;
+        team?: TargetRelationship<Team, Relations.ForeignKey>;
       }
 
       type TeamModelDescriptors = {
         id: ModelId;
         name: string;
         users?: TargetRelationship<User, Relations.ManyToMany>;
-        links?: QuerySet;
+        links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
       }
-      class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> {
+      class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> implements TeamModelDescriptors {
         static modelName = "TeamModel" as const;
         static fields = {
           id: attr(),
@@ -464,6 +510,11 @@ describe("Many to many relationships", () => {
             relatedName: "teams",
           }),
         };
+
+        id: ModelId;
+        name: string;
+        users?: TargetRelationship<User, Relations.ManyToMany>;
+        links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
       }
 
       type Schema = {
@@ -490,13 +541,11 @@ describe("Many to many relationships", () => {
       validateRelationState(session);
 
       expect(
-        castTo<QuerySet<User2TeamModel>>(UserModel.withId("u0")!
-          .links).toRefArray()
+        UserModel.withId("u0")!.links?.toRefArray()
           .map(row => row.name)
       ).toEqual(["link0"]);
       expect(
-        castTo<QuerySet<User2TeamModel>>(UserModel.withId("u1")!
-          .links).toRefArray()
+        UserModel.withId("u1")!.links?.toRefArray()
           .map(row => row.name)
       ).toEqual(["link1", "link2"]);
     });
@@ -505,8 +554,9 @@ describe("Many to many relationships", () => {
       type UserModelDescriptors = {
         id: ModelId;
         name: string;
+        users: SourceRelationship<typeof UserModel, Relations.ManyToMany>;
       }
-      class UserModel extends Model<typeof UserModel, UserModelDescriptors> {
+      class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
         static modelName = "UserModel" as const;
         static fields = {
           id: attr(),
@@ -517,6 +567,10 @@ describe("Many to many relationships", () => {
             relatedName: "otherUsers",
           }),
         };
+
+        id: ModelId;
+        name: string;
+        users: SourceRelationship<typeof UserModel, Relations.ManyToMany>;
       }
 
       type User2UserModelDescriptors = {
@@ -529,6 +583,9 @@ describe("Many to many relationships", () => {
           id: attr(),
           name: attr(),
         };
+
+        id: ModelId;
+        name: string;
       }
       
       type Schema = {
@@ -557,7 +614,7 @@ describe("Many to many relationships", () => {
 
       expect(TagSubTags.count()).toBe(0);
 
-      const technologySubTags = castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags);
+      const technologySubTags = Tag.withId("Technology")!.subTags!;
       
       technologySubTags.add("Redux");
       expect(TagSubTags.all().toRefArray()).toEqual([
@@ -570,7 +627,7 @@ describe("Many to many relationships", () => {
       expect(technologySubTags.count()).toBe(1);
       expect(technologySubTags.toRefArray()).toEqual<Ref<InstanceType<Schema['Tag']>>[]>([Tag.withId("Redux")!.ref]);
 
-      const reduxSubTags = castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.subTags);
+      const reduxSubTags = Tag.withId("Redux")!.subTags!;
 
       expect(reduxSubTags.count()).toBe(0);
       expect(reduxSubTags.toRefArray() ).toEqual([]);
@@ -578,13 +635,13 @@ describe("Many to many relationships", () => {
 
     it('removes relationships correctly when toModelName is "this"', () => {
       const { Tag, TagSubTags } = session;
-      castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags).add("Redux");
-      castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.subTags).add("Technology");
+      Tag.withId("Technology")!.subTags!.add("Redux");
+      Tag.withId("Redux")!.subTags!.add("Technology");
 
-      castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.subTags).remove("Technology");
+      Tag.withId("Redux")!.subTags!.remove("Technology");
 
       expect(
-        castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags).toRefArray()
+        Tag.withId("Technology")!.subTags!.toRefArray()
       ).toEqual<Ref<InstanceType<Schema['Tag']>>[]>([Tag.withId("Redux")!.ref]);
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
@@ -593,56 +650,56 @@ describe("Many to many relationships", () => {
           toTagId: "Redux",
         },
       ]);
-      expect(castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags).count()).toBe(
+      expect(Tag.withId("Technology")!.subTags!.count()).toBe(
         1
       );
       expect(
-        castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.subTags).toRefArray()
+        Tag.withId("Redux")!.subTags!.toRefArray()
       ).toEqual([]);
-      expect(castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.subTags).count()).toBe(0);
+      expect(Tag.withId("Redux")!.subTags!.count()).toBe(0);
     });
 
     it('querying backwards relationships works when toModelName is "this"', () => {
       const { Tag } = session;
-      castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags).add("Redux");
+      Tag.withId("Technology")!.subTags!.add("Redux");
 
       expect(
-        castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.parentTags).toRefArray()
+        Tag.withId("Redux")!.parentTags!.toRefArray()
       ).toEqual<Ref<InstanceType<Schema['Tag']>>[]>([Tag.withId("Technology")!.ref]);
-      expect(castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.parentTags).count()).toBe(1);
+      expect(Tag.withId("Redux")!.parentTags!.count()).toBe(1);
       expect(
-        castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.parentTags).toRefArray()
+        Tag.withId("Technology")!.parentTags!.toRefArray()
       ).toEqual([]);
       expect(
-        castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.parentTags).count()
+        Tag.withId("Technology")!.parentTags!.count()
       ).toBe(0);
     });
 
     it('adding relationships via backwards descriptor works when toModelName is "this"', () => {
       const { Tag } = session;
-      castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.parentTags).add("Technology");
+      Tag.withId("Redux")!.parentTags!.add("Technology");
 
       expect(
-        castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.parentTags).toRefArray()
+        Tag.withId("Redux")!.parentTags!.toRefArray()
       ).toEqual<Ref<InstanceType<Schema['Tag']>>[]>([Tag.withId("Technology")!.ref]);
-      expect(castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.parentTags).count()).toBe(1);
+      expect(Tag.withId("Redux")!.parentTags!.count()).toBe(1);
       expect(
-        castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags).toRefArray()
+        Tag.withId("Technology")!.subTags!.toRefArray()
       ).toEqual<Ref<InstanceType<Schema['Tag']>>[]>([Tag.withId("Redux")!.ref]);
-      expect(castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags).count()).toBe(
+      expect(Tag.withId("Technology")!.subTags!.count()).toBe(
         1
       );
     });
 
     it('removing relationships via backwards descriptor works when toModelName is "this"', () => {
       const { Tag, TagSubTags } = session;
-      castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags).add("Redux");
-      castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.subTags).add("Technology");
+      Tag.withId("Technology")!.subTags!.add("Redux");
+      Tag.withId("Redux")!.subTags!.add("Technology");
 
-      castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.parentTags).remove("Redux");
+      Tag.withId("Technology")!.parentTags!.remove("Redux");
 
       expect(
-        castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags).toRefArray()
+        Tag.withId("Technology")!.subTags!.toRefArray()
       ).toEqual<Ref<InstanceType<Schema['Tag']>>[]>([Tag.withId("Redux")!.ref]);
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
@@ -651,29 +708,33 @@ describe("Many to many relationships", () => {
           toTagId: "Redux",
         },
       ]);
-      expect(castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Technology")!.subTags).count()).toBe(
+      expect(Tag.withId("Technology")!.subTags!.count()).toBe(
         1
       );
       expect(
-        castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.subTags).toRefArray()
+        Tag.withId("Redux")!.subTags!.toRefArray()
       ).toEqual([]);
-      expect(castTo<QuerySet<InstanceType<Schema['Tag']>>>(Tag.withId("Redux")!.subTags).count()).toBe(0);
+      expect(Tag.withId("Redux")!.subTags!.count()).toBe(0);
     });
   });
 
   describe("self-referencing many field with modelName as toModelName", () => {
     type UserDescriptors = {
       id: ModelId;
-      subscribed?: QuerySet;
-      subscribers?: QuerySet;
+      subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
+      subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
     };
 
-    class User extends Model<typeof User, UserDescriptors> {
+    class User extends Model<typeof User, UserDescriptors> implements UserDescriptors {
       static modelName = "User" as const;
       static fields = {
         id: attr(),
         subscribed: many("User", "subscribers"),
       };
+
+      id: ModelId;
+      subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
+      subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
     }
     
     type Schema = {
@@ -709,18 +770,15 @@ describe("Many to many relationships", () => {
         user2 = session.User.withId("u2")!;
 
         expect(
-          castTo<QuerySet<User>>(user0
-            .subscribed).toRefArray()
+          user0.subscribed!.toRefArray()
             .map(row => row.id)
         ).toEqual(["u2"]);
         expect(
-          castTo<QuerySet<User>>(user1
-            .subscribed).toRefArray()
+          user1.subscribed!.toRefArray()
             .map(row => row.id)
         ).toEqual(["u0", "u2"]);
         expect(
-          castTo<QuerySet<User>>(user2
-            .subscribed).toRefArray()
+          user2.subscribed!.toRefArray()
             .map(row => row.id)
         ).toEqual(["u1"]);
 
@@ -729,12 +787,9 @@ describe("Many to many relationships", () => {
     });
 
     it("add forward many-many field", () => {
-      castTo<QuerySet<User>>(user0
-        .subscribed).add(user2);
-      castTo<QuerySet<User>>(user1
-        .subscribed).add(user0, user2);
-      castTo<QuerySet<User>>(user2
-        .subscribed).add(user1);
+      user0.subscribed!.add(user2);
+      user1.subscribed!.add(user0, user2);
+      user2.subscribed!.add(user1);
       validateRelationState();
     });
 
@@ -746,12 +801,9 @@ describe("Many to many relationships", () => {
     });
 
     it("add backward many-many field", () => {
-      castTo<QuerySet<User>>(user0
-        .subscribers).add(user1);
-      castTo<QuerySet<User>>(user1
-        .subscribers).add(user2);
-      castTo<QuerySet<User>>(user2
-        .subscribers).add(user0, user1);
+      user0.subscribers!.add(user1);
+      user1.subscribers!.add(user2);
+      user2.subscribers!.add(user0, user1);
       validateRelationState();
     });
 

@@ -1,6 +1,6 @@
 import { Model, ORM, attr, many, QuerySet } from "../..";
 import { castTo } from "../../hacks";
-import { ModelId, Relations, ModelInstance, SessionLike, TargetRelationship } from "../../types";
+import { ModelId, Relations, ModelInstance, SessionLike, TargetRelationship, SourceRelationship } from "../../types";
 import { measureMs, nTimes, avg, round } from "../helpers";
 
 const crypto = require("crypto");
@@ -31,12 +31,15 @@ describe("Big Data Test", () => {
     id: ModelId;
     name: string;
   }
-  class Item extends Model<typeof Item, ItemDescriptors> {
+  class Item extends Model<typeof Item, ItemDescriptors> implements ItemDescriptors {
     static modelName = "Item";
     static fields = {
       id: attr(),
       name: attr(),
     };
+
+    id: ModelId;
+    name: string;
   }
 
   type Schema = {
@@ -139,19 +142,27 @@ describe("Many-to-many relationship performance", () => {
   type ChildDescriptors = {
     id: ModelId;
     name: string;
-    parent?: QuerySet;
+    parent?: SourceRelationship<typeof Parent, Relations.ManyToMany>;
   };
-  class Parent extends Model<typeof Parent, ParentDescriptors> {
+  class Parent extends Model<typeof Parent, ParentDescriptors> implements ParentDescriptors {
     static modelName = "Parent" as const;
     static fields = {
       id: attr(),
       name: attr(),
       children: many("Child", "parent"),
     };
+
+    id: ModelId;
+    children?: TargetRelationship<Child, Relations.ManyToMany>;
+    name?: string;
   }
 
-  class Child extends Model<typeof Child, ChildDescriptors> {
+  class Child extends Model<typeof Child, ChildDescriptors> implements ChildDescriptors {
     static modelName = "Child" as const;
+
+    id: ModelId;
+    name: string;
+    parent?: SourceRelationship<typeof Parent, Relations.ManyToMany>;
   }
 
 

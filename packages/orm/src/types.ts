@@ -49,7 +49,7 @@ export type ModelClass<M extends AnyModel> = ReturnType<M["getClass"]>;
  */
 export type ModelInstance<
   M extends AnyModel = AnyModel,
-> = M & Temporary<M> & {[key: string]: any};
+> = M & {[key: string]: any};
 
 
 /**
@@ -68,7 +68,7 @@ export type Temporary<M extends AnyModel> = ConstructorParameters<
  */
 export type MappedRow<M extends AnyModel> = {
   [K in keyof Temporary<M>]: Exclude<Temporary<M>[K], undefined> extends QuerySet
-    ? (ModelInstance<Exclude<Temporary<M>[K], undefined> extends QuerySet<infer MClass> ? MClass : never> | ModelId | null)[]
+    ? (ModelInstance<Exclude<Temporary<M>[K], undefined> extends QuerySet<infer MClass> ? InstanceType<MClass> : never> | ModelId | null)[]
     : Exclude<Temporary<M>[K], undefined> extends AnyModel
     ? Temporary<M>[K] | ModelId | null
     : IsUnknown<Exclude<Temporary<M>[K], undefined>> extends true
@@ -84,7 +84,7 @@ export type ModelConstructor<MClass extends AnyModel = AnyModel> = {
 }
 
 
-export type QuerySetConstructor<M extends AnyModel, Payload extends object = {}> = {
+export type QuerySetConstructor<M extends typeof AnyModel, Payload extends object = {}> = {
   new (modelClass: typeof AnyModel, clauses?: QueryClause<Payload>[], opts?: object): QuerySet<M>;
 }
 
@@ -99,17 +99,17 @@ Relation extends Relations
 : Relation extends Relations.ForeignKey
 ? ModelInstance<M>
 : Relation extends Relations.ManyToMany
-  ? QuerySet<M>
+  ? QuerySet<ExtractModelClassType<M>>
   : never;
 
   /**
  * 
    */
   export type SourceRelationship<
-  M extends AnyModel,
+  M extends typeof AnyModel,
   Relation extends Relations
   > = Relation extends Relations.OneToOne
-  ? ModelInstance<M>
+  ? ModelInstance<InstanceType<M>>
   : Relation extends Relations.ForeignKey
   ? QuerySet<M>
   : Relation extends Relations.ManyToMany
@@ -119,7 +119,7 @@ Relation extends Relations
   /**
    * Extracts the first generic argument from the derived class.
    */
-  type ModelField = QuerySet | AnyModel | Serializable;
+  type ModelField = QuerySet<any> | AnyModel | Serializable;
   
   /**
    * Extracts the first generic argument from the derived class.

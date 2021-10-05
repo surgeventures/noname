@@ -370,8 +370,8 @@ describe("Immutable session", () => {
     ).toEqual<ModelId[]>([1, 2, 3]);
     /* the backward relation must have been updated as well */
     expect(
-      (Genre.withId(3)!
-        .books as QuerySet<Book>).all()
+      Genre.withId(3)!
+        .books?.all()
         .toRefArray()
         .map(_book => _book.id)
         .includes(book.id)
@@ -390,7 +390,7 @@ describe("Immutable session", () => {
 
     // Backward
     const genre = Genre.first()!;
-    const relatedBooks = genre.books as QuerySet<Book>;
+    const relatedBooks = genre.books as QuerySet<typeof Book>;
     expect(relatedBooks).toBeInstanceOf(QuerySet);
     expect(relatedBooks.modelClass).toBe(Book);
 
@@ -402,7 +402,7 @@ describe("Immutable session", () => {
 
     // Backward
     const tag = Tag.first()!;
-    const tagRelatedBooks = tag.books as QuerySet<Book>;
+    const tagRelatedBooks = tag.books as QuerySet<typeof Book>;
     expect(tagRelatedBooks).toBeInstanceOf(QuerySet);
     expect(tagRelatedBooks.modelClass).toBe(Book);
   });
@@ -419,7 +419,7 @@ describe("Immutable session", () => {
 
     // Backward
     const publisher = Publisher.get({ name: "Technical Publishing" })!;
-    const relatedAuthors = publisher.authors as QuerySet<Author>;
+    const relatedAuthors = publisher.authors as QuerySet<typeof Author>;
     expect(relatedAuthors).toBeInstanceOf(QuerySet);
     expect(relatedAuthors.modelClass).toBe<typeof Author>(Author);
     expect(relatedAuthors.count()).toBe(2);
@@ -454,7 +454,7 @@ describe("Immutable session", () => {
   it("updating related many-to-many entities through ids works", () => {
     const { Genre, Author } = session;
     const tommi = Author.get({ name: "Tommi Kaikkonen" })!;
-    const book = castTo<QuerySet<Book>>(tommi.books).first()!;
+    const book = tommi.books?.first()!;
     expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       0,
       1,
@@ -468,7 +468,7 @@ describe("Immutable session", () => {
       2,
     ]);
 
-    expect((deleteGenre!.books as QuerySet<Book>).filter({ id: book.id }).exists()).toBe(false);
+    expect(deleteGenre!.books?.filter({ id: book.id }).exists()).toBe(false);
   });
 
   it("updating related many-to-many with not existing entities works", () => {
@@ -501,7 +501,7 @@ describe("Immutable session", () => {
   it("updating non-existing many-to-many entities works", () => {
     const { Genre, Author } = session;
     const tommi = Author.get({ name: "Tommi Kaikkonen" })!;
-    const book = castTo<QuerySet<Book>>(tommi.books).first()!;
+    const book = tommi.books?.first()!;
     expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
       0,
       1,
@@ -517,7 +517,7 @@ describe("Immutable session", () => {
       2,
     ]);
 
-    expect(castTo<QuerySet<Book>>(deleteGenre.books).filter({ id: book.id }).exists()).toBe(false);
+    expect(deleteGenre.books?.filter({ id: book.id }).exists()).toBe(false);
   });
 
   it("creating models without many-to-many entities works", () => {
@@ -601,7 +601,7 @@ describe("Immutable session", () => {
     expect(author?.getId()).toBe<ModelId>(rawFk!);
 
     // Backward
-    const relatedBooks = author!.books as QuerySet<Book>;
+    const relatedBooks = author!.books!;
     expect(relatedBooks).toBeInstanceOf(QuerySet);
     relatedBooks._evaluate();
     expect(relatedBooks.rows).toContain(book.ref);
@@ -666,7 +666,7 @@ describe("Immutable session", () => {
     expect(cover!.getId()).toBe(rawFk);
 
     // Backward
-    const relatedBook = cover!.book as ModelInstance<Book>;
+    const relatedBook = cover!.book!;
     expect(relatedBook).toBeInstanceOf(Book);
     expect(relatedBook.getId()).toBe(book.getId());
   });
@@ -696,6 +696,8 @@ describe("Immutable session", () => {
       static fields = {
         id: attr({ getDefault: () => returnId }),
       };
+
+      id?: ModelId;
     }
 
     type Schema = {

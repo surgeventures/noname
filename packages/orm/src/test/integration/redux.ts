@@ -318,7 +318,7 @@ describe("Redux integration", () => {
       const session = orm.session(nextState);
       expect(
         // Movies is backwards relation key
-        castTo<QuerySet<Movie>>(session.Publisher.withId(123)!.movies).count()
+        castTo<QuerySet<typeof Movie>>(session.Publisher.withId(123)!.movies).count()
       ).toBe(1);
     });
 

@@ -9,9 +9,9 @@ import {
 
 describe("QuerySet tests", () => {
   let session: ExtendedSession;
-  let bookQs: QuerySet<InstanceType<Schema['Book']>>;
-  let genreQs: QuerySet<InstanceType<Schema['Genre']>>;
-  let tagQs: QuerySet<InstanceType<Schema['Tag']>>;
+  let bookQs: QuerySet<Schema['Book']>;
+  let genreQs: QuerySet<Schema['Genre']>;
+  let tagQs: QuerySet<Schema['Tag']>;
   beforeEach(() => {
     const result = createTestSessionWithData();
     session = result.session;
@@ -29,7 +29,7 @@ describe("QuerySet tests", () => {
   it("exists works correctly", () => {
     expect(bookQs.exists()).toBe(true);
 
-    const emptyQs = new QuerySet<InstanceType<ExtendedSession['Book']>>(session.Book, []).filter(() => false);
+    const emptyQs = new QuerySet<ExtendedSession['Book']>(session.Book, []).filter(() => false);
 
     expect(emptyQs.exists()).toBe(false);
   });
@@ -61,7 +61,7 @@ describe("QuerySet tests", () => {
     bookQs.toRefArray();
     all.toRefArray();
 
-    expect(all).not.toBe<QuerySet<InstanceType<Schema['Book']>>>(bookQs);
+    expect(all).not.toBe<QuerySet<Schema['Book']>>(bookQs);
     expect(all.rows).toHaveLength(bookQs.rows.length);
 
     for (let i = 0; i < all.rows.length; i++) {

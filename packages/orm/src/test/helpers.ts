@@ -1,8 +1,7 @@
 import ORM from "../ORM";
-import Model, { AnyModel } from "../Model";
+import Model from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
-import { ModelId, Relations, SessionLike, TargetRelationship } from "../types";
-import { QuerySet } from "..";
+import { ModelId, Relations, SessionLike, SourceRelationship, TargetRelationship } from "../types";
 
 /**
  * These utils create a database schema for testing.
@@ -122,14 +121,13 @@ export type BookDescriptors = {
   id?: ModelId;
   name?: string;
   releaseYear?: number;
-  author?: TargetRelationship<Author, Relations.ForeignKey>;
   cover?: TargetRelationship<Cover, Relations.OneToOne>;
   genres?: TargetRelationship<Genre, Relations.ManyToMany>;
-  // @ts-ignore
   tags?: TargetRelationship<Tag, Relations.ManyToMany>;
   publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
+  author?: TargetRelationship<Author, Relations.ForeignKey>;
 }
-export class Book extends Model<typeof Book, BookDescriptors> {
+export class Book extends Model<typeof Book, BookDescriptors> implements BookDescriptors {
   static modelName = "Book" as const;
   static fields = {
     id: attr(),
@@ -141,15 +139,24 @@ export class Book extends Model<typeof Book, BookDescriptors> {
     tags: many("Tag", "books"),
     publisher: fk("Publisher", "books"),
   };
+
+  id?: ModelId;
+  name?: string;
+  releaseYear?: number;
+  cover?: TargetRelationship<Cover, Relations.OneToOne>;
+  genres?: TargetRelationship<Genre, Relations.ManyToMany>;
+  tags?: TargetRelationship<Tag, Relations.ManyToMany>;
+  publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
+  author?: TargetRelationship<Author, Relations.ForeignKey>;
 }
 
 export type AuthorDescriptors = {
   id?: ModelId;
-  name: string;
+  name?: string;
   publishers?: TargetRelationship<Publisher, Relations.ManyToMany>;
-  books?: QuerySet;
+  books?: SourceRelationship<typeof Book, Relations.ForeignKey>;
 }
-export class Author extends Model<typeof Author, AuthorDescriptors> {
+export class Author extends Model<typeof Author, AuthorDescriptors> implements AuthorDescriptors {
   static modelName = "Author" as const;
   static fields = {
     id: attr(),
@@ -160,44 +167,57 @@ export class Author extends Model<typeof Author, AuthorDescriptors> {
       relatedName: "authors",
     }),
   };
+
+  id?: ModelId;
+  name?: string;
+  publishers?: TargetRelationship<Publisher, Relations.ManyToMany>;
+  books?: SourceRelationship<typeof Book, Relations.ForeignKey>; 
 }
 
 
 export type CoverDescriptors = {
   id?: ModelId;
   src: string;
-  book?: AnyModel;
+  book?: SourceRelationship<typeof Book, Relations.OneToOne>;
 };
-export class Cover extends Model<typeof Cover, CoverDescriptors> {
+export class Cover extends Model<typeof Cover, CoverDescriptors> implements CoverDescriptors {
   static modelName = "Cover" as const;
   static fields = {
     id: attr(),
     src: attr(),
   };
+
+  id?: ModelId;
+  src: string;
+  book?: SourceRelationship<typeof Book, Relations.OneToOne>;
 }
 
 export type GenreProps = {
   id?: ModelId;
   name: string;
-  books?: QuerySet;
+  books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
 };
 
-export class Genre extends Model<typeof Genre, GenreProps> {
+export class Genre extends Model<typeof Genre, GenreProps> implements GenreProps {
   static modelName = "Genre" as const;
   static fields = {
     id: attr(),
     name: attr(),
   };
+
+  id?: ModelId;
+  name: string;
+  books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
 }
 
 export type TagDescriptors = {
   id?: ModelId;
   name: string;
-  subTags?: QuerySet; // Should be TargetRelationship<Tag, Relations.ManyToMany>
-  parentTags?: QuerySet; // Verify the structure - should be TargetRelationship<Tag, Relations.ManyToMany>
-  books?: QuerySet;
+  subTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
+  parentTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
+  books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
 };
-export class Tag extends Model<typeof Tag, TagDescriptors> {
+export class Tag extends Model<typeof Tag, TagDescriptors> implements TagDescriptors {
   static modelName = "Tag" as const;
   static options() {
     return {
@@ -209,21 +229,32 @@ export class Tag extends Model<typeof Tag, TagDescriptors> {
     name: attr(),
     subTags: many("this", "parentTags"),
   };
+
+  id?: ModelId;
+  name: string;
+  subTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
+  parentTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
+  books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
 }
 
 export type PublisherDescriptors = {
   id?: ModelId;
   name?: string;
-  authors?: QuerySet;
-  movies?: QuerySet;
+  authors?: SourceRelationship<typeof Author, Relations.ManyToMany>;
+  movies?: SourceRelationship<typeof Movie, Relations.ForeignKey>;
 };
 
-export class Publisher extends Model<typeof Publisher, PublisherDescriptors> {
+export class Publisher extends Model<typeof Publisher, PublisherDescriptors> implements PublisherDescriptors {
   static modelName = "Publisher" as const;
   static fields = {
     id: attr(),
     name: attr(),
   };
+
+  id?: ModelId;
+  name?: string;
+  authors?: SourceRelationship<typeof Author, Relations.ManyToMany>;
+  movies?: SourceRelationship<typeof Movie, Relations.ForeignKey>;
 }
 
 export type MovieDescriptors = {
@@ -237,7 +268,7 @@ export type MovieDescriptors = {
   publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
 };
 
-export class Movie extends Model<typeof Movie, MovieDescriptors> {
+export class Movie extends Model<typeof Movie, MovieDescriptors> implements MovieDescriptors {
   static modelName = "Movie" as const;
   static fields = {
     id: attr(),
@@ -252,6 +283,15 @@ export class Movie extends Model<typeof Movie, MovieDescriptors> {
       relatedName: "movies",
     }),
   };
+
+  id?: ModelId;
+  name?: string;
+  rating?: number;
+  hasPremiered?: boolean;
+  characters?: string[];
+  meta?: {};
+  publisherId?: ModelId;
+  publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
 }
 
 export function createTestModels() {
