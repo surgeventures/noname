@@ -187,7 +187,7 @@ export default class Table<MClassType extends typeof AnyModel> {
   insert(tx: Transaction, branch: TableState<MClassType>, entry: Row<InstanceType<MClassType>>): { state: TableState<MClassType>; created: Row<InstanceType<MClassType>> } {
     const { batchToken, withMutations } = tx;
 
-    const hasId = entry.hasOwnProperty(this.idAttribute);
+    const hasId = castTo<any>(entry).hasOwnProperty(this.idAttribute);
 
     let workingState = branch;
 
