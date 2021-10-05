@@ -300,7 +300,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
 
     const ThisModel = castTo<ModelConstructor<InstanceType<M>>>(this);
     const instance = new ThisModel(newEntry);
-    instance._refreshMany2Many(m2mRelations); // eslint-disable-line no-underscore-dangle
+    castTo<any>(instance)._refreshMany2Many(m2mRelations); // eslint-disable-line no-underscore-dangle
     return instance;
   }
 
@@ -329,7 +329,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       const id = (userProps[idAttribute as keyof MappedRow<InstanceType<M>>] as unknown) as string;
       if (this.idExists(id)) {
         const model = this.withId(id)!;
-        model.update(userProps);
+        castTo<any>(model).update(userProps);
         return model;
       }
     }
