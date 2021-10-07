@@ -1,6 +1,6 @@
 import { castTo } from "./hacks";
-import Model, { AnyModel, ModelClassMap } from "./Model";
-import { AnyObject, ModelId, ModelRefLike } from "./types";
+import Model, { AnyModel } from "./Model";
+import { ModelId } from "./types";
 import { normalizeEntity } from "./utils";
 
 /**
@@ -20,11 +20,11 @@ import { normalizeEntity } from "./utils";
 export function attrDescriptor(fieldName: string) {
   return {
     get(): any {
-      return (this as AnyObject)._fields[fieldName];
+      return (this as unknown as AnyModel)._fields[fieldName];
     },
 
-    set(value: any): any {
-      return (this as AnyObject).set(fieldName, value);
+    set(value: any): void {
+      return (this as unknown as AnyModel).set(fieldName, value);
     },
 
     enumerable: true,
@@ -41,22 +41,20 @@ export function attrDescriptor(fieldName: string) {
  * @param  {string} fieldName - the name of the field the descriptor will be assigned to.
  * @param  {string} declaredToModelName - the name of the model that the field references.
  */
-export function forwardsManyToOneDescriptor(
+export function forwardsManyToOneDescriptor<MClass extends AnyModel>(
   fieldName: string,
   declaredToModelName: string
 ) {
   return {
     get() {
-      const thisModel = castTo<AnyModel>(this);
-      const DeclaredToModel = castTo<ModelClassMap>(
-        thisModel.getClass().session
-      )[declaredToModelName];
+      const thisModel = this as unknown as MClass;
+      const DeclaredToModel = thisModel.getClass().session[declaredToModelName];
       const { [fieldName as 'id']: toId } = thisModel._fields;
 
       return DeclaredToModel.withId(toId!);
     },
     set(value: any) {
-      const thisModel = castTo<Model>(this);
+      const thisModel = castTo<AnyModel>(this);
       thisModel.update({
         [fieldName]: normalizeEntity(value),
       });
@@ -90,16 +88,14 @@ export function forwardsOneToOneDescriptor(
  * @param  {string} declaredFieldName - the name of the field referencing the current model.
  * @param  {string} declaredFromModelName - the name of the other model.
  */
-export function backwardsOneToOneDescriptor(
+export function backwardsOneToOneDescriptor<MClass extends AnyModel>(
   declaredFieldName: string,
   declaredFromModelName: string
 ) {
   return {
     get() {
-      const thisModel = castTo<Model>(this);
-      const DeclaredFromModel = castTo<ModelClassMap>(
-        thisModel.getClass().session
-      )[declaredFromModelName];
+      const thisModel = this as unknown as MClass;
+      const DeclaredFromModel = thisModel.getClass().session[declaredFromModelName];
 
       return DeclaredFromModel.get({
         [declaredFieldName]: thisModel.getId(),
@@ -118,16 +114,14 @@ export function backwardsOneToOneDescriptor(
  * An example would be `author.books` referencing all instances of
  * the `Book` model that reference the author using `fk()`.
  */
-export function backwardsManyToOneDescriptor(
+export function backwardsManyToOneDescriptor<MClass extends AnyModel>(
   declaredFieldName: string,
   declaredFromModelName: string
 ) {
   return {
     get() {
-      const thisModel = castTo<Model>(this);
-      const DeclaredFromModel = castTo<ModelClassMap>(
-        thisModel.getClass().session
-      )[declaredFromModelName];
+      const thisModel = this as unknown as MClass;
+      const DeclaredFromModel = thisModel.getClass().session[declaredFromModelName];
 
       return DeclaredFromModel.filter({
         [declaredFieldName]: thisModel.getId(),
@@ -143,7 +137,7 @@ export function backwardsManyToOneDescriptor(
  * This descriptor is assigned to both sides of a many-to-many relationship.
  * To indicate the backwards direction pass `true` for `reverse`.
  */
-export function manyToManyDescriptor(
+export function manyToManyDescriptor<MClass extends AnyModel>(
   declaredFromModelName: string,
   declaredToModelName: string,
   throughModelName: string,
@@ -152,8 +146,8 @@ export function manyToManyDescriptor(
 ) {
   return {
     get() {
-      const thisModel = castTo<Model>(this);
-      const session = castTo<ModelClassMap>(thisModel.getClass().session);
+      const thisModel = this as unknown as MClass;
+      const session = thisModel.getClass().session;
       const {
         [declaredFromModelName]: DeclaredFromModel,
         [declaredToModelName]: DeclaredToModel,
@@ -183,7 +177,7 @@ export function manyToManyDescriptor(
       const referencedOtherIds = new Set(
         throughQs
           .toRefArray()
-          .map((obj: ModelRefLike) => obj[otherReferencingField])
+          .map(obj => obj[otherReferencingField])
       );
 
       /**
@@ -192,7 +186,7 @@ export function manyToManyDescriptor(
        */
       const qs = OtherModel.filter((otherModelInstance) =>
         referencedOtherIds.has(
-          (otherModelInstance as AnyObject)[OtherModel.idAttribute]
+          otherModelInstance[OtherModel.idAttribute]
         )
       );
 
@@ -204,17 +198,17 @@ export function manyToManyDescriptor(
        *
        * @return undefined
        */
-      qs.add = function add(...entities: (ModelId | Model)[]) {
+      qs.add = function add(...entities: (ModelId | AnyModel)[]) {
         const idsToAdd = new Set(entities.map(normalizeEntity));
 
         const existingQs = throughQs.filter((through) =>
-          idsToAdd.has((through as AnyObject)[otherReferencingField])
+          idsToAdd.has(through[otherReferencingField] as ModelId)
         );
 
         if (existingQs.exists()) {
           const existingIds = existingQs
             .toRefArray()
-            .map((through: AnyObject) => through[otherReferencingField]);
+            .map(through => through[otherReferencingField]);
 
           throw new Error(
             `Tried to add already existing ${OtherModel.modelName} id(s) ${existingIds} to the ${ThisModel.modelName} instance with id ${thisId}`
@@ -253,14 +247,14 @@ export function manyToManyDescriptor(
         const idsToRemove = new Set(entities.map(normalizeEntity));
 
         const entitiesToDelete = throughQs.filter((through) =>
-          idsToRemove.has((through as AnyObject)[otherReferencingField])
+          idsToRemove.has(through[otherReferencingField] as ModelId)
         );
 
         if (entitiesToDelete.count() !== idsToRemove.size) {
           // Tried deleting non-existing entities.
           const entitiesToDeleteIds = entitiesToDelete
             .toRefArray()
-            .map((through: AnyObject) => through[otherReferencingField]);
+            .map(through => through[otherReferencingField]);
 
           const unexistingIds = [...idsToRemove].filter(
             (id) => !entitiesToDeleteIds.includes(id)

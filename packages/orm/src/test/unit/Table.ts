@@ -157,7 +157,6 @@ describe("Table", () => {
       };
       const state = deepFreeze(stateObj) as typeof stateObj;
       const table = new Table<typeof Test>({ idAttribute: "name" });
-      // ERROR: idAttribute is not mapped to id type
       const clauses: QueryClause<(attrs: Ref<Test>) => boolean>[] = [
         {
           type: FILTER,

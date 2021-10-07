@@ -89,12 +89,12 @@ describe("Utils", () => {
 
   describe("normalizeEntity", () => {
     it("returns id of model instances", () => {
-      class Book extends Model<typeof Book, { someAttr: string }> {
+      type BookDescriptors = {}
+      class Book extends Model<typeof Book, BookDescriptors> implements BookDescriptors {
         static get idAttribute() {
           return "title";
         }
       }
-      // ERROR: the issue with idAttribute
       const book = new Book({ title: "book title" } as any);
       expect(normalizeEntity(book)).toBe("book title");
     });

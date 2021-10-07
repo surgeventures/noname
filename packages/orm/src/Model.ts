@@ -204,9 +204,9 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
    *
    * @return {Object} An instance of the model's `querySetClass`.
    */
-  static getQuerySet<M extends typeof AnyModel>(this: M): QuerySet<M> {
+  static getQuerySet<MClassType extends typeof AnyModel>(this: MClassType): QuerySet<MClassType> {
     const { querySetClass: QuerySetClass } = this;
-    return new (castTo<QuerySetConstructor<M>>(QuerySetClass))(this);
+    return new (castTo<QuerySetConstructor<MClassType>>(QuerySetClass))(this);
   }
 
   /**
@@ -300,7 +300,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
 
     const ThisModel = castTo<ModelConstructor<InstanceType<MClassType>>>(this);
     const instance = new ThisModel(newEntry);
-    castTo<any>(instance)._refreshMany2Many(m2mRelations); // eslint-disable-line no-underscore-dangle
+    instance._refreshMany2Many(m2mRelations); // eslint-disable-line no-underscore-dangle
     return instance;
   }
 
@@ -375,7 +375,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
    * @param  {*}  props - a key-value that {@link Model} instances should have to be considered as existing.
    * @return {Boolean} a boolean indicating if entity with `props` exists in the state
    */
-  static exists<LookupObj extends {}>(lookupObj: LookupObj): boolean {
+  static exists<MClassType extends typeof AnyModel>(this: MClassType, lookupObj: Partial<Ref<InstanceType<MClassType>>>): boolean {
     if (typeof this.session === "undefined") {
       throw new Error(
         [
@@ -781,7 +781,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
     return this.getQuerySet().orderBy(iteratees, orders);
   }
 
-  static update(mergeObj: Partial<ModelRefLike>): void {
+  static update<MClassType extends typeof AnyModel>(mergeObj: Partial<Ref<InstanceType<MClassType>>>): void {
     this.getQuerySet().update(mergeObj);
   }
 

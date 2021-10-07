@@ -53,7 +53,7 @@ describe("Big Data Test", () => {
   beforeEach(() => {
     orm = new ORM();
     orm.register(Item);
-    session = castTo<ExtendedSession>(orm.session(orm.getEmptyState()));
+    session = orm.session(orm.getEmptyState());
   });
 
   it("adds a big amount of items in acceptable time", () => {
@@ -240,7 +240,7 @@ describe("Many-to-many relationship performance", () => {
     assignChildren(parent, 0, 3000);
 
     const measurements = nTimes(n)
-      .map((_value, _index) =>
+      .map(() =>
         measureMs(() => {
           for (let i = 0; i < queryCount; ++i) {
             parent.children?.count();

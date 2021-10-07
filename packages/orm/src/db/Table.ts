@@ -194,7 +194,7 @@ export default class Table<MClassType extends typeof AnyModel> {
     // This will not affect string id's.
     const [newMaxId, id] = idSequencer(
       this.getMaxId(branch),
-      castTo<any>(entry)[this.idAttribute]
+      entry[this.idAttribute]
     );
     workingState = this.setMaxId(tx, branch, newMaxId);
 
@@ -271,7 +271,7 @@ export default class Table<MClassType extends typeof AnyModel> {
 
     const arr = branch.items;
 
-    const idsToDelete = rows.map((row) => castTo<any>(row)[this.idAttribute] as string);
+    const idsToDelete = rows.map((row) => row[this.idAttribute] as string);
     if (withMutations) {
       idsToDelete.forEach((id) => {
         const idx = arr.indexOf(id);

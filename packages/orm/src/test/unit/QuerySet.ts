@@ -104,7 +104,6 @@ describe("QuerySet tests", () => {
   });
 
   it("exclude works correctly with object argument, with model instance value", () => {
-    // ERROR: interface says Model | undefined, withId returns Model | null
     const excluded = bookQs.exclude({
       author: session.Author.withId(1),
     });

@@ -24,10 +24,9 @@ describe("Redux integration", () => {
   let Movie: Schema['Movie'];
   let emptyState: OrmState<Schema>;
   let nextState: OrmState<Schema>;
-  // ERROR: should not accept not serialized objects
-  let ormReducer: <M extends Schema[keyof Schema]>(
+  let ormReducer: <MClassType extends Schema[keyof Schema]>(
     state: OrmState<Schema> | undefined,
-    action: ReduxAction<Ref<InstanceType<M>>>
+    action: ReduxAction<Ref<InstanceType<MClassType>>>
   ) => OrmState<Schema>;
 
   const CREATE_MOVIE = "CREATE_MOVIE";

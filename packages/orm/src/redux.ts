@@ -91,10 +91,10 @@ export function createReducer<Schema extends ModelClassMap>(orm: ORM<Schema>, up
  * @return {Function} memoized selector
  */
 export function createSelector<
-Result,
-Schema extends ModelClassMap = any,
-O extends ORM<Schema> = ORM<Schema>,
-Args extends unknown[] = []
+  Result,
+  Schema extends ModelClassMap = any,
+  O extends ORM<Schema> = ORM<Schema>,
+  Args extends unknown[] = []
 >(
   orm: O,
   ormStateSelector: OrmSelector<O extends ORM<infer S> ? S : never, Result, Args>,

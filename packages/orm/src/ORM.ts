@@ -35,7 +35,7 @@ const ORM_DEFAULTS = {
  * to the database.
  */
 export default class ORM<
-Schema extends ModelClassMap,
+  Schema extends ModelClassMap,
 > {
   private readonly createDatabase: DatabaseCreator<Schema>;
   readonly registry: Schema[keyof Schema][];

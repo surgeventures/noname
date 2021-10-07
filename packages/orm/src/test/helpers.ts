@@ -323,9 +323,9 @@ export type Schema = {
   Movie: typeof Movie; 
   Publisher: typeof Publisher;
   
-  BookGenres: typeof Model; // Verify
-  BookTags: typeof Model; // Verify
-  TagSubTags: typeof Tag; // Verify
+  BookGenres: typeof Model;
+  BookTags: typeof Model;
+  TagSubTags: typeof Tag;
 }
 
 export type ExtendedSession = SessionWithBoundModels<Schema>;
@@ -365,7 +365,7 @@ export function createTestSessionWithData(customORM?: ORM<Schema>) {
   PUBLISHERS_INITIAL.forEach((props) => Publisher.create(props));
   MOVIES_INITIAL.forEach((props) => Movie.create(props));
 
-  const normalSession = orm.session(state) as ExtendedSession;
+  const normalSession = orm.session(state);
   return { session: normalSession, orm, state };
 }
 

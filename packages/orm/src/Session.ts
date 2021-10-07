@@ -176,7 +176,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
 
     const { idAttribute } = castTo<Schema>(this)[table];
     const accessedIds = new Set<ModelId>(
-      rows.map((row) => castTo<any>(row)[idAttribute] as ModelId)
+      rows.map((row) => row[idAttribute] as ModelId)
     );
 
     const anyClauseFilteredById = clauses.some(
