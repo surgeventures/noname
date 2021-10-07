@@ -1,5 +1,4 @@
 import { Model, ORM, attr, many } from "../..";
-import { castTo } from "../../hacks";
 import { ModelId, Relations, SessionBoundModel, SessionWithBoundModels, TargetRelationship, SourceRelationship } from "../../types";
 import { measureMs, nTimes, avg, round } from "../helpers";
 

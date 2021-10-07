@@ -16,12 +16,15 @@ describe("createDatabase", () => {
     id: ModelId;
   }
   class Book extends Model<typeof Book, BookDescriptors> {
+    static modelName = "Book" as const;
     static fields = {
       id: attr(),
       name: attr(),
     }
   }
-  class Author extends Model<typeof Author, AuthorDescriptors> {}
+  class Author extends Model<typeof Author, AuthorDescriptors> {
+    static modelName = "Author" as const;
+  }
   type Schema = {
     Book: typeof Book;
     Author: typeof Author;

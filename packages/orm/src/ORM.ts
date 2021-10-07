@@ -5,7 +5,7 @@ import { ForeignKey, ManyToMany, attr, Field } from "./fields";
 
 import { m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
 import { DatabaseCreator } from "./db/Database";
-import { Database, OrmState, ModelTableOpts, SessionWithBoundModels } from "./types";
+import { Database, OrmState, SessionWithBoundModels } from "./types";
 import { castTo } from "./hacks";
 
 /**
@@ -161,16 +161,16 @@ export default class ORM<
 
   generateSchemaSpec() {
     const models = this.getModelClasses();
-    const tables = models.reduce<{ [K in keyof Schema]: ModelTableOpts<Schema[K]> }>((spec, modelClass) => {
+    const tables = models.reduce<{ [K in keyof Schema]: Schema[K] }>((spec, modelClass) => {
       const tableName = modelClass.modelName;
-      const tableSpec = modelClass._getTableOpts(); // eslint-disable-line no-underscore-dangle
+      const tableSpec = modelClass._getTableOpts();
       spec[tableName as keyof Schema] = Object.assign(
         {},
         { fields: modelClass.fields },
         tableSpec
-      ) as ModelTableOpts<Schema[keyof Schema]>;
+      ) as Schema[keyof Schema];
       return spec;
-    }, {} as { [K in keyof Schema]: ModelTableOpts<Schema[K]> });
+    }, {} as { [K in keyof Schema]: Schema[K] });
     return { tables };
   }
 

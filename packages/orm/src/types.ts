@@ -14,7 +14,6 @@ import Table from "./db/Table";
 import { AnyModel, ModelClassMap } from "./Model";
 import Session from "./Session";
 import QuerySet from "./QuerySet";
-import { Field } from "./fields";
 
 export type AnyObject = Record<string, any>;
 export type AnySchema = Record<string, typeof AnyModel>;
@@ -290,59 +289,19 @@ export interface Database<Schema extends ModelClassMap> {
  * ```
  * <br/>
  */
- export interface TableOpts {
+ export interface TableOpts<MClassType extends typeof AnyModel> {
   readonly idAttribute?: string;
   readonly arrName?: string;
   readonly mapName?: string;
-  readonly fields?: { [K: string]: Field };
-}
-
-/**
- * 
- */
-export interface ModelTableOpts<MClassType extends typeof AnyModel> {
-  readonly idAttribute?: IdAttribute<MClassType>;
-  readonly arrName?: ArrName<MClassType>;
-  readonly mapName?: MapName<MClassType>;
   readonly fields?: MClassType['fields'];
 }
-
-/**
- * 
- */
-type IdAttribute<MClassType extends typeof AnyModel> = ExtractModelOption<MClassType, 'idAttribute', 'id'>;
-/**
- * 
- */
-type ArrName<MClass extends typeof AnyModel> = ExtractModelOption<MClass, 'arrName', 'items'>;
-/**
- * 
- */
-type MapName<MClass extends typeof AnyModel> = ExtractModelOption<MClass, 'mapName', 'itemsById'>;
-
-/**
- * 
- */
-export type ExtractModelOption<
-    MClassType extends typeof AnyModel,
-    K extends keyof TableOpts,
-    DefaultValue extends string
-> = MClassType['options'] extends () => { [P in K]: infer R }
-    ? R extends string
-        ? R
-        : DefaultValue
-    : MClassType['options'] extends { [P in K]: infer R }
-    ? R extends string
-        ? R
-        : DefaultValue
-    : DefaultValue;
 
 /**
  * Schema specification required for a database creator
  */
 export type SchemaSpec<Schema extends ModelClassMap> = {
   tables: {
-    [K in keyof Schema]: ModelTableOpts<Schema[K]>;
+    [K in keyof Schema]: TableOpts<Schema[K]>;
   };
 };
 
