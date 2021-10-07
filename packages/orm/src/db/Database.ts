@@ -10,7 +10,7 @@ import {
   TableState,
   Transaction,
   UpdateSpec,
-  Row,
+  Ref,
 } from "../types";
 
 import Table from "./Table";
@@ -44,21 +44,21 @@ function query<Schema extends ModelClassMap>(tables: TableMap<Schema>, querySpec
 
 function update<Schema extends ModelClassMap>(
   tables: TableMap<Schema>,
-  updateSpec: UpdateSpec<Schema, Row<InstanceType<Schema[keyof Schema]>>>,
+  updateSpec: UpdateSpec<Schema, Ref<InstanceType<Schema[keyof Schema]>>>,
   tx: Transaction,
   state: OrmState<Schema>
-  ): { status: typeof SUCCESS; state: OrmState<Schema>; payload: Row<InstanceType<Schema[keyof Schema]>> | Row<InstanceType<Schema[keyof Schema]>>[] } {
+  ): { status: typeof SUCCESS; state: OrmState<Schema>; payload: Ref<InstanceType<Schema[keyof Schema]>> | Ref<InstanceType<Schema[keyof Schema]>>[] } {
   const { action, payload } = updateSpec;
 
   let tableName: keyof Schema;
   let nextTableState: TableState<Schema[keyof Schema]>;
-  let resultPayload: Row<InstanceType<Schema[keyof Schema]>> | Row<InstanceType<Schema[keyof Schema]>>[];
+  let resultPayload: Ref<InstanceType<Schema[keyof Schema]>> | Ref<InstanceType<Schema[keyof Schema]>>[];
 
   if (action === CREATE) {
     tableName = updateSpec.table!;
     const table = tables[tableName];
     const currTableState = state[tableName];
-    const result = table.insert(tx, currTableState, payload || {} as Row<InstanceType<Schema[keyof Schema]>>);
+    const result = table.insert(tx, currTableState, payload || {} as Ref<InstanceType<Schema[keyof Schema]>>);
     nextTableState = result.state;
     resultPayload = result.created;
   } else {

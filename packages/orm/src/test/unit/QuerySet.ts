@@ -1,5 +1,5 @@
 import { Model, QuerySet } from "../..";
-import { Row, ModelInstance } from "../../types";
+import { Ref, SessionBoundModel } from "../../types";
 import {
   createTestModels,
   createTestSessionWithData,
@@ -36,7 +36,7 @@ describe("QuerySet tests", () => {
 
   it("at works correctly", () => {
     expect(bookQs.at(0)).toBeInstanceOf(Model);
-    expect(bookQs.toRefArray()[0]).toBe<Row<InstanceType<ExtendedSession['Book']>>>(session.Book.withId(0)!.ref);
+    expect(bookQs.toRefArray()[0]).toBe<Ref<InstanceType<ExtendedSession['Book']>>>(session.Book.withId(0)!.ref);
   });
 
   it("at doesn't return a Model instance if index is out of bounds", () => {
@@ -46,12 +46,12 @@ describe("QuerySet tests", () => {
   });
 
   it("first works correctly", () => {
-    expect(bookQs.first()).toEqual<ModelInstance<InstanceType<Schema['Book']>> | undefined>(bookQs.at(0));
+    expect(bookQs.first()).toEqual<SessionBoundModel<InstanceType<Schema['Book']>> | undefined>(bookQs.at(0));
   });
 
   it("last works correctly", () => {
     const lastIndex = bookQs.count() - 1;
-    expect(bookQs.last()).toEqual<ModelInstance<InstanceType<Schema['Book']>> | undefined>(bookQs.at(lastIndex));
+    expect(bookQs.last()).toEqual<SessionBoundModel<InstanceType<Schema['Book']>> | undefined>(bookQs.at(lastIndex));
   });
 
   it("all works correctly", () => {
@@ -65,14 +65,14 @@ describe("QuerySet tests", () => {
     expect(all.rows).toHaveLength(bookQs.rows.length);
 
     for (let i = 0; i < all.rows.length; i++) {
-      expect(all.rows[i]).toBe<Row<InstanceType<Schema['Book']>>>(bookQs.rows[i]);
+      expect(all.rows[i]).toBe<Ref<InstanceType<Schema['Book']>>>(bookQs.rows[i]);
     }
   });
 
   it("filter works correctly with object argument", () => {
     const filtered = bookQs.filter({ name: "Clean Code" });
     expect(filtered.count()).toBe(1);
-    expect(filtered.first()!.ref).toBe<Row<InstanceType<ExtendedSession['Book']>>>(session.Book.withId(1)!.ref);
+    expect(filtered.first()!.ref).toBe<Ref<InstanceType<ExtendedSession['Book']>>>(session.Book.withId(1)!.ref);
   });
 
   it("filter works correctly with object argument, with model instance value", () => {

@@ -8,7 +8,7 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { Row, AnySchema, ModelData, ModelId, Query, ReduxAction, QuerySetConstructor, ModelAttrs, ModelFieldMap, SortIteratee, SortOrder, ModelInstance, SessionLike, ModelConstructor, MappedRow, Ref } from "./types";
+import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
 
@@ -59,7 +59,7 @@ type __TemporaryModelFields = {
  * information about the data model, override static class methods. Define instance
  * logic by defining prototype methods (without `static` keyword).
  */
-export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Attrs extends ModelFieldMap = ModelFieldMap> {
+export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFieldMap extends ModelFieldMap = ModelFieldMap> {
   static modelName: string;
   static fields: __TemporaryModelFields = {
     id: attr(),
@@ -67,10 +67,10 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
   static virtualFields: Record<string, RelationalField> = {};
   static readonly querySetClass = QuerySet;
   static isSetUp: boolean;
-  static _session: SessionLike<any>;
-  _fields: ModelAttrs<Attrs>;
+  static _session: SessionWithBoundModels<any>;
+  _fields: ModelRefLike<MFieldMap>;
   static reducer: <Schema extends AnySchema, ModelClassType extends Schema[keyof Schema]>(
-    action: ReduxAction<Row<InstanceType<ModelClassType>>>,
+    action: ReduxAction<Ref<InstanceType<ModelClassType>>>,
     modelClass: ModelClassType,
     session: Session<Schema>
   ) => void;
@@ -80,12 +80,12 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * Don't use this to create a new record; Use the static method {@link Model#create}.
    * @param  {Object} props - the properties to instantiate with
    */
-  constructor(props: ModelAttrs<Attrs>) {
+  constructor(props: ModelRefLike<MFieldMap>) {
     this._initFields(props);
   }
 
-  _initFields(props?: ModelAttrs<Attrs>): void {
-    const propsObj = Object(props) as ModelAttrs<Attrs>;
+  _initFields(props?: ModelRefLike<MFieldMap>): void {
+    const propsObj = Object(props) as ModelRefLike<MFieldMap>;
     this._fields = { ...propsObj };
 
     Object.keys(propsObj).forEach((fieldName) => {
@@ -194,7 +194,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @private
    * @return {Session} The current {@link Session} instance.
    */
-  static get session(): SessionLike<AnySchema> {
+  static get session(): SessionWithBoundModels<AnySchema> {
     return this._session;
   }
 
@@ -243,7 +243,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {props} userProps - the new {@link Model}'s properties.
    * @return {Model} a new {@link Model} instance.
    */
-  static create<M extends typeof AnyModel>(this: M, userProps: MappedRow<InstanceType<M>>): ModelInstance<InstanceType<M>> {
+  static create<MClassType extends typeof AnyModel>(this: MClassType, userProps: RefWithFields<InstanceType<MClassType>>): SessionBoundModel<InstanceType<MClassType>> {
     if (typeof this._session === "undefined") {
       throw new Error(
         [
@@ -266,7 +266,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       const valuePassed = userProps.hasOwnProperty(key);
       if (!(field instanceof ManyToMany)) {
         if (valuePassed) {
-          const value = (userProps[key as keyof MappedRow<InstanceType<M>>] as unknown) as AnyModel;
+          const value = (userProps[key as keyof RefWithFields<InstanceType<MClassType>>] as unknown) as AnyModel;
           (props as any)[key] = normalizeEntity(value);
         } else if ((field as Attribute).getDefault) {
           (props as any)[key] = (field as Attribute).getDefault!();
@@ -274,7 +274,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       } else if (valuePassed) {
         // If a value is supplied for a ManyToMany field,
         // discard them from props and save for later processing.
-        m2mRelations[key] = (userProps[key as keyof MappedRow<InstanceType<M>>] as unknown) as (AnyModel | ModelId)[];
+        m2mRelations[key] = (userProps[key as keyof RefWithFields<InstanceType<MClassType>>] as unknown) as (AnyModel | ModelId)[];
         delete props[key];
       }
     });
@@ -286,19 +286,19 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         if (userProps.hasOwnProperty(key) && field instanceof ManyToMany) {
           // If a value is supplied for a ManyToMany field,
           // discard them from props and save for later processing.
-          m2mRelations[key] = (userProps[key as keyof MappedRow<InstanceType<M>>] as unknown) as (AnyModel | ModelId)[];
+          m2mRelations[key] = (userProps[key as keyof RefWithFields<InstanceType<MClassType>>] as unknown) as (AnyModel | ModelId)[];
           delete props[key];
         }
       }
     });
 
-    const newEntry = this.session.applyUpdate<InstanceType<M>>({
+    const newEntry = this.session.applyUpdate<InstanceType<MClassType>>({
       action: CREATE,
       table: this.modelName,
-      payload: castTo<Row<InstanceType<M>>>(props),
+      payload: castTo<Ref<InstanceType<MClassType>>>(props),
     });
 
-    const ThisModel = castTo<ModelConstructor<InstanceType<M>>>(this);
+    const ThisModel = castTo<ModelConstructor<InstanceType<MClassType>>>(this);
     const instance = new ThisModel(newEntry);
     castTo<any>(instance)._refreshMany2Many(m2mRelations); // eslint-disable-line no-underscore-dangle
     return instance;
@@ -313,7 +313,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {props} userProps - the required {@link Model}'s properties.
    * @return {Model} a {@link Model} instance.
    */
-  static upsert<M extends typeof AnyModel>(this: M, userProps: MappedRow<InstanceType<M>>): ModelInstance<InstanceType<M>> {
+  static upsert<MClassType extends typeof AnyModel>(this: MClassType, userProps: RefWithFields<InstanceType<MClassType>>): SessionBoundModel<InstanceType<MClassType>> {
     if (typeof this.session === "undefined") {
       throw new Error(
         [
@@ -326,7 +326,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
 
     const { idAttribute } = this;
     if (userProps.hasOwnProperty(idAttribute)) {
-      const id = (userProps[idAttribute as keyof MappedRow<InstanceType<M>>] as unknown) as string;
+      const id = (userProps[idAttribute as keyof RefWithFields<InstanceType<MClassType>>] as unknown) as string;
       if (this.idExists(id)) {
         const model = this.withId(id)!;
         castTo<any>(model).update(userProps);
@@ -347,10 +347,10 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @throws If object with id `id` doesn't exist
    * @return {Model|null} {@link Model} instance with id `id`
    */
-  static withId<M extends typeof AnyModel>(this: M, id: ModelId): ModelInstance<InstanceType<M>> | null {
+  static withId<MClassType extends typeof AnyModel>(this: MClassType, id: ModelId): SessionBoundModel<InstanceType<MClassType>> | null {
     return this.get({
       [this.idAttribute]: id,
-    } as unknown as Partial<Row<InstanceType<M>>>);
+    } as unknown as Partial<Ref<InstanceType<MClassType>>>);
   }
 
   /**
@@ -398,10 +398,10 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @throws {Error} If more than one entity matches the properties in `lookupObj`.
    * @return {Model} a {@link Model} instance that matches the properties in `lookupObj`.
    */
-  static get<M extends typeof AnyModel>(this: M, lookupObj: Partial<Row<InstanceType<M>>>): ModelInstance<InstanceType<M>> | null {
-    const ThisModel = castTo<ModelConstructor<InstanceType<M>>>(this);
+  static get<MClassType extends typeof AnyModel>(this: MClassType, lookupObj: Partial<Ref<InstanceType<MClassType>>>): SessionBoundModel<InstanceType<MClassType>> | null {
+    const ThisModel = castTo<ModelConstructor<InstanceType<MClassType>>>(this);
 
-    const rows = this._findDatabaseRows<InstanceType<M>>(lookupObj);
+    const rows = this._findDatabaseRows<InstanceType<MClassType>>(lookupObj);
     if (rows.length === 0) {
       return null;
     }
@@ -446,7 +446,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     // eslint-disable-next-line no-underscore-dangle
     return ThisModel._findDatabaseRows<this>({
       [ThisModel.idAttribute as 'id']: this.getId(),
-    } as Row<this>)[0];
+    } as Ref<this>)[0];
   }
 
   /**
@@ -457,8 +457,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @return {Boolean} a boolean indicating if entity with `props` exists in the state
    * @private
    */
-  static _findDatabaseRows<M extends AnyModel = AnyModel>(lookupObj: Partial<Row<M>>): Row<M>[] {
-    const querySpec: Query<ModelClassMap, Partial<Row<M>>> = {
+  static _findDatabaseRows<M extends AnyModel = AnyModel>(lookupObj: Partial<Ref<M>>): Ref<M>[] {
+    const querySpec: Query<ModelClassMap, Partial<Ref<M>>> = {
       table: this.modelName,
       clauses: [],
     };
@@ -470,7 +470,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
         },
       ];
     }
-    return this.session.query(querySpec).rows as Row<M>[];
+    return this.session.query(querySpec).rows as Ref<M>[];
   }
 
   /**
@@ -491,7 +491,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
             .map((model) => castTo<any>(model).getId());
           return `${fieldName}: [${ids.join(", ")}]`;
         }
-        const val = this._fields[fieldName as keyof Attrs];
+        const val = this._fields[fieldName as keyof MFieldMap];
         return `${fieldName}: ${val}`;
       })
       .join(", ");
@@ -535,7 +535,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
    * @param  {Object} userMergeObj - an object that will be merged with this instance.
    * @return {undefined}
    */
-  update<M extends AnyModel = AnyModel>(this: M, userMergeObj: Partial<MappedRow<M>>): void {
+  update<M extends AnyModel = AnyModel>(this: M, userMergeObj: Partial<RefWithFields<M>>): void {
     const ThisModel = this.getClass();
     if (typeof ThisModel.session === "undefined") {
       throw new Error(
@@ -583,7 +583,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     const mergedFields = {
       ...this._fields,
       ...mergeObj,
-    } as Row<M>;
+    } as Ref<M>;
 
     const updatedModel = new ThisModel(this._fields);
     updatedModel._initFields(mergedFields); // eslint-disable-line no-underscore-dangle
@@ -593,8 +593,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     const relationsEqual = Object.keys(m2mRelations).every(
       (name) =>
         !arrayDiffActions(
-          (this as ModelData)[name] as ModelId[],
-          (updatedModel as ModelData)[name] as ModelId[]
+          (this as AnyObject)[name] as ModelId[],
+          (updatedModel as AnyObject)[name] as ModelId[]
         )
     );
     const fieldsEqual = this.equals(updatedModel);
@@ -614,7 +614,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       ThisModel.session.applyUpdate({
         action: UPDATE,
         query: getByIdQuery(this),
-        payload: castTo<Row<M>>(mergeObj),
+        payload: castTo<Ref<M>>(mergeObj),
       });
     }
   }
@@ -699,7 +699,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
 
       const currentIds = ThroughModel.filter(
         (through) =>
-          (through as ModelData)[fromField] === (this as ModelData)[ThisModel.idAttribute]
+          (through as AnyObject)[fromField] === (this as AnyObject)[ThisModel.idAttribute]
       )
         .toRefArray()
         .map((ref) => castTo<ModelId>(ref[toField]));
@@ -709,11 +709,10 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       if (diffActions) {
         const { delete: idsToDelete, add: idsToAdd } = diffActions;
         if (idsToDelete.length > 0) {
-          // Przyklad gdzie tworzac instancje, mozemy przekazywac nie tylko idki
-          (this as ModelData)[name].remove(...idsToDelete);
+          (this as AnyObject)[name].remove(...idsToDelete);
         }
         if (idsToAdd.length > 0) {
-          (this as ModelData)[name].add(...idsToAdd);
+          (this as AnyObject)[name].add(...idsToAdd);
         }
       }
     });
@@ -730,17 +729,17 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
       const field = virtualFields[key];
       if (field instanceof ManyToMany) {
         // Delete any many-to-many rows the entity is included in.
-        (this as ModelData)[key].clear();
+        (this as AnyObject)[key].clear();
       } else if (field instanceof ForeignKey) {
-        const relatedQs = (this as ModelData)[key];
+        const relatedQs = (this as AnyObject)[key];
         if (relatedQs.exists()) {
           relatedQs.update({ [field.relatedName!]: null });
         }
       } else if (field instanceof OneToOne) {
         // Set null to any foreign keys or one to ones pointed to
         // this instance.
-        if ((this as ModelData)[key] !== null) {
-          (this as ModelData)[key][field.relatedName!] = null;
+        if ((this as AnyObject)[key] !== null) {
+          (this as AnyObject)[key][field.relatedName!] = null;
         }
       }
     }
@@ -750,39 +749,39 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, Att
     return this.getQuerySet().count();
   }
 
-  static at<M extends typeof AnyModel>(this: M, index: number): ModelInstance<InstanceType<M>> | undefined {
+  static at<MClassType extends typeof AnyModel>(this: MClassType, index: number): SessionBoundModel<InstanceType<MClassType>> | undefined {
     return this.getQuerySet().at(index);
   }
 
-  static all<M extends typeof AnyModel>(this: M): QuerySet<M> {
+  static all<MClassType extends typeof AnyModel>(this: MClassType): QuerySet<MClassType> {
     return this.getQuerySet().all();
   }
 
-  static first<M extends typeof AnyModel>(this: M): ModelInstance<InstanceType<M>> | undefined {
+  static first<MClassType extends typeof AnyModel>(this: MClassType): SessionBoundModel<InstanceType<MClassType>> | undefined {
     return this.getQuerySet().first();
   }
 
-  static last<M extends typeof AnyModel>(this: M): ModelInstance<InstanceType<M>> | undefined {
+  static last<MClassType extends typeof AnyModel>(this: MClassType): SessionBoundModel<InstanceType<MClassType>> | undefined {
     return this.getQuerySet().last();
   }
 
-  static filter<M extends typeof AnyModel>(this: M, lookupObj: Partial<MappedRow<InstanceType<M>>> | ((row: MappedRow<InstanceType<M>>) => boolean)): QuerySet<M> {
+  static filter<MClassType extends typeof AnyModel>(this: MClassType, lookupObj: Partial<RefWithFields<InstanceType<MClassType>>> | ((row: RefWithFields<InstanceType<MClassType>>) => boolean)): QuerySet<MClassType> {
     return this.getQuerySet().filter(lookupObj);
   }
 
-  static exclude<M extends typeof AnyModel>(this: M, lookupObj: Partial<MappedRow<InstanceType<M>>> | ((row: MappedRow<InstanceType<M>>) => boolean)): QuerySet<M> {
+  static exclude<MClassType extends typeof AnyModel>(this: MClassType, lookupObj: Partial<RefWithFields<InstanceType<MClassType>>> | ((row: RefWithFields<InstanceType<MClassType>>) => boolean)): QuerySet<MClassType> {
     return this.getQuerySet().exclude(lookupObj);
   }
 
-  static orderBy<M extends typeof AnyModel>(
-    this: M,
-    iteratees: SortIteratee<InstanceType<M>> | ReadonlyArray<SortIteratee<InstanceType<M>>>,
+  static orderBy<MClassType extends typeof AnyModel>(
+    this: MClassType,
+    iteratees: SortIteratee<InstanceType<MClassType>> | ReadonlyArray<SortIteratee<InstanceType<MClassType>>>,
     orders?: SortOrder | ReadonlyArray<SortOrder>
-  ): QuerySet<M> {
+  ): QuerySet<MClassType> {
     return this.getQuerySet().orderBy(iteratees, orders);
   }
 
-  static update(mergeObj: Partial<ModelAttrs>): void {
+  static update(mergeObj: Partial<ModelRefLike>): void {
     this.getQuerySet().update(mergeObj);
   }
 

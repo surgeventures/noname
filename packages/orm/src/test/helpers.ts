@@ -1,7 +1,7 @@
 import ORM from "../ORM";
 import Model from "../Model";
 import { fk, many, oneToOne, attr } from "../fields";
-import { ModelId, Relations, SessionLike, SourceRelationship, TargetRelationship } from "../types";
+import { ModelId, Relations, SessionWithBoundModels, SourceRelationship, TargetRelationship } from "../types";
 
 /**
  * These utils create a database schema for testing.
@@ -328,7 +328,7 @@ export type Schema = {
   TagSubTags: typeof Tag; // Verify
 }
 
-export type ExtendedSession = SessionLike<Schema>;
+export type ExtendedSession = SessionWithBoundModels<Schema>;
 
 export function createTestORM() {
   const {

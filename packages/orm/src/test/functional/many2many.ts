@@ -1,7 +1,7 @@
 import { Model, QuerySet, ORM, attr, many, fk } from "../..";
 import { castTo } from "../../hacks";
 import { AnyModel, ModelClassMap } from "../../Model";
-import { ModelId, Relations, SessionLike, TargetRelationship, ModelInstance, Ref, SourceRelationship } from "../../types";
+import { ModelId, Relations, SessionWithBoundModels, TargetRelationship, Ref, SourceRelationship, SessionBoundModel } from "../../types";
 import {
   createTestSessionWithData,
   ExtendedSession,
@@ -59,11 +59,11 @@ describe("Many to many relationships", () => {
       User2Team: typeof AnyModel;
     }
     
-    type CustomSession = SessionLike<Schema>;
+    type CustomSession = SessionWithBoundModels<Schema>;
     let session: CustomSession;
-    let teamFirst: ModelInstance<Team>;
-    let userFirst: ModelInstance<User>;
-    let userLast: ModelInstance<User>;
+    let teamFirst: SessionBoundModel<Team>;
+    let userFirst: SessionBoundModel<User>;
+    let userLast: SessionBoundModel<User>;
     let orm: ORM<Schema>;
     let validateRelationState: () => void;
 
@@ -247,22 +247,22 @@ describe("Many to many relationships", () => {
   });
 
   describe("many-many with a custom through model", () => {
-    let validateRelationState: <Schema extends ModelClassMap>(session: SessionLike<Schema>) => void;
+    let validateRelationState: <Schema extends ModelClassMap>(session: SessionWithBoundModels<Schema>) => void;
 
     beforeEach(() => {
-      validateRelationState = <Schema extends ModelClassMap>(session: SessionLike<Schema>) => {
+      validateRelationState = <Schema extends ModelClassMap>(session: SessionWithBoundModels<Schema>) => {
         const { User, Team, User2Team } = session;
 
         // Forward (from many-to-many field declaration)
-        const user = User.get({ name: "user0" });
-        const relatedTeams = user!.teams as QuerySet<typeof Team>;
+        const user = User.get({ name: "user0" }) as unknown as { id: ModelId; teams: QuerySet<typeof Team> };
+        const relatedTeams = user.teams;
         expect(relatedTeams).toBeInstanceOf(QuerySet);
         expect(relatedTeams.modelClass).toBe(Team);
         expect(relatedTeams.count()).toBe(1);
 
         // Backward
-        const team = Team.get({ name: "team0" })!;
-        const relatedUsers = team.users as QuerySet<typeof User>;
+        const team = Team.get({ name: "team0" }) as unknown as { id: ModelId; users: QuerySet<typeof User> };
+        const relatedUsers = team.users;
         expect(relatedUsers).toBeInstanceOf(QuerySet);
         expect(relatedUsers.modelClass).toBe(User);
         expect(relatedUsers.count()).toBe(2);
@@ -271,8 +271,8 @@ describe("Many to many relationships", () => {
           relatedUsers.toRefArray().map(row => row.id)
         ).toEqual(["u0", "u1"]);
         expect(
-          castTo<QuerySet<typeof User>>(Team.withId("t2")!
-            .users).toRefArray()
+          castTo<{ users: QuerySet<typeof User> }>(Team.withId("t2"))
+            .users.toRefArray()
             .map(row => row.id)
         ).toEqual(["u1"]);
 
@@ -280,8 +280,8 @@ describe("Many to many relationships", () => {
           relatedTeams.toRefArray().map(row => row.id)
         ).toEqual([team.id]);
         expect(
-          castTo<QuerySet<typeof Team>>(User.withId("u1")!
-            .teams).toRefArray()
+          castTo<{ teams: QuerySet<typeof Team> }>(User.withId("u1"))
+            .teams.toRefArray()
             .map(row => row.id)
         ).toEqual(["t0", "t2"]);
 
@@ -743,10 +743,10 @@ describe("Many to many relationships", () => {
     };
 
     let orm: ORM<Schema>;
-    let session: SessionLike<Schema>;
-    let user0: ModelInstance<User>;
-    let user1: ModelInstance<User>;
-    let user2: ModelInstance<User>;
+    let session: SessionWithBoundModels<Schema>;
+    let user0: SessionBoundModel<User>;
+    let user1: SessionBoundModel<User>;
+    let user2: SessionBoundModel<User>;
     let validateRelationState: () => void;
 
     beforeEach(() => {

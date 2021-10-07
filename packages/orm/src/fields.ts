@@ -373,7 +373,7 @@ export abstract class RelationalField extends Field {
       installForwardsDescriptor() {
         Object.defineProperty(
           this.model.prototype,
-          this.field.as || this.fieldName, // use supplied name if possible
+          castTo<RelationalField>(this.field).as || this.fieldName, // use supplied name if possible
           this.field.createForwardsDescriptor(
             this.fieldName,
             this.model,

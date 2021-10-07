@@ -1,6 +1,8 @@
 import ORM from "./ORM";
 import AnyModel, { ModelClassMap } from "./Model";
-import { ModelId, OrmState, EqualityFunc, Row } from "./types";
+import { ModelId, OrmState, Ref } from "./types";
+
+export type EqualityFunc = (arg1: any, arg2: any) => boolean;
 
 type MemoizeState<Schema extends ModelClassMap> = {
   result: any;
@@ -21,8 +23,8 @@ const argsAreEqual = (
 
 const rowsAreEqual = (
   ids: ModelId[],
-  rowsA: Record<ModelId, Row<AnyModel>>,
-  rowsB: Record<ModelId, Row<AnyModel>>
+  rowsA: Record<ModelId, Ref<AnyModel>>,
+  rowsB: Record<ModelId, Ref<AnyModel>>
 ) => ids.every((id) => rowsA[id] === rowsB[id]);
 
 const accessedModelInstancesAreEqual = <Schema extends ModelClassMap>(

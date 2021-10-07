@@ -11,22 +11,18 @@ import {
   UPDATE,
 } from "./constants";
 import Table from "./db/Table";
-import Model, { AnyModel, ModelClassMap } from "./Model";
+import { AnyModel, ModelClassMap } from "./Model";
 import Session from "./Session";
 import QuerySet from "./QuerySet";
 import { Field } from "./fields";
 
-/**
- * 
- */
-export type AnyObject = Record<string, unknown>;
-/**
- * 
- */
+export type AnyObject = Record<string, any>;
 export type AnySchema = Record<string, typeof AnyModel>;
 
+export type ModelId = number | string;
+
 /**
- * Enumerates possible relations
+ * Enumeration of possible relations used for defining interfaces with descriptors.
  */
 export enum Relations {
   OneToOne = "oneToOne",
@@ -35,168 +31,136 @@ export enum Relations {
 }
 
 /**
- * Extracts the first generic argument from the derived class.
+ * Returns the type of the passed model class.
  */
-export type ExtractModelClassType<T> = T extends Model<infer U, any> ? U : T;
+export type ModelClassType<M extends AnyModel> = ReturnType<M["getClass"]>;
 
 /**
- * Extracts the first generic argument from the derived class.
+ * Imitates the model bound to the session.
+ * 
+ * ModelId type helps to ensure that every model's instance has the id included within its type declaration.
  */
-export type ModelClass<M extends AnyModel> = ReturnType<M["getClass"]>;
+export type SessionBoundModel<
+  MClass extends AnyModel = AnyModel,
+> = MClass & { id?: ModelId };
 
 /**
- * Extracts the first generic argument from the derived class.
+ * Infers the fields type passed to a model. 
  */
-export type ModelInstance<
-  M extends AnyModel = AnyModel,
-> = M & {[key: string]: any};
-
-
-/**
- * Checks the interfaces regardless optional arguments
- */
-export type Temporary<M extends AnyModel> = ConstructorParameters<
- ModelClass<M>
-> extends [infer U]
- ? U extends ModelAttrs<infer Z>
-   ? Z
+export type ModelFields<MClass extends AnyModel> = ConstructorParameters<
+  ModelClassType<MClass>
+> extends [infer FirstConstructorParam]
+ ? FirstConstructorParam extends ModelRefLike<infer ModelFields>
+   ? ModelFields
    : never 
  : never;
 
-/**
- * Extracts the first generic argument from the derived class.
- */
-export type MappedRow<M extends AnyModel> = {
-  [K in keyof Temporary<M>]: Exclude<Temporary<M>[K], undefined> extends QuerySet
-    ? (ModelInstance<Exclude<Temporary<M>[K], undefined> extends QuerySet<infer MClass> ? InstanceType<MClass> : never> | ModelId | null)[]
-    : Exclude<Temporary<M>[K], undefined> extends AnyModel
-    ? Temporary<M>[K] | ModelId | null
-    : IsUnknown<Exclude<Temporary<M>[K], undefined>> extends true
-      ? (ModelInstance | ModelId | null)[]
-      : Temporary<M>[K];
-}; 
-
-/**
- * 
- */
-export type ModelConstructor<MClass extends AnyModel = AnyModel> = {
-  new (props: Row<MClass>): ModelInstance<MClass>; 
-}
-
-
-export type QuerySetConstructor<M extends typeof AnyModel, Payload extends object = {}> = {
-  new (modelClass: typeof AnyModel, clauses?: QueryClause<Payload>[], opts?: object): QuerySet<M>;
+ 
+ export type ModelConstructor<MClass extends AnyModel = AnyModel> = {
+   new (props: Ref<MClass>): SessionBoundModel<MClass>; 
+  }
+  export type QuerySetConstructor<MClassType extends typeof AnyModel, Payload extends object = {}> = {
+  new (modelClass: typeof AnyModel, clauses?: QueryClause<Payload>[], opts?: object): QuerySet<MClassType>;
 }
 
 /**
- * 
+ * Handles relationships on the source model side.
+ *
+ * Each key points either to a single entity or a query set of entities on another model.
  */
 export type TargetRelationship<
-M extends AnyModel,
-Relation extends Relations
-> = Relation extends Relations.OneToOne
-? ModelInstance<M>
-: Relation extends Relations.ForeignKey
-? ModelInstance<M>
-: Relation extends Relations.ManyToMany
-  ? QuerySet<ExtractModelClassType<M>>
-  : never;
-
-  /**
- * 
-   */
-  export type SourceRelationship<
-  M extends typeof AnyModel,
+  MClass extends AnyModel,
   Relation extends Relations
-  > = Relation extends Relations.OneToOne
-  ? ModelInstance<InstanceType<M>>
+> = Relation extends Relations.OneToOne
+  ? SessionBoundModel<MClass>
   : Relation extends Relations.ForeignKey
-  ? QuerySet<M>
-  : Relation extends Relations.ManyToMany
-  ? QuerySet<M>
+    ? SessionBoundModel<MClass>
+    : Relation extends Relations.ManyToMany
+      ? QuerySet<ModelClassType<MClass>>
+      : never;
+      
+/**
+ * Handles relationships on the target model side.
+ *
+ * Defines keys used to access the Model foreign key is being defined from, from the target model.
+ */
+export type SourceRelationship<
+  MClassType extends typeof AnyModel,
+  Relation extends Relations
+> = Relation extends Relations.OneToOne
+  ? InstanceType<MClassType>
+  : Relation extends Relations.ForeignKey
+    ? QuerySet<MClassType>
+    : Relation extends Relations.ManyToMany
+      ? QuerySet<MClassType>
+      : never;
+      
+/**
+ * Possible types of relations and attributes that describe a single model.
+ */
+type ModelField = QuerySet<any> | AnyModel | Serializable;
+  
+/**
+ * A map of possible types of relations and attributes that describe a single model.
+ */
+export type ModelFieldMap = {
+  id?: ModelId;
+  [K: string]: ModelField;
+};
+  
+/**
+ * A plain JS object representing the database entry.
+ */
+export type Ref<MClass extends AnyModel> = ConstructorParameters<
+  ModelClassType<MClass>
+> extends [infer FirstConstructorParam]
+  ? FirstConstructorParam extends ModelRefLike
+  ? FirstConstructorParam
+  : never
   : never;
-  
-  /**
-   * Extracts the first generic argument from the derived class.
-   */
-  type ModelField = QuerySet<any> | AnyModel | Serializable;
-  
-  /**
-   * Extracts the first generic argument from the derived class.
-   */
-  export type ModelFieldMap = {
-    id?: ModelId;
-    [K: string]: ModelField;
-  };
-  
-  /**
-   * 
-   */
-  export type Ref<M extends AnyModel> = Row<M>;
 
-  /**
-   * 
-   */
-  export type ModelFields<M extends AnyModel> = Row<M> extends ModelAttrs<infer Fields>
-  ? Fields
-  : never;
+/**
+ * Extends the plan JS object interface, representing the database entry, with {@link ModelField}
+ * 
+ * Mainly used in functions that manipulate db entries.
+ */
+export type RefWithFields<M extends AnyModel> = {
+  [K in keyof ModelFields<M>]: ExcludeUndefined<ModelFields<M>[K]> extends QuerySet
+    ? (SessionBoundModel<ExcludeUndefined<ModelFields<M>[K]> extends QuerySet<infer MClass> ? InstanceType<MClass> : never> | ModelId | null)[]
+    : ExcludeUndefined<ModelFields<M>[K]> extends AnyModel
+      ? ModelFields<M>[K] | ModelId | null
+      : ModelFields<M>[K];
+}; 
   
-  /**
-   * 
-   */
-  export type Row<M extends AnyModel> = ConstructorParameters<
-  ModelClass<M>
-  > extends [infer U]
-  ? U extends ModelAttrs
-   ? U
-   : never
-  : never;
-  
-  /**
-   * 
-   */
-  export type ModelAttrs<Attrs extends ModelFieldMap = ModelFieldMap> = {
-    [K in keyof Attrs]: Exclude<Attrs[K], undefined> extends QuerySet
+/**
+ * Transforms the fields object to match the interface of the plain JS object in the database.
+ * 
+ * TODO: should firstly check if is undefined
+ */
+export type ModelRefLike<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
+  [K in keyof MFieldMap]: ExcludeUndefined<MFieldMap[K]> extends QuerySet
     ? never
-    : Exclude<Attrs[K], undefined> extends AnyModel
-    ? ModelId | undefined
-    : Attrs[K];
+    : ExcludeUndefined<MFieldMap[K]> extends AnyModel
+      ? ModelId | undefined
+      : MFieldMap[K];
 };
 
 /**
- * 
+ * Excludes undefined type from an union of types.
  */
-type IsAny<T> = (
-  unknown extends T
-  ? [keyof T] extends [never] ? false : true
-    : false
-);
-
-/**
- * 
- */
-type IsUnknown<T> = unknown extends T ? IsAny<T> extends true ? false : true : false;
-
-/**
- * 
- */
-export type OmitUnknowns<T> = {[K in keyof T]: unknown extends T[K] ? IsAny<T[K]> extends true ? T[K] : never : T[K] };
+type ExcludeUndefined<T> = Exclude<T, undefined>;
 
 /**
  * Optional ordering direction.
- *
- * {@see QuerySet.orderBy}
  */
-  export type SortOrder = 'asc' | 'desc' | true | false;
+export type SortOrder = 'asc' | 'desc' | true | false;
 
-  /**
-  * Ordering clause.
-  *
-  * Either a key of SessionBoundModel or a evaluator function accepting plain object Model representation stored in the database.
-  *
-  * {@see QuerySet.orderBy}
-  */
-  export type SortIteratee<M extends AnyModel> = keyof Ref<M> | { (row: Ref<M>): any };
+/**
+ * Ordering clause.
+ *
+ * Either a key of SessionBoundModel or a evaluator function accepting plain object Model representation stored in the database.
+ */
+export type SortIteratee<MClass extends AnyModel> = keyof Ref<MClass> | { (row: Ref<MClass>): any };
 
 /**
  * A primitive value
@@ -215,30 +179,27 @@ export type Serializable =
     };
 
 /**
- * 
+ * The state of a specific model's table
  */
-export type TableState<MClass extends typeof AnyModel> = {
+export type TableState<MClassType extends typeof AnyModel> = {
   meta: {
     maxId?: number;
     [k: string]: any;
   };
   items: ModelId[];
-  itemsById: Record<ModelId, Ref<InstanceType<MClass>>>;
+  itemsById: Record<ModelId, Ref<InstanceType<MClassType>>>;
 };
 
 /**
- * 
+ * Allows to access any models that have been bound to the session.
  */
- export type SessionLike<Schema extends ModelClassMap> = Session<Schema> & Schema;
+export type SessionWithBoundModels<Schema extends ModelClassMap> = Session<Schema> & Schema;
 
 /**
- * 
+ * Represents the object with the ORM state type based on the model's schema.
  */
 export type OrmState<Schema extends ModelClassMap> = { [K in keyof Schema]: TableState<Schema[K]> };
 
-/**
- * A type of {@link QueryClause}.
- */
 export type QueryType = typeof FILTER | typeof EXCLUDE | typeof ORDER_BY;
 
 /**
@@ -286,13 +247,6 @@ export interface UpdateSpec<Schema extends ModelClassMap, Payload extends {} = {
 }
 
 /**
- * 
- */
-export type UpdateCreateSpec = {
-  table: string;
-};
-
-/**
  * Data update result.
  */
 export interface UpdateResult<Schema extends ModelClassMap> {
@@ -310,12 +264,12 @@ export interface Transaction {
 }
 
 /**
- * 
+ * A database definition parametrized by schema made of models types
  */
 export interface Database<Schema extends ModelClassMap> {
   describe(modelName: keyof Schema): Table<Schema[keyof Schema]>;
   getEmptyState(): OrmState<Schema>;
-  query<Payload extends object = {}>(query: Query<Schema, Payload>, state: OrmState<Schema>): { rows: Row<InstanceType<Schema[keyof Schema]>>[] };
+  query<Payload extends object = {}>(query: Query<Schema, Payload>, state: OrmState<Schema>): { rows: Ref<InstanceType<Schema[keyof Schema]>>[] };
   update<Payload extends object = object>(
     updateSpec: UpdateSpec<Schema>,
     tx: Transaction,
@@ -323,21 +277,9 @@ export interface Database<Schema extends ModelClassMap> {
   ): { status: UpdateStatus; state: OrmState<Schema>; payload: Payload };
 }
 
-/**
- * 
- */
-export type ModelId = number | string;
 
 /**
- * 
- */
-// Try to replace with AnyObject
-export type ModelData = Record<string, any>;
-
-/**
- * {@link TableOpts} used for {@link Table} customization.
- *
- * Supplied via {@link Model#options}.
+ * Table options used for {@link Table} customization.
  *
  * If no customizations were provided, the table uses following default options:
  * <br/>
@@ -347,9 +289,6 @@ export type ModelData = Record<string, any>;
  *  }
  * ```
  * <br/>
- *  @see {@link Model}
- *  @see {@link Model#options}
- *  @see {@link OrmState}
  */
  export interface TableOpts {
   readonly idAttribute?: string;
@@ -399,12 +338,7 @@ export type ExtractModelOption<
     : DefaultValue;
 
 /**
- * 
- */
-export type TableSpec = TableOpts;
-
-/**
- * 
+ * Schema specification required for a database creator
  */
 export type SchemaSpec<Schema extends ModelClassMap> = {
   tables: {
@@ -413,51 +347,34 @@ export type SchemaSpec<Schema extends ModelClassMap> = {
 };
 
 /**
- * 
+ * Store dispatched action type
  */
 export type ReduxAction<Payload = {}> = {
   type: string;
   payload: Payload | null;
 };
 
-/**
- * 
- */
-export type ForEachCallback<T> = {
-  (elem: T): void;
-};
 
 /**
- * 
- */
-export type WithForEach<T> = {
-  forEach: (cb: ForEachCallback<T>) => void;
-}
-
-/**
- * 
+ * Tables map created by the schema specification 
  */
 export type TableMap<Schema extends ModelClassMap> = { [K in keyof Schema]: Table<Schema[K]> };
 
-/**
- * 
- */
-export type EqualityFunc = (arg1: any, arg2: any) => boolean;
 
 /**
- * 
+ * The type of ORM selector creator
  */
 export type OrmSelector<
-Result,
-Schema extends ModelClassMap,
-Args extends unknown[]
-> = (session: SessionLike<Schema>, ...args: Args) => Result;
+  Schema extends ModelClassMap,
+  Result,
+  Args extends unknown[]
+> = (session: SessionWithBoundModels<Schema>, ...args: Args) => Result;
 
 /**
- * 
+ * The type of memoized function
  */
 export type Selector<
-Schema extends ModelClassMap,
-Result,
-Args extends unknown[]
+  Schema extends ModelClassMap,
+  Result,
+  Args extends unknown[]
 > = (state: OrmState<Schema>, ...args: Args) => Result;

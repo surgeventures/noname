@@ -7,7 +7,7 @@ import ops, { SetFunc } from "immutable-ops";
 import { AnyModel } from "../Model";
 import { FILTER, EXCLUDE, ORDER_BY, DEFAULT_TABLE_OPTIONS } from "../constants";
 import { clauseFiltersByAttribute, clauseReducesResultSetSize } from "../utils";
-import { QueryClause, TableOpts, Row, TableState, Transaction, ModelId } from "../types";
+import { QueryClause, TableOpts, Ref, TableState, Transaction, ModelId } from "../types";
 import { castTo } from "../hacks";
 
 // Input is the current max id and the new id passed to the create action.
@@ -96,7 +96,7 @@ export default class Table<MClassType extends typeof AnyModel> {
     return id + 1;
   }
 
-  query(branch: TableState<MClassType>, clauses: QueryClause[]): Row<InstanceType<MClassType>>[] {
+  query(branch: TableState<MClassType>, clauses: QueryClause[]): Ref<InstanceType<MClassType>>[] {
     if (clauses.length === 0) {
       return this.accessList(branch);
     }
@@ -115,9 +115,9 @@ export default class Table<MClassType extends typeof AnyModel> {
       return 3;
     });
 
-    const initialArray: Row<InstanceType<MClassType>>[] = [];
+    const initialArray: Ref<InstanceType<MClassType>>[] = [];
 
-    const reducer = (rows: Row<InstanceType<MClassType>>[], clause: QueryClause): Row<InstanceType<MClassType>>[] => {
+    const reducer = (rows: Ref<InstanceType<MClassType>>[], clause: QueryClause): Ref<InstanceType<MClassType>>[] => {
       const { type, payload = {} } = clause;
       if (rows === initialArray) {
         if (clauseFiltersByAttribute(clause, idAttribute)) {
@@ -132,10 +132,10 @@ export default class Table<MClassType extends typeof AnyModel> {
 
       switch (type) {
         case FILTER: {
-          return filter<Row<InstanceType<MClassType>>>(rows, payload);
+          return filter<Ref<InstanceType<MClassType>>>(rows, payload);
         }
         case EXCLUDE: {
-          return reject<Row<InstanceType<MClassType>>>(rows, payload);
+          return reject<Ref<InstanceType<MClassType>>>(rows, payload);
         }
         case ORDER_BY: {
           const [iteratees, orders] = payload as [string[], string[]];
@@ -184,7 +184,7 @@ export default class Table<MClassType extends typeof AnyModel> {
    *                  `state` is the new table state and `created` is the
    *                  row that was created.
    */
-  insert(tx: Transaction, branch: TableState<MClassType>, entry: Row<InstanceType<MClassType>>): { state: TableState<MClassType>; created: Row<InstanceType<MClassType>> } {
+  insert(tx: Transaction, branch: TableState<MClassType>, entry: Ref<InstanceType<MClassType>>): { state: TableState<MClassType>; created: Ref<InstanceType<MClassType>> } {
     const { batchToken, withMutations } = tx;
 
     const hasId = castTo<any>(entry).hasOwnProperty(this.idAttribute);
@@ -200,7 +200,7 @@ export default class Table<MClassType extends typeof AnyModel> {
 
     const finalEntry = hasId
       ? entry
-      : ops.batch.set(batchToken, this.idAttribute, id, entry) as Row<InstanceType<MClassType>>;
+      : ops.batch.set(batchToken, this.idAttribute, id, entry) as Ref<InstanceType<MClassType>>;
 
     if (withMutations) {
       ops.mutable.push(id, workingState.items);
@@ -240,7 +240,7 @@ export default class Table<MClassType extends typeof AnyModel> {
    * @param  {Object} mergeObj - The object to merge with each row.
    * @return {Object}
    */
-  update(tx: Transaction, branch: TableState<MClassType>, rows: Row<InstanceType<MClassType>>[], mergeObj: object): TableState<MClassType> {
+  update(tx: Transaction, branch: TableState<MClassType>, rows: Ref<InstanceType<MClassType>>[], mergeObj: object): TableState<MClassType> {
     const { batchToken, withMutations } = tx;
 
     const mapFunction = (row: object) => {
@@ -266,7 +266,7 @@ export default class Table<MClassType extends typeof AnyModel> {
    * @param  {Object[]} rows - rows to update
    * @return {Object} the data structure without ids in `idsToDelete`.
    */
-  delete(tx: Transaction, branch: TableState<MClassType>, rows: Row<InstanceType<MClassType>>[]): TableState<MClassType> {
+  delete(tx: Transaction, branch: TableState<MClassType>, rows: Ref<InstanceType<MClassType>>[]): TableState<MClassType> {
     const { batchToken, withMutations } = tx;
 
     const arr = branch.items;

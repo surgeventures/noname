@@ -1,6 +1,6 @@
 import { castTo } from "./hacks";
 import Model, { AnyModel, ModelClassMap } from "./Model";
-import { ModelData, ModelId, ModelAttrs } from "./types";
+import { AnyObject, ModelId, ModelRefLike } from "./types";
 import { normalizeEntity } from "./utils";
 
 /**
@@ -20,11 +20,11 @@ import { normalizeEntity } from "./utils";
 export function attrDescriptor(fieldName: string) {
   return {
     get(): any {
-      return (this as ModelData)._fields[fieldName];
+      return (this as AnyObject)._fields[fieldName];
     },
 
     set(value: any): any {
-      return (this as ModelData).set(fieldName, value);
+      return (this as AnyObject).set(fieldName, value);
     },
 
     enumerable: true,
@@ -183,7 +183,7 @@ export function manyToManyDescriptor(
       const referencedOtherIds = new Set(
         throughQs
           .toRefArray()
-          .map((obj: ModelAttrs) => obj[otherReferencingField])
+          .map((obj: ModelRefLike) => obj[otherReferencingField])
       );
 
       /**
@@ -192,7 +192,7 @@ export function manyToManyDescriptor(
        */
       const qs = OtherModel.filter((otherModelInstance) =>
         referencedOtherIds.has(
-          (otherModelInstance as ModelData)[OtherModel.idAttribute]
+          (otherModelInstance as AnyObject)[OtherModel.idAttribute]
         )
       );
 
@@ -208,13 +208,13 @@ export function manyToManyDescriptor(
         const idsToAdd = new Set(entities.map(normalizeEntity));
 
         const existingQs = throughQs.filter((through) =>
-          idsToAdd.has((through as ModelData)[otherReferencingField])
+          idsToAdd.has((through as AnyObject)[otherReferencingField])
         );
 
         if (existingQs.exists()) {
           const existingIds = existingQs
             .toRefArray()
-            .map((through: ModelData) => through[otherReferencingField]);
+            .map((through: AnyObject) => through[otherReferencingField]);
 
           throw new Error(
             `Tried to add already existing ${OtherModel.modelName} id(s) ${existingIds} to the ${ThisModel.modelName} instance with id ${thisId}`
@@ -253,14 +253,14 @@ export function manyToManyDescriptor(
         const idsToRemove = new Set(entities.map(normalizeEntity));
 
         const entitiesToDelete = throughQs.filter((through) =>
-          idsToRemove.has((through as ModelData)[otherReferencingField])
+          idsToRemove.has((through as AnyObject)[otherReferencingField])
         );
 
         if (entitiesToDelete.count() !== idsToRemove.size) {
           // Tried deleting non-existing entities.
           const entitiesToDeleteIds = entitiesToDelete
             .toRefArray()
-            .map((through: ModelData) => through[otherReferencingField]);
+            .map((through: AnyObject) => through[otherReferencingField]);
 
           const unexistingIds = [...idsToRemove].filter(
             (id) => !entitiesToDeleteIds.includes(id)

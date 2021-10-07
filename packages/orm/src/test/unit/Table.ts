@@ -4,7 +4,7 @@ import { BatchToken } from "immutable-ops";
 import Table from "../../db/Table";
 import { getBatchToken } from "../../utils";
 import { FILTER, EXCLUDE, ORDER_BY } from "../../constants";
-import { ModelId, QueryClause, Row, TableState, Transaction } from "../../types";
+import { ModelId, QueryClause, Ref, TableState, Transaction } from "../../types";
 import Model from "../../Model";
 
 describe("Table", () => {
@@ -65,7 +65,7 @@ describe("Table", () => {
       const entry = { id: 3, data: "newdata!" };
       const { state: newState, created } = table.insert(txInfo, state, entry);
 
-      expect(created).toBe<Row<Test>>(entry);
+      expect(created).toBe<Ref<Test>>(entry);
 
       expect(newState).not.toBe<TableState<typeof Test>>(state);
       expect(newState.items).toEqual<TableState<typeof Test>['items']>([0, 1, 2, 3]);
@@ -90,7 +90,7 @@ describe("Table", () => {
     });
 
     it("correctly updates entries with a merging object", () => {
-      const toMergeObj: Row<Test> = { data: "modifiedData" };
+      const toMergeObj: Ref<Test> = { data: "modifiedData" };
       const rowsToUpdate: TableState<typeof Test>['itemsById'][number][] = [state.itemsById[1], state.itemsById[2]];
       const newState = table.update(txInfo, state, rowsToUpdate, toMergeObj);
 
@@ -158,7 +158,7 @@ describe("Table", () => {
       const state = deepFreeze(stateObj) as typeof stateObj;
       const table = new Table<typeof Test>({ idAttribute: "name" });
       // ERROR: idAttribute is not mapped to id type
-      const clauses: QueryClause<(attrs: Row<Test>) => boolean>[] = [
+      const clauses: QueryClause<(attrs: Ref<Test>) => boolean>[] = [
         {
           type: FILTER,
           payload: attrs =>
@@ -174,7 +174,7 @@ describe("Table", () => {
     it("orderBy works correctly with prop argument", () => {
       const clauses: QueryClause<[string[], string[]]>[] = [{ type: ORDER_BY, payload: [["data"], ["inc"]] }];
       const result = table.query(state, clauses);
-      expect(result.map((row) => row.data)).toEqual<Row<Test>['data'][]>([
+      expect(result.map((row) => row.data)).toEqual<Ref<Test>['data'][]>([
         "awesomedata",
         "cooldata",
         "verycooldata!",
@@ -182,11 +182,11 @@ describe("Table", () => {
     });
 
     it("orderBy works correctly with function argument", () => {
-      const clauses: QueryClause<[(row: Row<Test>) => Row<Test>['data'], undefined]>[] = [
+      const clauses: QueryClause<[(row: Ref<Test>) => Ref<Test>['data'], undefined]>[] = [
         { type: ORDER_BY, payload: [row => row.data, undefined] },
       ];
       const result = table.query(state, clauses);
-      expect(result.map((row) => row.data)).toEqual<Row<Test>['data'][]>([
+      expect(result.map((row) => row.data)).toEqual<Ref<Test>['data'][]>([
         "awesomedata",
         "cooldata",
         "verycooldata!",
@@ -197,23 +197,23 @@ describe("Table", () => {
       const clauses: QueryClause<{ data: string }>[] = [{ type: EXCLUDE, payload: { data: "verycooldata!" } }];
       const result = table.query(state, clauses);
       expect(result).toHaveLength(2);
-      expect(result.map((row) => row.id)).toEqual<Row<Test>['id'][]>([0, 2]);
+      expect(result.map((row) => row.id)).toEqual<Ref<Test>['id'][]>([0, 2]);
     });
 
     it("query works with multiple clauses", () => {
-      const clauses: (QueryClause<(row: Row<Test>) => boolean> | QueryClause<[string[], string[]]>)[] = [
+      const clauses: (QueryClause<(row: Ref<Test>) => boolean> | QueryClause<[string[], string[]]>)[] = [
         { type: FILTER, payload: row => row.id! > 0 },
         { type: ORDER_BY, payload: [["data"], ["inc"]] },
       ];
       const result = table.query(state, clauses);
-      expect(result.map((row) => row.data)).toEqual<Row<Test>['data'][]>([
+      expect(result.map((row) => row.data)).toEqual<Ref<Test>['data'][]>([
         "awesomedata",
         "verycooldata!",
       ]);
     });
 
     it("query works with an id filter for a row which is not in the current result set", () => {
-      const clauses: (QueryClause<(row: Row<Test>) => boolean> | QueryClause<Row<Test>>)[] = [
+      const clauses: (QueryClause<(row: Ref<Test>) => boolean> | QueryClause<Ref<Test>>)[] = [
         { type: FILTER, payload: row => row.id !== 1 },
         { type: FILTER, payload: { id: 1 } },
       ];

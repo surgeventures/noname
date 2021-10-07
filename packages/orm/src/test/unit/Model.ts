@@ -1,6 +1,6 @@
 import { ORM, Model, QuerySet, attr } from "../..";
 import { castTo } from "../../hacks";
-import { ModelId, SessionLike } from "../../types";
+import { ModelId, SessionWithBoundModels } from "../../types";
 
 
 describe("Model", () => {
@@ -16,7 +16,7 @@ describe("Model", () => {
     };
 
     let TestModel: ReturnType<typeof getTestModelClass>;
-    let sessionMock: SessionLike<Schema>;
+    let sessionMock: SessionWithBoundModels<Schema>;
 
     beforeEach(() => {
       TestModel = getTestModelClass();
@@ -38,13 +38,13 @@ describe("Model", () => {
     it("session getter works correctly", () => {
       expect(TestModel.session).toBeUndefined();
       TestModel._session = sessionMock;
-      expect(TestModel.session).toBe<SessionLike<Schema>>(sessionMock);
+      expect(TestModel.session).toBe<SessionWithBoundModels<Schema>>(sessionMock);
     });
 
     it("connect defines session statically on Model", () => {
       expect(TestModel.session).toBeUndefined();
       TestModel.connect(sessionMock);
-      expect(TestModel.session).toBe<SessionLike<Schema>>(sessionMock);
+      expect(TestModel.session).toBe<SessionWithBoundModels<Schema>>(sessionMock);
     });
 
     it("connect throws if not passing a session", () => {

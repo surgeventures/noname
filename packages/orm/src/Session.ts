@@ -9,14 +9,19 @@ import {
   Query,
   UpdateSpec,
   ModelId,
-  WithForEach,
-  Row
+  Ref
 } from "./types";
 import { clauseFiltersByAttribute } from "./utils";
 import { castTo } from "./hacks";
 
-type Temp = { accessedInstances: Record<ModelId, boolean>, fullTableScanned: boolean };
-type ModelData<Schema extends ModelClassMap> = Record<keyof Schema, Temp>
+type WithForEach<T> = {
+  forEach: (cb: {
+    (elem: T): void;
+  }) => void;
+}
+
+type Data = { accessedInstances: Record<ModelId, boolean>, fullTableScanned: boolean };
+type ModelData<Schema extends ModelClassMap> = Record<keyof Schema, Data>
 
 export default class Session<Schema extends ModelClassMap = ModelClassMap> {
   readonly schema: ORM<Schema>;
@@ -80,7 +85,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
 
   getDataForModel(modelName: keyof Schema) {
     if (!this.modelData[modelName]) {
-      this.modelData[modelName] = {} as Temp;
+      this.modelData[modelName] = {} as Data;
     }
     return this.modelData[modelName];
   }
@@ -105,7 +110,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
           ...result,
           [modelName]: this.getDataForModel(modelName).accessedInstances,
         }),
-        {} as Record<keyof Schema, Temp['accessedInstances']>
+        {} as Record<keyof Schema, Data['accessedInstances']>
       );
   }
 
@@ -129,9 +134,9 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
    * @param {Object} update - the update object. Must have keys
    *                          `type`, `payload`.
    */
-  applyUpdate<MClass extends AnyModel>(updateSpec: UpdateSpec<Schema, Partial<Row<MClass>>>): Row<MClass> {
+  applyUpdate<MClass extends AnyModel>(updateSpec: UpdateSpec<Schema, Partial<Ref<MClass>>>): Ref<MClass> {
     const tx = this._getTransaction(updateSpec);
-    const result = this.db.update<Row<MClass>>(updateSpec, tx, this.state);
+    const result = this.db.update<Ref<MClass>>(updateSpec, tx, this.state);
     const { status, state, payload } = result;
 
     if (status !== SUCCESS) {
@@ -146,7 +151,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
   }
 
   query(querySpec: Query<Schema>): {
-    rows: Row<InstanceType<Schema[keyof Schema]>>[];
+    rows: Ref<InstanceType<Schema[keyof Schema]>>[];
 } {
     const result = this.db.query(querySpec, this.state);
 
@@ -165,7 +170,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
     return { batchToken, withMutations };
   }
 
-  _markAccessedByQuery(querySpec: Query<Schema, Record<string, ModelId>>, result: { rows: Row<InstanceType<Schema[keyof Schema]>>[] }) {
+  _markAccessedByQuery(querySpec: Query<Schema, Record<string, ModelId>>, result: { rows: Ref<InstanceType<Schema[keyof Schema]>>[] }) {
     const { table, clauses } = querySpec;
     const { rows } = result;
 

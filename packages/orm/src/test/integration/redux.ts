@@ -6,12 +6,11 @@ import {
   Model,
 } from "../..";
 import { castTo } from "../../hacks";
-import { ModelId, OrmState, ReduxAction, Row, SessionLike, TableState, Ref } from "../../types";
+import { ModelId, OrmState, ReduxAction, Ref, SessionWithBoundModels, TableState } from "../../types";
 import {
   Schema,
   createTestModels,
   Publisher,
-  Movie,
 } from "../helpers";
 
 describe("Redux integration", () => {
@@ -28,7 +27,7 @@ describe("Redux integration", () => {
   // ERROR: should not accept not serialized objects
   let ormReducer: <M extends Schema[keyof Schema]>(
     state: OrmState<Schema> | undefined,
-    action: ReduxAction<Row<InstanceType<M>>>
+    action: ReduxAction<Ref<InstanceType<M>>>
   ) => OrmState<Schema>;
 
   const CREATE_MOVIE = "CREATE_MOVIE";
@@ -42,7 +41,7 @@ describe("Redux integration", () => {
     Tag.reducer = jest.fn();
     Movie.reducer<Schema, Schema['Movie']>({ type: 'asdas', payload: null }, Movie, orm.session())
     Movie.reducer = jest.fn(
-      ((action: ReduxAction<Row<InstanceType<Schema[keyof Schema]>>>, Model: Schema['Movie']) => {
+      ((action: ReduxAction<Ref<InstanceType<Schema[keyof Schema]>>>, Model: Schema['Movie']) => {
         switch (action.type) {
           case CREATE_MOVIE:
             Model.create(action.payload || {});
@@ -53,7 +52,7 @@ describe("Redux integration", () => {
       }) as any
     );
     Publisher.reducer = jest.fn(
-      ((action: ReduxAction<Row<InstanceType<Schema['Publisher']>>>, Model: Schema['Publisher']) => {
+      ((action: ReduxAction<Ref<InstanceType<Schema['Publisher']>>>, Model: Schema['Publisher']) => {
         switch (action.type) {
           case CREATE_PUBLISHER:
             Model.create(action.payload || {});
@@ -140,7 +139,7 @@ describe("Redux integration", () => {
     });
 
     it("arbitrary filters", () => {
-      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
+      const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) =>
         selectorSession.Movie.filter(
           movie => movie.name === "Getting started with filters"
         ).toRefArray()
@@ -164,7 +163,7 @@ describe("Redux integration", () => {
     });
 
     it("id lookups", () => {
-      const memoized = jest.fn((selectorSession: SessionLike<Schema>) => {
+      const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) => {
         return selectorSession.Movie.withId(0)
       });
       const selector = createSelector(orm, memoized);
@@ -187,7 +186,7 @@ describe("Redux integration", () => {
     });
 
     it("empty QuerySets", () => {
-      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
+      const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) =>
         selectorSession.Movie.all().toModelArray()
       );
       const selector = createSelector(orm, memoized);
@@ -211,7 +210,7 @@ describe("Redux integration", () => {
 
     it("Model updates", () => {
       const session = orm.session();
-      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
+      const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) =>
         selectorSession.Movie.withId(0)
       );
       const selector = createSelector(orm, memoized);
@@ -233,7 +232,7 @@ describe("Redux integration", () => {
 
     it("Model deletions", () => {
       const session = orm.session();
-      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
+      const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) =>
         selectorSession.Movie.withId(0)
       );
       const selector = createSelector(orm, memoized);
@@ -254,7 +253,7 @@ describe("Redux integration", () => {
     });
 
     it("foreign key descriptors", () => {
-      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
+      const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) =>
         selectorSession.Movie.all()
           .toModelArray()
           .reduce(
@@ -336,7 +335,7 @@ describe("Redux integration", () => {
       _orm.register(CustomizedModel);
       const session = _orm.session();
 
-      const memoized = jest.fn((selectorSession: SessionLike<Schema>) =>
+      const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) =>
         selectorSession.CustomizedModel.count()
       );
       const selector = createSelector(_orm, memoized);

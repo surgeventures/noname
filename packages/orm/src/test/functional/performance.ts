@@ -1,6 +1,6 @@
-import { Model, ORM, attr, many, QuerySet } from "../..";
+import { Model, ORM, attr, many } from "../..";
 import { castTo } from "../../hacks";
-import { ModelId, Relations, ModelInstance, SessionLike, TargetRelationship, SourceRelationship } from "../../types";
+import { ModelId, Relations, SessionBoundModel, SessionWithBoundModels, TargetRelationship, SourceRelationship } from "../../types";
 import { measureMs, nTimes, avg, round } from "../helpers";
 
 const crypto = require("crypto");
@@ -45,7 +45,7 @@ describe("Big Data Test", () => {
   type Schema = {
     Item: typeof Item;
   }
-  type ExtendedSession = SessionLike<Schema>;
+  type ExtendedSession = SessionWithBoundModels<Schema>;
 
   let orm: ORM<Schema>;
   let session: ExtendedSession;
@@ -172,7 +172,7 @@ describe("Many-to-many relationship performance", () => {
   }
 
   let orm: ORM<Schema>;
-  let session: SessionLike<Schema>;
+  let session: SessionWithBoundModels<Schema>;
 
   beforeEach(() => {
     orm = new ORM<Schema>();
@@ -190,7 +190,7 @@ describe("Many-to-many relationship performance", () => {
   };
 
   const assignChildren = (
-    parent: ModelInstance<Parent>,
+    parent: SessionBoundModel<Parent>,
     start: number,
     end: number
   ) => {
@@ -203,7 +203,7 @@ describe("Many-to-many relationship performance", () => {
     const { Parent } = session;
 
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
-    let parent: ModelInstance<Parent>;
+    let parent: SessionBoundModel<Parent>;
     const n = 5;
     const childAmount = 1000;
     createChildren(0, 8000);
