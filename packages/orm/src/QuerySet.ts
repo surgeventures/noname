@@ -300,7 +300,7 @@ export default class QuerySet<MClassType extends typeof AnyModel = typeof AnyMod
     const { session, modelName: table } = this.modelClass;
 
     this.toModelArray().forEach(
-      (model) => model // eslint-disable-line no-underscore-dangle
+      (model) => model._onDelete()
     );
 
     session.applyUpdate({

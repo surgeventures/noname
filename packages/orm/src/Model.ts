@@ -439,7 +439,6 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
    *
    * @return {Object} a reference to the plain JS object in the store
    */
-  //@ts-ignore
   get ref(): Ref<this> {
     const ThisModel = this.getClass();
 
@@ -699,7 +698,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
 
       const currentIds = ThroughModel.filter(
         (through) =>
-          (through as AnyObject)[fromField] === (this as AnyObject)[ThisModel.idAttribute]
+          through[fromField] === (this as AnyObject)[ThisModel.idAttribute]
       )
         .toRefArray()
         .map((ref) => castTo<ModelId>(ref[toField]));
