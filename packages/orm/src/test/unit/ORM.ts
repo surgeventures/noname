@@ -1,7 +1,8 @@
-import { ORM, Session, Model, oneToOne, fk, many, attr } from "../..";
-import { ModelDescriptorsRegistry, registerDescriptors, AnyModel } from '../../Model';
+import { ORM, Session, Model} from "../..";
 import { createTestModels, Schema } from "../helpers";
-import { OrmState } from '../../types';
+import { ModelId, OrmState, Relations, TargetRelationship } from '../../types';
+import { Attribute, OneToOne } from "../../decorators";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 registry.clear()
@@ -21,15 +22,23 @@ describe("ORM", () => {
         static modelName = "A" as const;
       }
 
-      class B extends Model {
-        static modelName = "B" as const;
+      type BDescriptors = {
+        id: ModelId;
+        field1: TargetRelationship<A, Relations.OneToOne>;
+        field2: TargetRelationship<A, Relations.OneToOne>;
       }
+      class B extends Model<typeof B, BDescriptors> implements BDescriptors {
+        static modelName = "B" as const;
 
-      registerDescriptors("B" as any, {
-        id: attr(),
-        field1: oneToOne("A"),
-        field2: oneToOne("A"),
-      })
+        @Attribute()
+        public id: ModelId;
+
+        @OneToOne("A")
+        public field1: TargetRelationship<A, Relations.OneToOne>;
+
+        @OneToOne("A")
+        public field2: TargetRelationship<A, Relations.OneToOne>;
+      }
 
       const orm = new ORM<Schema>();
       orm.register(A, B);
@@ -45,15 +54,24 @@ describe("ORM", () => {
         static modelName = "A" as const;
       }
 
-      class B extends Model<typeof B> {
-        static modelName = "B" as const;
+      type BDescriptors = {
+        id: ModelId;
+        field1: TargetRelationship<A, Relations.ForeignKey>;
+        field2: TargetRelationship<A, Relations.ForeignKey>;
       }
 
-      registerDescriptors("B" as any, {
-        id: attr(),
-        field1: fk("A"),
-        field2: fk("A"),
-      })
+      class B extends Model<typeof B, BDescriptors> implements BDescriptors {
+        static modelName = "B" as const;
+
+        @Attribute()
+        public id: ModelId;
+
+        @OneToOne("A")
+        public field1: TargetRelationship<A, Relations.ForeignKey>;
+
+        @OneToOne("A")
+        public field2: TargetRelationship<A, Relations.ForeignKey>;
+      }
 
       const orm = new ORM<Schema>();
       orm.register(A, B);
@@ -69,15 +87,24 @@ describe("ORM", () => {
         static modelName = "A" as const;
       }
 
-      class B extends Model<typeof B> {
-        static modelName = "B" as const;
+      type BDescriptors = {
+        id: ModelId;
+        field1: TargetRelationship<A, Relations.ManyToMany>;
+        field2: TargetRelationship<A, Relations.ManyToMany>;
       }
 
-      registerDescriptors("B" as any, {
-        id: attr(),
-        field1: many("A"),
-        field2: many("A"),
-      })
+      class B extends Model<typeof B, BDescriptors> implements BDescriptors {
+        static modelName = "B" as const;
+
+        @Attribute()
+        public id: ModelId;
+
+        @OneToOne("A")
+        public field1: TargetRelationship<A, Relations.ManyToMany>;
+
+        @OneToOne("A")
+        public field2: TargetRelationship<A, Relations.ManyToMany>;
+      }
 
       const orm = new ORM<Schema>();
       orm.register(A, B);
