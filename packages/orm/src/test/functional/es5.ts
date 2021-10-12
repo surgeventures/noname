@@ -1,6 +1,7 @@
 import ORM from "../../ORM";
 import Model from "../../Model";
 import { ModelId, SessionBoundModel, SessionWithBoundModels } from "../../types";
+import { Attribute } from "../../decorators";
 
 describe("ES5 library code", () => {
   describe("With ES6 client code", () => {
@@ -8,8 +9,14 @@ describe("ES5 library code", () => {
       id: ModelId;
       title: string;
     }
-    class Book extends Model<typeof Book, BookDescriptors> {
+    class Book extends Model<typeof Book, BookDescriptors> implements BookDescriptors {
       static modelName = "Book";
+
+      @Attribute()
+      public id: ModelId;
+
+      @Attribute()
+      public title: string;
     }
     type Schema = {
       Book: typeof Book;
