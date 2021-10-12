@@ -1,6 +1,6 @@
 import Session from "./Session";
 import QuerySet from "./QuerySet";
-import { ManyToMany, ForeignKey, OneToOne, attr, RelationalField, Field } from "./fields";
+import { ManyToMany, ForeignKey, OneToOne, RelationalField } from "./fields";
 import { CREATE, UPDATE, DELETE, FILTER } from "./constants";
 import {
   normalizeEntity,
@@ -8,60 +8,10 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
+import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref, ModelName, SingleMClassMap } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
-
-export type Registry<
-    T extends { [k in keyof T]: typeof Model } = {},
-    K extends keyof T = Extract<keyof T, T[keyof T]['modelName']>,
-    D extends {[k: string]: Attribute | OneToOne | ManyToMany | ForeignKey} = {[k: string]: Attribute | OneToOne | ManyToMany | ForeignKey}
-> = { [k in K]: D };
-
-type Schema = {
-  User: typeof Model;
-}
-
-export class ModelDescriptorsRegistry {
-  private static instance: ModelDescriptorsRegistry;
-  public registry: Registry<Schema> = {} as Registry<Schema>;
-
-  private constructor() { }
-
-  public static getInstance(): ModelDescriptorsRegistry {
-      if (!ModelDescriptorsRegistry.instance) {
-        ModelDescriptorsRegistry.instance = new ModelDescriptorsRegistry();
-      }
-
-      return ModelDescriptorsRegistry.instance;
-  }
-
-  public add<D extends {[k: string]: Attribute | OneToOne | ManyToMany | ForeignKey}>(modelName: keyof Schema, descriptors: D): void {
-    this.registry[modelName] = descriptors;
-  }
-
-  public getDescriptors(modelName: keyof Schema) {
-    const descriptors = this.registry[modelName];
-    if (!descriptors) {
-      this.add(modelName, this.getDefaultDescriptors());
-      return this.registry[modelName];
-    }
-    return descriptors;
-  }
-
-  public getDefaultDescriptors() {
-    return { id: attr() };
-  }
-
-  public clear(): void {
-    this.registry = {} as Registry<Schema>;
-  }
-}
-
-export function registerDescriptors(modelName: keyof Schema, descriptors: {}) {
-  const registry = ModelDescriptorsRegistry.getInstance();
-  registry.add(modelName, descriptors);
-}
+import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 
 /**
  * Generates a query specification to get the instance's
@@ -105,7 +55,7 @@ function getByIdQuery(modelInstance: AnyModel): Query<AnySchema, Record<string, 
  * information about the data model, override static class methods. Define instance
  * logic by defining prototype methods (without `static` keyword).
  */
-export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFieldMap extends ModelFieldMap = ModelFieldMap> {
+export default class Model<MClassType extends typeof AnyModel = typeof AnyModel, MFieldMap extends ModelFieldMap = ModelFieldMap> {
   static modelName: string;
   static virtualFields: Record<string, RelationalField> = {};
   static readonly querySetClass = QuerySet;
@@ -299,8 +249,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
     const props: Record<string, AnyModel | ModelId | null | (AnyModel | ModelId | null)[]> = { ...userProps };
 
     const m2mRelations: Record<string, (AnyModel | ModelId)[]> = {} as Record<string, (AnyModel | ModelId)[]>;
-    const registry = ModelDescriptorsRegistry.getInstance();
-    const descriptors = registry.getDescriptors(this.modelName as any);
+    const registry = ModelDescriptorsRegistry.getInstance<Record<ModelName<MClassType>, MClassType>>();
+    const descriptors = registry.getDescriptors(this.modelName);
     const declaredFieldNames = Object.keys(descriptors);
     const declaredVirtualFieldNames = Object.keys(this.virtualFields);
 
@@ -464,8 +414,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
    * @return {Model} The {@link Model} class or subclass constructor used to instantiate
    *                 this instance.
    */
-  getClass(): MClass {
-    return this.constructor as MClass;
+  getClass(): MClassType {
+    return this.constructor as MClassType;
   }
 
   /**
@@ -523,16 +473,16 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
   toString(): string {
     const ThisModel = this.getClass();
     const className = ThisModel.modelName;
-    const registry = ModelDescriptorsRegistry.getInstance();
-    const descriptors = registry.getDescriptors(className as any);
-    const fieldNames = Object.keys(descriptors) as string[];
+    const registry = ModelDescriptorsRegistry.getInstance<SingleMClassMap<MClassType>>();
+    const descriptors = registry.getDescriptors(className);
+    const fieldNames = Object.keys(descriptors);
     const fields = fieldNames
       .map((fieldName) => {
         const field = descriptors[fieldName];
         if (field instanceof ManyToMany) {
-          const ids: ModelId[] = (castTo<__TemporaryModelFields>(this)[fieldName] as unknown as QuerySet<MClass>)
+          const ids: ModelId[] = (castTo<AnyObject>(this)[fieldName] as unknown as QuerySet<MClassType>)
             .toModelArray()
-            .map((model: Model<MClass>) => model.getId());
+            .map(model => model.getId());
           return `${fieldName}: [${ids.join(", ")}]`;
         }
         const val = this._fields[fieldName as keyof MFieldMap];
@@ -592,8 +542,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
 
     const mergeObj = { ...userMergeObj };
 
-    const registry = ModelDescriptorsRegistry.getInstance();
-    const fields = registry.getDescriptors(ThisModel.modelName as any);
+    const registry = ModelDescriptorsRegistry.getInstance<SingleMClassMap<MClassType>>();
+    const fields = registry.getDescriptors(ThisModel.modelName);
     const { virtualFields } = ThisModel;
 
     const m2mRelations: Record<string, ModelId[]> = {} as Record<string, ModelId[]>;
@@ -707,8 +657,8 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
   _refreshMany2Many(relations: Record<string, (ModelId | AnyModel)[]>): void {
     const ThisModel = this.getClass();
     const { virtualFields, modelName } = ThisModel;
-    const registry = ModelDescriptorsRegistry.getInstance();
-    const fields = registry.getDescriptors(ThisModel.modelName as any);
+    const registry = ModelDescriptorsRegistry.getInstance<SingleMClassMap<MClassType>>();
+    const fields = registry.getDescriptors(ThisModel.modelName);
     Object.keys(relations).forEach((name) => {
       const reverse = !fields.hasOwnProperty(name);
       const field = virtualFields[name];

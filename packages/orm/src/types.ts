@@ -32,7 +32,11 @@ export enum Relations {
 /**
  * Returns the type of the passed model class.
  */
-export type ModelClassType<M extends AnyModel> = ReturnType<M["getClass"]>;
+export type ModelClassType<MClass extends AnyModel> = ReturnType<MClass["getClass"]>;
+
+export type ModelName<MClassType extends typeof AnyModel> = MClassType['modelName'];
+
+export type SingleMClassMap<MClassType extends typeof AnyModel> = { [K in ModelName<MClassType>]: MClassType };
 
 /**
  * Imitates the model bound to the session.

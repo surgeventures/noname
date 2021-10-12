@@ -2,8 +2,6 @@ import mapValues from "lodash/mapValues";
 import { normalizeEntity } from "./utils";
 
 import { UPDATE, DELETE, FILTER, EXCLUDE, ORDER_BY } from "./constants";
-import Model, { AnyModel } from "./Model";
-import { ModelData, ModelId, TableRow } from "./types";
 import { AnyModel } from "./Model";
 import { ModelConstructor, ModelId, QueryClause, Ref, SortIteratee, SortOrder, QuerySetConstructor, RefWithFields, SessionBoundModel } from "./types";
 import { castTo } from "./hacks";

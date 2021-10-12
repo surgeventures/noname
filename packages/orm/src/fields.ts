@@ -1,4 +1,4 @@
-import { ModelDescriptorsRegistry, AnyModel } from "./Model";
+import { AnyModel } from "./Model";
 import ORM from "./ORM";
 import {
   attrDescriptor,
@@ -18,6 +18,7 @@ import {
   reverseFieldErrorMessage,
 } from "./utils";
 import { castTo } from "./hacks";
+import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 
 /**
  * Contains the logic for how fields on {@link Model}s work
@@ -510,7 +511,7 @@ export class ManyToMany extends RelationalField {
     throughModel: typeof AnyModel
   ): { from: string; to: string } {
     const registry = ModelDescriptorsRegistry.getInstance();
-    const descriptors = registry.getDescriptors(throughModel.modelName as any);
+    const descriptors = registry.getDescriptors(throughModel.modelName);
     if (this.throughFields) {
       const [fieldAName, fieldBName] = this.throughFields as [string, string];
       const fieldA = descriptors[fieldAName];

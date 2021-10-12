@@ -1,12 +1,13 @@
 import Session from "./Session";
-import Model, { ModelDescriptorsRegistry, AnyModel, ModelClassMap } from "./Model";
+import Model, { AnyModel, ModelClassMap } from "./Model";
 import { createDatabase as defaultCreateDatabase } from "./db";
 import { ForeignKey, ManyToMany, attr, Field } from "./fields";
 
 import { m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
 import { DatabaseCreator } from "./db/Database";
-import { Database, OrmState, SessionWithBoundModels } from "./types";
+import { Database, ModelName, OrmState, SessionWithBoundModels } from "./types";
 import { castTo } from "./hacks";
+import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 
 /**
  * ORM instantiation opts.
@@ -78,10 +79,9 @@ export default class ORM<
   }
 
   registerManyToManyModelsFor(model: Schema[keyof Schema]) {
-    const { fields } = model;
-    const thisModelName = model.modelName;
-    const registry = ModelDescriptorsRegistry.getInstance();
-    const fields = registry.getDescriptors(thisModelName as any);
+    const thisModelName = model.modelName as ModelName<Schema[keyof Schema]>;
+    const registry = ModelDescriptorsRegistry.getInstance<Schema>();
+    const fields = registry.getDescriptors(thisModelName);
     Object.entries(fields).forEach(([fieldName, fieldInstance]) => {
       if (!(fieldInstance instanceof ManyToMany)) {
         return;
@@ -124,8 +124,7 @@ export default class ORM<
           }
         };
         const ForeignKeyClass = selfReferencing ? PlainForeignKey : ForeignKey;
-        const registry = ModelDescriptorsRegistry.getInstance();
-        registry.add(Through.modelName as any, {
+        registry.add(Through.modelName, {
           id: attr(),
           [fromFieldName]: new ForeignKeyClass(thisModelName),
           [toFieldName]: new ForeignKeyClass(toModelName),
@@ -163,18 +162,18 @@ export default class ORM<
 
   generateSchemaSpec() {
     const models = this.getModelClasses();
-    const tables = models.reduce<{ [K in keyof Schema]: Schema[K] }>((spec, modelClass) => {
-      const tableName = modelClass.modelName;
+    const tables = models.reduce<{ [K in ModelName<Schema[keyof Schema]>]: Schema[K] }>((spec, modelClass) => {
+      const tableName = modelClass.modelName as ModelName<Schema[keyof Schema]>;
       const tableSpec = modelClass._getTableOpts();
-      const registry = ModelDescriptorsRegistry.getInstance();
-      const descriptors = registry.getDescriptors(tableName as any);
-      spec[tableName as keyof Schema] = Object.assign(
+      const registry = ModelDescriptorsRegistry.getInstance<Schema>();
+      const descriptors = registry.getDescriptors(tableName);
+      spec[tableName] = Object.assign(
         {},
         { fields: descriptors },
         tableSpec
-      ) as Schema[keyof Schema];
+      ) as unknown as Schema[ModelName<Schema[keyof Schema]>];
       return spec;
-    }, {} as { [K in keyof Schema]: Schema[K] });
+    }, {} as { [K in ModelName<Schema[keyof Schema]>]: Schema[K] });
     return { tables };
   }
 
@@ -222,7 +221,7 @@ export default class ORM<
     models.forEach((model) => {
       if (!model.isSetUp) {
         const { modelName } = model;
-        const fields = registry.getDescriptors(modelName as any);
+        const fields = registry.getDescriptors(modelName);
         Object.entries(fields).forEach(([fieldName, field]) => {
           if (!this._isFieldInstalled(modelName, fieldName)) {
             this._installField(field, fieldName, model);
