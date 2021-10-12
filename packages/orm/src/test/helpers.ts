@@ -1,15 +1,8 @@
 import ORM from "../ORM";
-import Model, { ModelDescriptorsRegistry, registerDescriptors } from "../Model";
-import { fk, many, oneToOne, attr } from "../fields";
+import Model from "../Model";
 import { ModelId, Relations, SessionWithBoundModels, SourceRelationship, TargetRelationship } from "../types";
-import { fk, many, attr } from "../fields";
-import { ModelId, TableRow } from "../types";
-import Session from "../Session";
-import { castTo } from "../hacks";
-import { Attribute } from "../decorators/attribute";
-import { ManyToMany } from "../decorators/manyToMany";
-import { ForeignKey } from "../decorators/foreignKey";
-import { OneToOne } from "../decorators/oneToOne";
+import { Attribute, ManyToMany, ForeignKey, OneToOne } from "../decorators";
+import { ModelDescriptorsRegistry } from "../modelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 registry.clear();
@@ -140,52 +133,30 @@ export type BookDescriptors = {
 }
 export class Book extends Model<typeof Book, BookDescriptors> implements BookDescriptors {
   static modelName = "Book" as const;
-  static fields = {
-    id: attr(),
-    name: attr(),
-    releaseYear: attr(),
-    author: fk("Author", "books"),
-    cover: oneToOne("Cover"),
-    genres: many("Genre", "books"),
-    tags: many("Tag", "books"),
-    publisher: fk("Publisher", "books"),
-  };
 
-  id?: ModelId;
-  name?: string;
-  releaseYear?: number;
-  cover?: TargetRelationship<Cover, Relations.OneToOne>;
-  genres?: TargetRelationship<Genre, Relations.ManyToMany>;
-  tags?: TargetRelationship<Tag, Relations.ManyToMany>;
-  publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
-  author?: TargetRelationship<Author, Relations.ForeignKey>;
+  @Attribute()
+  public id?: ModelId;
 
-  @Attribute
-  public id: string | number;
+  @Attribute()
+  public name?: string;
 
-  @Attribute
-  public name: string;
-
-  @Attribute
-  public releaseYear: number;
+  @Attribute()
+  public releaseYear?: number;
 
   @ForeignKey("Author", "books")
-  public author: any // Should be TargetModelRelationship<typeof Author, Relations.ForeignKey>
+  public author?: TargetRelationship<Author, Relations.ForeignKey>;
 
   @OneToOne("Cover")
-  public cover: any // Should be TargetModelRelationship<typeof Cover, Relations.ForeignKey>
+  public cover?: TargetRelationship<Cover, Relations.OneToOne>;
 
   @ManyToMany("Genre", "books")
-  public genres: any // Should be TargetModelRelationship<typeof Genre, Relations.ForeignKey>
+  public genres?: TargetRelationship<Genre, Relations.ManyToMany>;
 
   @ManyToMany("Tag", "books")
-  public tags: any // Should be TargetModelRelationship<typeof Tag, Relations.ForeignKey>
+  public tags?: TargetRelationship<Tag, Relations.ManyToMany>;
 
   @ForeignKey("Publisher", "books")
-  public publisher: any // Should be TargetModelRelationship<typeof Publisher, Relations.ForeignKey>
-
-  public foreignKeyOfSomeSourceModel: unknown // Should be SourceModelRelationship<typeof SomeSourceModel, Relations.ForeignKey> or unknown
-
+  public publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
 }
 
 export type AuthorDescriptors = {
@@ -196,20 +167,21 @@ export type AuthorDescriptors = {
 }
 export class Author extends Model<typeof Author, AuthorDescriptors> implements AuthorDescriptors {
   static modelName = "Author" as const;
-  static fields = {
-    id: attr(),
-    name: attr(),
-    publishers: many({
-      to: "Publisher",
-      through: "Book",
-      relatedName: "authors",
-    }),
-  };
 
-  id?: ModelId;
-  name?: string;
-  publishers?: TargetRelationship<Publisher, Relations.ManyToMany>;
-  books?: SourceRelationship<typeof Book, Relations.ForeignKey>;
+  @Attribute()
+  public id?: ModelId;
+
+  @Attribute()
+  public name?: string;
+
+  @ManyToMany({
+    to: "Publisher",
+    through: "Book",
+    relatedName: "authors",
+  })
+  public publishers?: TargetRelationship<Publisher, Relations.ManyToMany>;
+
+  public books?: SourceRelationship<typeof Book, Relations.ForeignKey>;
 }
 
 
@@ -220,14 +192,14 @@ export type CoverDescriptors = {
 };
 export class Cover extends Model<typeof Cover, CoverDescriptors> implements CoverDescriptors {
   static modelName = "Cover" as const;
-  static fields = {
-    id: attr(),
-    src: attr(),
-  };
+  
+  @Attribute()
+  public id?: ModelId;
+  
+  @Attribute()
+  public src: string;
 
-  id?: ModelId;
-  src: string;
-  book?: SourceRelationship<typeof Book, Relations.OneToOne>;
+  public book?: SourceRelationship<typeof Book, Relations.OneToOne>;
 }
 
 export type GenreProps = {
@@ -238,14 +210,14 @@ export type GenreProps = {
 
 export class Genre extends Model<typeof Genre, GenreProps> implements GenreProps {
   static modelName = "Genre" as const;
-  static fields = {
-    id: attr(),
-    name: attr(),
-  };
 
-  id?: ModelId;
-  name: string;
-  books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
+  @Attribute()
+  public id?: ModelId;
+  
+  @Attribute()
+  public name: string;
+
+  public books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
 }
 
 export type TagDescriptors = {
@@ -269,28 +241,9 @@ export class Tag extends Model<typeof Tag, TagDescriptors> implements TagDescrip
   @Attribute
   public name: string;
 
-  @ManyToMany("this", "parentTags")
-  subTags: any;
-}
-
-export type TagProps = {
-  id: ModelId;
-  name: string;
-  subTags: IManyQuerySet<Tag & TagProps>;
-  parentTags: IManyQuerySet<Tag & TagProps>;
-  books: IQuerySet<Book & BookProps>;
-};
-  static fields = {
-    id: attr(),
-    name: attr(),
-    subTags: many("this", "parentTags"),
-  };
-
-  id?: ModelId;
-  name: string;
-  subTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
-  parentTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
-  books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
+  public subTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
+  public parentTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
+  public books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
 }
 
 export type PublisherDescriptors = {
@@ -302,13 +255,13 @@ export type PublisherDescriptors = {
 
 export class Publisher extends Model<typeof Publisher, PublisherDescriptors> implements PublisherDescriptors {
   static modelName = "Publisher" as const;
-  static fields = {
-    id: attr(),
-    name: attr(),
-  };
 
-  id?: ModelId;
-  name?: string;
+  @Attribute
+  public id?: string;
+
+  @Attribute
+  public name?: string;
+
   authors?: SourceRelationship<typeof Author, Relations.ManyToMany>;
   movies?: SourceRelationship<typeof Movie, Relations.ForeignKey>;
 }
@@ -326,107 +279,44 @@ export type MovieDescriptors = {
 
 export class Movie extends Model<typeof Movie, MovieDescriptors> implements MovieDescriptors {
   static modelName = "Movie" as const;
-  static fields = {
-    id: attr(),
-    name: attr(),
-    rating: attr(),
-    hasPremiered: attr(),
-    characters: attr(),
-    meta: attr(),
-    publisherId: fk({
-      to: "Publisher",
-      as: "publisher",
-      relatedName: "movies",
-    }),
-  };
 
-  id?: ModelId;
-  name?: string;
-  rating?: number;
-  hasPremiered?: boolean;
-  characters?: string[];
-  meta?: {};
-  publisherId?: ModelId;
-  publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
+  @Attribute
+  public id?: ModelId;
+
+  @Attribute
+  public name?: string;
+
+  @Attribute
+  public rating?: number;
+
+  @Attribute
+  public hasPremiered?: boolean;
+
+  @Attribute
+  public characters?: string[];
+
+  @Attribute
+  public meta?: {};
+
+  @Attribute
+  public publisherId?: ModelId;
+
+  @ForeignKey({
+    to: "Publisher",
+    as: "publisher",
+    relatedName: "movies",
+  })
+  public publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
 }
 
 export function createTestModels() {
-  class MyBook extends Book {
-    @Attribute
-    public id: string | number;
-
-    @Attribute
-    public name: string;
-
-    @Attribute
-    public releaseYear: number;
-
-    @ForeignKey("Author", "books")
-    public author: any // Should be TargetModelRelationship<typeof Author, Relations.ForeignKey>
-
-    @OneToOne("Cover")
-    public cover: any // Should be TargetModelRelationship<typeof Cover, Relations.ForeignKey>
-
-    @ManyToMany("Genre", "books")
-    public genres: any // Should be TargetModelRelationship<typeof Genre, Relations.ForeignKey>
-
-    @ManyToMany("Tag", "books")
-    public tags: any // Should be TargetModelRelationship<typeof Tag, Relations.ForeignKey>
-
-    @ForeignKey("Publisher", "books")
-    public publisher: any // Should be TargetModelRelationship<typeof Publisher, Relations.ForeignKey>
-  }
-
+  const MyBook = class extends Book {};
   const MyAuthor = class extends Author {};
-  registerDescriptors(MyAuthor.modelName as any, {
-    id: attr(),
-    name: attr(),
-    publishers: many({
-      to: "Publisher",
-      through: "Book",
-      relatedName: "authors",
-    })
-  })
   const MyCover = class extends Cover {};
-  registerDescriptors(MyCover.modelName as any, {
-    id: attr(),
-    src: attr(),
-  })
   const MyGenre = class extends Genre {};
-  registerDescriptors(MyGenre.modelName as any, {
-    id: attr(),
-    name: attr(),
-  })
-  class MyTag extends Tag {
-    @Attribute
-    public id: string;
-
-    @Attribute
-    public name: string;
-
-    @ManyToMany("this", "parentTags")
-    subTags: any;
-  }
-
+  const MyTag = class extends Tag {};
   const MyPublisher = class extends Publisher {};
-  registerDescriptors(MyPublisher.modelName as any, {
-    id: attr(),
-    name: attr(),
-  })
   const MyMovie = class extends Movie {};
-  registerDescriptors(MyMovie.modelName as any, {
-    id: attr(),
-    name: attr(),
-    rating: attr(),
-    hasPremiered: attr(),
-    characters: attr(),
-    meta: attr(),
-    publisherId: fk({
-      to: "Publisher",
-      as: "publisher",
-      relatedName: "movies",
-    }),
-  })
 
   return {
     Book: MyBook,
