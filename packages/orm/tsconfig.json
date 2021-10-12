@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": true,
+    "target": "es6",
+    "module": "esnext",
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "lib": [
+      "es6"
+    ],
+    "outDir": "dist",
+    "noImplicitThis": true,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "sourceMap": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "moduleResolution": "node"
+  },
+  "exclude": [
+    "node_modules/**/*"
+  ],
+  "include": [
+    "src/*.js",
+    "src/**/*.js",
+    "src/*.ts",
+    "src/**/*.ts"
+  ]
+}

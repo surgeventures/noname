@@ -1,21 +1,20 @@
 const path = require('path');
 
 module.exports = {
+    preset: 'ts-jest',
+    testEnvironment: 'node',
     rootDir: path.resolve('./src/'),
-    testRegex: 'test/(.*)/(.*)\\.(js)',
-    moduleFileExtensions: ['js', 'json'],
+    testRegex: 'test/(.*)/(.*)\\.(ts)',
+    moduleFileExtensions: ['js', 'ts', 'json'],
     testPathIgnorePatterns: [
-        'test/functional/es5\\.(js)',
-        'test/functional/performance\\.(js)',
+        'test/functional/es5\\.(ts)',
+        'test/functional/performance\\.(ts)',
     ],
-    transform: {
-        '\\.js$': 'babel-jest',
-    },
     coverageDirectory: './coverage/',
-    collectCoverage: true,
+    collectCoverage: false,
     collectCoverageFrom: [
-        '*.js',
-        '*/*.js',
+        '*.ts',
+        '*/*.ts',
     ],
     coveragePathIgnorePatterns: [
         'test/*',
