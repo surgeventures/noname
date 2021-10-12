@@ -1,7 +1,8 @@
-import { Model, QuerySet, ORM, attr, many, fk } from "../..";
-import { ModelDescriptorsRegistry, registerDescriptors } from '../../Model';
+import { Model, QuerySet, ORM } from "../..";
+import { Attribute, ManyToMany, ForeignKey } from "../../decorators";
 import { castTo } from "../../hacks";
 import { AnyModel, ModelClassMap } from "../../Model";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 import { ModelId, Relations, SessionWithBoundModels, TargetRelationship, Ref, SourceRelationship, SessionBoundModel } from "../../types";
 import {
   createTestSessionWithData,
@@ -22,15 +23,16 @@ type UserDescriptors = {
 
 class User extends Model<typeof User, UserDescriptors> implements UserDescriptors {
   static modelName = "User" as const;
-  static fields = {
-    id: attr(),
-    name: attr(),
-    subscribed: many("User", "subscribers"),
-  };
 
-  id?: ModelId;
-  name?: string;
-  subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
+  @Attribute()
+  public id?: ModelId;
+
+  @Attribute()
+  public name?: string;
+
+  @ManyToMany("User", "subscribers")
+  public subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>; // self-referencing
+
   subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
   teams?: SourceRelationship<typeof Team, Relations.ManyToMany>;
 }
@@ -43,17 +45,15 @@ type TeamDescriptors = {
 
 class Team extends Model<typeof Team, TeamDescriptors> implements TeamDescriptors {
   static modelName = "Team" as const;
-}
 
-registerDescriptors("Team" as any, {
-  id: attr(),
-  name: attr(),
-  users: many("User", "teams"),
-});
+  @Attribute()
+  public id?: ModelId;
 
-  id?: ModelId;
-  name?: string;
-  users?: TargetRelationship<User, Relations.ManyToMany>;
+  @Attribute()
+  public name?: string;
+
+  @ManyToMany("User", "teams")
+  public users?: TargetRelationship<User, Relations.ManyToMany>;
 }
 
 describe("Many to many relationships", () => {
@@ -295,7 +295,6 @@ describe("Many to many relationships", () => {
         expect(User2Team.count()).toBe(3);
       };
     });
-    // HERE
     it("without throughFields", () => {
       type UserModelDescriptors = {
         id: ModelId;
@@ -304,13 +303,13 @@ describe("Many to many relationships", () => {
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
         static modelName = "User" as const;
-        static fields = {
-          id: attr(),
-          name: attr(),
-        };
 
-        id: ModelId;
-        name: string;
+        @Attribute()
+        public id: ModelId;
+      
+        @Attribute()
+        public name: string;
+
         teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
       }
 
@@ -321,15 +320,15 @@ describe("Many to many relationships", () => {
       }
       class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> implements User2TeamModelDescriptors {
         static modelName = "User2Team" as const;
-        static fields = {
-          id: attr(),
-          user: fk("User"),
-          team: fk("Team"),
-        };
 
-        id: ModelId;
-        user: TargetRelationship<User, Relations.ForeignKey>;
-        team: TargetRelationship<Team, Relations.ForeignKey>;
+        @Attribute()
+        public id: ModelId;
+      
+        @ForeignKey("User")
+        public user: TargetRelationship<User, Relations.ForeignKey>;
+
+        @ForeignKey("Team")
+        public team: TargetRelationship<Team, Relations.ForeignKey>;
       }
 
       type TeamModelDescriptors = {
@@ -340,20 +339,21 @@ describe("Many to many relationships", () => {
       }
       class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> implements TeamModelDescriptors {
         static modelName = "Team" as const;
-        static fields = {
-          id: attr(),
-          name: attr(),
-          users: many({
-            to: "User",
-            through: "User2Team",
-            relatedName: "teams",
-          }),
-        };
 
-        id: ModelId;
-        name: string;
-        users: TargetRelationship<User, Relations.ManyToMany>;
-        teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;
+
+        @ManyToMany({
+          to: "User",
+          through: "User2Team",
+          relatedName: "teams",
+        })
+        public users: TargetRelationship<User, Relations.ManyToMany>;
+
+        public teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
       }
 
       type Schema = {
@@ -386,14 +386,14 @@ describe("Many to many relationships", () => {
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
         static modelName = "User" as const;
-        static fields = {
-          id: attr(),
-          name: attr(),
-        };
 
-        id: ModelId;
-        name: string;
-        teams: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;
+
+        public teams: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
       }
 
       type User2TeamModelDescriptors = {
@@ -403,15 +403,15 @@ describe("Many to many relationships", () => {
       }
       class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> implements User2TeamModelDescriptors {
         static modelName = "User2Team" as const;
-        static fields = {
-          id: attr(),
-          user: fk("User"),
-          team: fk("Team"),
-        };
 
-        id: ModelId;
-        user: TargetRelationship<User, Relations.ForeignKey>;
-        team: TargetRelationship<Team, Relations.ForeignKey>;
+        @Attribute()
+        public id: ModelId;
+      
+        @ForeignKey("User")
+        public user: TargetRelationship<User, Relations.ForeignKey>;
+
+        @ForeignKey("Team")
+        public team: TargetRelationship<Team, Relations.ForeignKey>;
       }
 
       type TeamModelDescriptors = {
@@ -422,23 +422,15 @@ describe("Many to many relationships", () => {
 
       class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> implements TeamModelDescriptors {
         static modelName = "Team" as const;
-      }
 
-      registerDescriptors("Team" as any, {
-          id: attr(),
-          name: attr(),
-          users: many({
-            to: "User",
-            through: "User2Team",
-            relatedName: "teams",
-            throughFields: ["user", "team"],
-          }),
-        });
-        };
+        @Attribute()
+        public id: ModelId;
 
-        id: ModelId;
-        name: string;
-        users: TargetRelationship<User, Relations.ManyToMany>;
+        @Attribute()
+        public name: string;
+      
+        @ForeignKey("User")
+        public users: TargetRelationship<User, Relations.ManyToMany>;
       }
 
       type Schema = {
@@ -471,15 +463,15 @@ describe("Many to many relationships", () => {
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
         static modelName = "UserModel" as const;
-        static fields = {
-          id: attr(),
-          name: attr(),
-        };
 
-        id: ModelId;
-        name: string;
-        links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
-        teams?: SourceRelationship<typeof TeamModel, Relations.ManyToMany>;
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;
+
+        public links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
+        public teams?: SourceRelationship<typeof TeamModel, Relations.ManyToMany>;
       }
 
       type User2TeamModelDescriptors = {
@@ -490,17 +482,18 @@ describe("Many to many relationships", () => {
       }
       class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> implements User2TeamModelDescriptors {
         static modelName = "User2TeamModel" as const;
-        static fields = {
-          id: attr(),
-          user: fk("UserModel", "links"),
-          team: fk("TeamModel", "links"),
-          name: attr(),
-        };
 
-        id?: ModelId;
-        name: string;
-        user?: TargetRelationship<User, Relations.ForeignKey>;
-        team?: TargetRelationship<Team, Relations.ForeignKey>;
+        @Attribute()
+        public id?: ModelId;
+
+        @Attribute()
+        public name: string;;
+
+        @ForeignKey("UserModel", "links")
+        public user?: TargetRelationship<User, Relations.ForeignKey>;
+
+        @ForeignKey("TeamModel", "links")
+        public team?: TargetRelationship<Team, Relations.ForeignKey>;
       }
 
       type TeamModelDescriptors = {
@@ -511,20 +504,21 @@ describe("Many to many relationships", () => {
       }
       class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> implements TeamModelDescriptors {
         static modelName = "TeamModel" as const;
-        static fields = {
-          id: attr(),
-          name: attr(),
-          users: many({
-            to: "UserModel",
-            through: "User2TeamModel",
-            relatedName: "teams",
-          }),
-        };
 
-        id: ModelId;
-        name: string;
-        users?: TargetRelationship<User, Relations.ManyToMany>;
-        links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;
+
+        @ManyToMany({
+          to: "UserModel",
+          through: "User2TeamModel",
+          relatedName: "teams",
+        })
+        public users?: TargetRelationship<User, Relations.ManyToMany>;
+
+        public links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
       }
 
       type Schema = {
@@ -568,19 +562,19 @@ describe("Many to many relationships", () => {
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
         static modelName = "UserModel" as const;
-        static fields = {
-          id: attr(),
-          name: attr(),
-          users: many({
-            to: "UserModel",
-            through: "User2UserModel",
-            relatedName: "otherUsers",
-          }),
-        };
 
-        id: ModelId;
-        name: string;
-        users: SourceRelationship<typeof UserModel, Relations.ManyToMany>;
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;
+
+        @ManyToMany({
+          to: "UserModel",
+          through: "User2UserModel",
+          relatedName: "otherUsers",
+        }) 
+        public users: SourceRelationship<typeof UserModel, Relations.ManyToMany>;
       }
 
       type User2UserModelDescriptors = {
@@ -589,13 +583,12 @@ describe("Many to many relationships", () => {
       }
       class User2UserModel extends Model<typeof User2UserModel, User2UserModelDescriptors> {
         static modelName = "User2UserModel" as const;
-        static fields = {
-          id: attr(),
-          name: attr(),
-        };
 
-        id: ModelId;
-        name: string;
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;;
       }
 
       type Schema = {
@@ -737,14 +730,14 @@ describe("Many to many relationships", () => {
 
     class User extends Model<typeof User, UserDescriptors> implements UserDescriptors {
       static modelName = "User" as const;
-      static fields = {
-        id: attr(),
-        subscribed: many("User", "subscribers"),
-      };
 
-      id: ModelId;
-      subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
-      subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
+      @Attribute()
+      public id: ModelId;
+
+      @ManyToMany("User", "subscribers")
+      public subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
+
+      public subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
     }
 
     type Schema = {

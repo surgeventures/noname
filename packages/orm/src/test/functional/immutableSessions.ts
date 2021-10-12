@@ -1,6 +1,4 @@
 import deepFreeze from "deep-freeze";
-import { Model, QuerySet, ORM, attr, Session } from "../..";
-import { ModelDescriptorsRegistry, registerDescriptors } from '../../Model';
 import { Model, QuerySet, ORM, attr } from "../..";
 import { AnyModel } from "../../Model";
 import { castTo } from "../../hacks";
@@ -14,13 +12,10 @@ import {
   Schema,
   Publisher,
 } from "../helpers";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 registry.clear()
-
-type WithSetter = {
-  author: Author | number | null;
-};
 
 describe("Immutable session", () => {
   let session: ExtendedSession;
