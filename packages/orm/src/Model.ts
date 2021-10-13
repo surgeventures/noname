@@ -438,7 +438,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     // eslint-disable-next-line no-underscore-dangle
     return ThisModel._findDatabaseRows<this>({
       [ThisModel.idAttribute as 'id']: this.getId(),
-    } as Ref<this>)[0] as Attrs;
+    } as Ref<this>)[0];
   }
 
   /**

@@ -1,17 +1,16 @@
-import { Model, ORM, attr, many, QuerySet } from "../..";
-import { AnyModel, ModelDescriptorsRegistry, registerDescriptors, SessionBoundModel } from '../../Model';
+import { Model, ORM, QuerySet } from "../..";
+import { AnyModel } from '../../Model';
 import { ModelId, Relations, SessionBoundModel, SessionWithBoundModels, TargetRelationship, SourceRelationship } from "../../types";
 import { createSelector } from "../..";
 import { createSelector as createReselectSelector } from "reselect";
 import { measureMs, nTimes, avg, round } from "../helpers";
-import { Attribute } from "../../decorators/attribute";
-import { ManyToMany } from "../../decorators/manyToMany";
-import { ForeignKey } from "../../decorators/foreignKey";
-import { OneToOne } from "../../decorators/oneToOne";
+import { Attribute, ManyToMany, ForeignKey, OneToOne } from "../../decorators";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
 const crypto = require("crypto");
 
 const PRECISION = 2;
+// eslint-disable-next-line no-console
 const print = (msg: string) => console.log(msg);
 const createTimeLog = (
   message: string,
@@ -36,47 +35,26 @@ const randomInt = (max: number): number => {
 }
 
 describe("Big Data Test", () => {
-  type ExtendedSession = {
-    Location: typeof Model;
-  };
+  const createModel = () => {
+    type ItemDescriptors = {
+      id: ModelId;
+      name: string;
+    }
+    class Item extends Model<typeof Item, ItemDescriptors> implements ItemDescriptors {
+      static modelName = "Location" as const;
 
-  let orm: ORM;
-  let session: ExtendedSession;
+      @Attribute()
+      public id: ModelId;
 
-  beforeEach(() => {
-    const registry = ModelDescriptorsRegistry.getInstance();
-    registry.clear()
-    class Location extends Model {
-      static modelName = "Location";
-
-      @Attribute
-      public id: string;
-
-      @Attribute
+      @Attribute()
       public name: string;
     }
 
-    registerDescriptors("Item" as any, {
-      id: attr(),
-      name: attr(),
-    })
-  type ItemDescriptors = {
-    id: ModelId;
-    name: string;
-  }
-  class Item extends Model<typeof Item, ItemDescriptors> implements ItemDescriptors {
-    static modelName = "Item";
-    static fields = {
-      id: attr(),
-      name: attr(),
-    };
-
-    id: ModelId;
-    name: string;
+    return { Item };
   }
 
   type Schema = {
-    Item: typeof Item;
+    Item: ReturnType<typeof createModel>['Item'];
   }
   type ExtendedSession = SessionWithBoundModels<Schema>;
 
@@ -84,13 +62,14 @@ describe("Big Data Test", () => {
   let session: ExtendedSession;
 
   beforeEach(() => {
-    orm = new ORM();
-    orm.register(Location);
+    const { Item } = createModel();
+    orm = new ORM<Schema>();
+    orm.register(Item);
     session = orm.session(orm.getEmptyState());
   });
 
-  it("adds a big amount of Locations in acceptable time", () => {
-    const { Location } = session;
+  it("adds a big amount of Items in acceptable time", () => {
+    const { Item } = session;
 
     const maxSeconds = process.env.TRAVIS ? 10 : 2;
     const n = 5;
@@ -111,7 +90,7 @@ describe("Big Data Test", () => {
         const end = start + amount;
         return measureMs(() => {
           for (let i = start; i < end; ++i) {
-            Location.create(Locations.get(i)!);
+            Item.create(Locations.get(i)!);
           }
         });
       })
@@ -128,7 +107,7 @@ describe("Big Data Test", () => {
   });
 
   it("looks up Locations by id in a large table in acceptable time", () => {
-    const { Location } = session;
+    const { Item } = session;
 
     const maxSeconds = process.env.TRAVIS ? 5 : 2;
     const n = 5;
@@ -136,7 +115,7 @@ describe("Big Data Test", () => {
     const rowCount = n * lookupCount;
 
     for (let i = 0; i < rowCount; ++i) {
-      Location.create({
+      Item.create({
         id: i,
         name: randomName(),
       });
@@ -148,7 +127,7 @@ describe("Big Data Test", () => {
         const end = start + lookupCount;
         return measureMs(() => {
           for (let i = start; i < end; ++i) {
-            Location.withId(i);
+            Item.withId(i);
           }
         });
       })
@@ -166,48 +145,57 @@ describe("Big Data Test", () => {
 });
 
 describe("Many-to-many relationship performance", () => {
-  type ParentDescriptors = {
-    id: ModelId;
-    children?: TargetRelationship<Child, Relations.ManyToMany>;
-    name?: string;
-  };
-
-  type ChildDescriptors = {
-    id: ModelId;
-    name: string;
-    parent?: SourceRelationship<typeof Parent, Relations.ManyToMany>;
-  };
-  class Parent extends Model<typeof Parent, ParentDescriptors> implements ParentDescriptors {
-    static modelName = "Parent" as const;
-    static fields = {
-      id: attr(),
-      name: attr(),
-      children: many("Child", "parent"),
+  const createModels = () => {
+    type ParentDescriptors = {
+      id: ModelId;
+      children?: TargetRelationship<Child, Relations.ManyToMany>;
+      name?: string;
     };
+  
+    type ChildDescriptors = {
+      id: ModelId;
+      name: string;
+      parent?: SourceRelationship<typeof Parent, Relations.ManyToMany>;
+    };
+    class Parent extends Model<typeof Parent, ParentDescriptors> implements ParentDescriptors {
+      static modelName = "Parent" as const;
+  
+      @Attribute()
+      public id: ModelId;
+  
+      @Attribute()
+      public name?: string;
+  
+      @ManyToMany("Child", "parent")
+      public children?: TargetRelationship<Child, Relations.ManyToMany>;
+    }
+  
+    class Child extends Model<typeof Child, ChildDescriptors> implements ChildDescriptors {
+      static modelName = "Child" as const;
+  
+      @Attribute()
+      public id: ModelId;
+  
+      @Attribute()
+      public name: string;
+  
+      public parent?: SourceRelationship<typeof Parent, Relations.ManyToMany>;
+    }
 
-    id: ModelId;
-    children?: TargetRelationship<Child, Relations.ManyToMany>;
-    name?: string;
-  }
-
-  class Child extends Model<typeof Child, ChildDescriptors> implements ChildDescriptors {
-    static modelName = "Child" as const;
-
-    id: ModelId;
-    name: string;
-    parent?: SourceRelationship<typeof Parent, Relations.ManyToMany>;
+    return { Child, Parent };
   }
 
 
   type Schema = {
-    Child: typeof Child;
-    Parent: typeof Parent;
+    Child: ReturnType<typeof createModels>['Child'];
+    Parent: ReturnType<typeof createModels>['Parent'];
   }
 
   let orm: ORM<Schema>;
   let session: SessionWithBoundModels<Schema>;
 
   beforeEach(() => {
+    const { Child, Parent } = createModels();
     orm = new ORM<Schema>();
     orm.register(Parent, Child);
     session = orm.session(orm.getEmptyState());
@@ -223,7 +211,7 @@ describe("Many-to-many relationship performance", () => {
   };
 
   const assignChildren = (
-    parent: SessionBoundModel<Parent>,
+    parent: SessionBoundModel<InstanceType<Schema['Parent']>>,
     start: number,
     end: number
   ) => {
@@ -236,7 +224,7 @@ describe("Many-to-many relationship performance", () => {
     const { Parent } = session;
 
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
-    let parent: SessionBoundModel<Parent>;
+    let parent: SessionBoundModel<InstanceType<Schema['Parent']>>;
     const n = 5;
     const childAmount = 1000;
     createChildren(0, 8000);
@@ -332,99 +320,99 @@ describe("Many-to-many relationship performance", () => {
   });
 });
 
-describe("Benchmark", () => {
+describe("Accessors and models registration performance", () => {
   const logs: string[] = [];
-  type LocationDescriptors = {
-    id: string;
-    name: string;
-    employees: QuerySet;
-  };
-  type EmployeeDescriptors = {
-    id: string;
-    name: string;
-    resource: SessionBoundModel;
-    location: QuerySet;
-  };
-  type ResourceDescriptors = {
-    id: string;
-    name: string;
-    employees: QuerySet;
-  };
-
-  type CustomSession = {
-    Location: typeof Model;
-    Employee: typeof Model;
-    Resource: typeof Model;
+  
+  type Schema = {
+    Location: ReturnType<typeof getTestModels>['Location'];
+    Employee: ReturnType<typeof getTestModels>['Employee'];
+    Resource: ReturnType<typeof getTestModels>['Resource'];
   }
-  let models: typeof AnyModel[] = [];
-
+  let models: Schema[keyof Schema][] = [];
+  
   const createModelsList = (amount: number) => {
     const models: (typeof AnyModel)[] = [];
-
+    
     for (let i = 0; i < amount; i++) {
       const randomizedName = randomName();
       class Test extends Model {
         static modelName = randomizedName;
-
-        @Attribute
+        
+        @Attribute()
         public id: string;
-
-        @Attribute
+        
+        @Attribute()
         public name: string;
-
+        
         @OneToOne('Location', randomizedName)
         public location: SessionBoundModel;
-
+        
         @ManyToMany('Employee', randomizedName)
         public employees: QuerySet;
-
+        
         @ForeignKey('Resource', randomizedName)
         public resource: SessionBoundModel;
       }
-
+      
       models.push(Test);
     }
-
+    
     return models;
   }
-
+  
   const getTestModels = () => {
-    class Location extends Model implements LocationDescriptors {
-      static modelName = "Location";
+    type LocationDescriptors = {
+      id: string;
+      name: string;
+      employees: TargetRelationship<Employee, Relations.ManyToMany>;
+    };
+    type EmployeeDescriptors = {
+      id: string;
+      name: string;
+      resource: TargetRelationship<Resource, Relations.ForeignKey>;
+      locations: SourceRelationship<typeof Location, Relations.ManyToMany>;
+    };
+    type ResourceDescriptors = {
+      id: string;
+      name: string;
+      employees: SourceRelationship<typeof Employee, Relations.ForeignKey>;
+    };
+    class Location extends Model<typeof Location, LocationDescriptors> implements LocationDescriptors {
+      static modelName = "Location" as const;
 
-      @Attribute
+      @Attribute()
       public id: string;
 
-      @Attribute
+      @Attribute()
       public name: string;
 
       @ManyToMany('Employee', 'locations')
-      public employees: QuerySet;
+      public employees: TargetRelationship<Employee, Relations.ManyToMany>;
     }
-    class Employee extends Model implements EmployeeDescriptors {
-      static modelName = "Employee";
+    class Employee extends Model<typeof Employee, EmployeeDescriptors> implements EmployeeDescriptors {
+      static modelName = "Employee" as const;
 
-      @Attribute
+      @Attribute()
       public id: string;
 
-      @Attribute
+      @Attribute()
       public name: string;
 
       @ForeignKey('Resource', 'employees')
-      public resource: SessionBoundModel;
+      public resource: TargetRelationship<Resource, Relations.ForeignKey>;
 
-      public location: QuerySet;
+      public locations: SourceRelationship<typeof Location, Relations.ManyToMany>;
     }
-    class Resource extends Model implements ResourceDescriptors {
-      static modelName = "Resource";
+    class Resource extends Model<typeof Resource, ResourceDescriptors> implements ResourceDescriptors {
+      static modelName = "Resource" as const;
 
-      @Attribute
+      @Attribute()
       public id: string;
 
-      @Attribute
+      @Attribute()
       public name: string;
 
-      public employees: QuerySet;
+      public employees: SourceRelationship<typeof Employee, Relations.ForeignKey>;
     }
 
     return {
@@ -434,15 +422,15 @@ describe("Benchmark", () => {
     }
   }
 
-  const setupSession = (models: typeof AnyModel[]) => {
+  const setupSession = (models: (typeof AnyModel)[]) => {
     const orm = new ORM();
     orm.register(...models);
-    const session = castTo<CustomSession>(orm.session(orm.getEmptyState()));
+    const session = orm.session(orm.getEmptyState()) as unknown as SessionWithBoundModels<Schema>;
 
     return { session };
   }
 
-  const createEntities = (model: typeof Model, amount: number) => {
+  const createEntities = (model: typeof AnyModel, amount: number) => {
     for (let i = 0; i < amount; ++i) {
       model.create({
         id: i,
@@ -451,7 +439,7 @@ describe("Benchmark", () => {
     }
   }
 
-  const assignEntities1ToN = (session: CustomSession, from: keyof CustomSession, to: keyof CustomSession, descriptorName: string) => {
+  const assignEntities1ToN = (session: Schema, from: keyof Schema, to: keyof Schema, descriptorName: string) => {
     const {[from]: SourceModel, [to]: TargetModel} = session;
     const sourceCount = SourceModel.count();
     const targetCount = TargetModel.count();
@@ -473,7 +461,7 @@ describe("Benchmark", () => {
     }
   };
 
-  const assignEntitiesNtoM = (session: CustomSession, from: keyof CustomSession, to: keyof CustomSession, descriptorName: string) => {
+  const assignEntitiesNtoM = (session: Schema, from: keyof Schema, to: keyof Schema, descriptorName: string) => {
     const {[from]: SourceModel, [to]: TargetModel} = session;
     const sourceCount = SourceModel.count();
     const targetCount = TargetModel.count();
@@ -490,7 +478,7 @@ describe("Benchmark", () => {
     })
   };
 
-  const createDb = (session: CustomSession) => {
+  const createDb = (session: Schema) => {
     createEntities(session.Location, 400);
     createEntities(session.Employee, 200);
     createEntities(session.Resource, 100);
@@ -569,7 +557,7 @@ describe("Benchmark", () => {
     const measurements = nTimes(n)
       .map(() => measureMs(() => {
         for (let i = 0; i < repsNumber; ++i) {
-          (session.Location.first() as any).name
+          session.Location.first()?.name
         }
       }))
       .map((ms) => ms / 1000);
@@ -595,7 +583,7 @@ describe("Benchmark", () => {
     const measurements = nTimes(n)
       .map(() => measureMs(() => {
         for (let i = 0; i < repsNumber; ++i) {
-          (session.Employee.first() as any).resource
+          session.Employee.first()?.resource
         }
       }))
       .map((ms) => ms / 1000);
@@ -621,7 +609,7 @@ describe("Benchmark", () => {
     const measurements = nTimes(n)
       .map(() => measureMs(() => {
         for (let i = 0; i < repsNumber; ++i) {
-          (session.Resource.first() as any).employees.first()
+          session.Resource.first()?.employees.first()
         }
       }))
       .map((ms) => ms / 1000);
@@ -647,7 +635,7 @@ describe("Benchmark", () => {
     const measurements = nTimes(n)
       .map(() => measureMs(() => {
         for (let i = 0; i < repsNumber; ++i) {
-          (session.Location.first() as any).employees.first()
+          session.Location.first()?.employees.first()
         }
       }))
       .map((ms) => ms / 1000);
@@ -699,7 +687,7 @@ describe("Benchmark", () => {
     const measurements = nTimes(n)
       .map(() => measureMs(() => {
         for (let i = 0; i < repsNumber; ++i) {
-          (session.Location.first() as any).employees.first().resource.name
+          session.Location.first()?.employees.first()?.resource.name
         }
       }))
       .map((ms) => ms / 1000);
@@ -716,215 +704,249 @@ describe("Benchmark", () => {
   });
 })
 
-describe.only("Selectors performance", () => {
-  let models: any[] = [];
+describe("Selectors performance", () => {
+  let models: Schema[keyof Schema][] = [];
   const logs: string[] = [];
-  type OrmSelector<R> = (orm: ORM, selector: (session: CustomSession) => R) => R;
 
   const getTestModels = () => {
-    class Room extends Model {
-      static modelName = 'Room';
-
-      @Attribute
+    type RoomProps = {
       id: string;
-
-      @Attribute
       name: string;
+      location: TargetRelationship<Location, Relations.ForeignKey>;
+      services: TargetRelationship<Service, Relations.ManyToMany>;
+    }
+    type ServiceProps = {
+      id: string;
+      roomRequired: boolean;
+      name: string;
+      extraTimeInSeconds: string;
+      extraTimeType: string;
+      rooms: SourceRelationship<typeof Room, Relations.ManyToMany>;
+    }
+    type ServicePricingLevelProps = {
+      id: string;
+      duration: string;
+      name: string;
+      price: string;
+      deletedAt: string;
+      specialPrice: string;
+      priceType: string;
+      service: TargetRelationship<Service, Relations.ForeignKey>;
+    }
+    type LocationProps = {
+      id: string;
+      deletedAt: string;
+      isOnline: boolean;
+      displayNewAddress: boolean;
+      name: string;
+      sortingId: number;
+      services: string[];
+      rooms: SourceRelationship<typeof Room, Relations.ForeignKey>;
+      address: TargetRelationship<LocationAddress, Relations.OneToOne>;
+      employees: TargetRelationship<Employee, Relations.ManyToMany>;
+      secondaryBusinessTypes: TargetRelationship<NewBusinessType, Relations.ManyToMany>;
+      primaryBusinessType: TargetRelationship<NewBusinessType, Relations.ForeignKey>;
+    };
+    type EmployeeProps = {
+      id: string;
+      appointmentColor: string;
+      calendarTipsReadAt: string;
+      confirmedAt: string;
+      deletedAt: string;
+      email: string;
+      locations: SourceRelationship<typeof Location, Relations.ManyToMany>;
+    };
+    type LocationAddressProps = {
+      id: string;
+      location: SourceRelationship<typeof Location, Relations.OneToOne>;
+    };
+    type NewBusinessTypeProps = {
+      id: string;
+      englishName: string;
+      name: string;
+      pluralName: string;
+      sortingId: number;
+      locationSecondaryBusinessTypes: SourceRelationship<typeof Location, Relations.ManyToMany>;
+      locationPrimaryBusinessType: SourceRelationship<typeof Location, Relations.ForeignKey>;
+    };
+
+    class Room extends Model<typeof Room, RoomProps> implements RoomProps {
+      static modelName = 'Room' as const;
+
+      @Attribute()
+      public id: string;
+
+      @Attribute()
+      public name: string;
 
       @ForeignKey('Location', 'rooms')
-      location: any;
+      public location: TargetRelationship<Location, Relations.ForeignKey>;
 
       @ManyToMany('Service', 'rooms')
-      services: any;
+      public services: TargetRelationship<Service, Relations.ManyToMany>;
     }
 
-    class Service extends Model {
-      static modelName = 'Service';
+    class Service extends Model<typeof Service, ServiceProps> implements ServiceProps {
+      static modelName = 'Service' as const;
 
-      @Attribute
-      id: string;
+      @Attribute()
+      public id: string;
 
-      @Attribute
-      name: string;
+      @Attribute()
+      public name: string;
 
-      @Attribute
-      extraTimeInSeconds: string;
+      @Attribute()
+      public extraTimeInSeconds: string;
 
-      @Attribute
-      extraTimeType: string;
+      @Attribute()
+      public extraTimeType: string;
 
-      @Attribute
-      roomRequired: string;
+      @Attribute()
+      public roomRequired: boolean;
 
-      @Attribute
-      deletedAt: string;
-
-      @Attribute
-      voucherEnabled: string;
-
-      @Attribute
-      sortingId: any;
-
-      @Attribute
-      onlineBookingEnabled: any;
-
-      @Attribute
-      commissionEnabled: any;
-
-      @Attribute
-      description: any;
-
-      @Attribute
-      gender: any;
-
-      @Attribute
-      voucherExpirationPeriod: any;
+      public rooms: SourceRelationship<typeof Room, Relations.ManyToMany>;
     }
 
-    class ServicePricingLevel extends Model {
-      static modelName = 'ServicePricingLevel';
+    class ServicePricingLevel extends Model<typeof ServicePricingLevel, ServicePricingLevelProps> implements ServicePricingLevelProps {
+      static modelName = 'ServicePricingLevel' as const;
 
-      @Attribute
-      id: any;
+      @Attribute()
+      public id: string;
 
-      @Attribute
-      duration: any;
+      @Attribute()
+      public duration: string;
 
-      @Attribute
-      name: any;
+      @Attribute()
+      public name: string;
 
-      @Attribute
-      price: any;
+      @Attribute()
+      public price: string;
 
-      @Attribute
-      deletedAt: any;
+      @Attribute()
+      public deletedAt: string;
 
-      @Attribute
-      specialPrice: any;
+      @Attribute()
+      public specialPrice: string;
 
-      @Attribute
-      priceType: any;
+      @Attribute()
+      public priceType: string;
 
       @ForeignKey('Service', 'pricingLevels')
-      service: any;
+      public service: TargetRelationship<Service, Relations.ForeignKey>;
 
-      toObject(): ServicePricingLevelProps {
-        const { service = {} } = this as any;
-        const { rooms, employees } = service;
+      toObject() {
+        const { service } = this;
+        const { rooms } = service;
         const serviceRef = service.ref;
 
         return {
           ...serviceRef,
-          ...this.ref,
+          ...this.ref as any,
           service: serviceRef,
           serviceName: serviceRef.name,
           serviceId: serviceRef.id,
 
           rooms: rooms && rooms.toRefArray(),
-          employees: employees && employees.toRefArray(),
         };
       }
     }
-    class Employee extends Model {
-      static modelName = 'Employee';
+    class Employee extends Model<typeof Employee, EmployeeProps> implements EmployeeProps {
+      static modelName = 'Employee' as const;
 
-      @Attribute
-      id: any;
+      @Attribute()
+      public id: string;
 
-      @Attribute
-      name: any;
+      @Attribute()
+      public appointmentColor: string;
 
-      @Attribute
-      firstName: any;
+      @Attribute()
+      public calendarTipsReadAt: string;
 
-      @Attribute
-      lastName: any;
+      @Attribute()
+      public confirmedAt: string;
 
-      @Attribute
-      providesServices: any;
+      @Attribute()
+      public deletedAt: string;
 
-      @Attribute
-      role: any;
+      @Attribute()
+      public email: string;
 
-      @Attribute
-      services: any
-
-      @Attribute
-      appointmentColor: any
-
-      @Attribute
-      title: any
-
-      @Attribute
-      calendarTipsReadAt: any
-
-      @Attribute
-      confirmedAt: any
+      public locations: SourceRelationship<typeof Location, Relations.ManyToMany>;
     }
 
-    class LocationAddress extends Model {
-      static modelName = 'LocationAddress';
+    class LocationAddress extends Model<typeof LocationAddress, LocationAddressProps> implements LocationAddressProps {
+      static modelName = 'LocationAddress' as const;
 
-      @Attribute
-      id: any;
+      @Attribute()
+      public id: string;
+
+      public location: SourceRelationship<typeof Location, Relations.OneToOne>;
     }
 
-    class NewBusinessType extends Model {
-      static modelName = 'NewBusinessType';
+    class NewBusinessType extends Model<typeof NewBusinessType, NewBusinessTypeProps> implements NewBusinessTypeProps {
+      static modelName = 'NewBusinessType' as const;
 
-      @Attribute
-      id: any;
+      @Attribute()
+      public id: string;
 
-      @Attribute
-      englishName: any;
+      @Attribute()
+      public englishName: string;
 
-      @Attribute
-      name: any;
+      @Attribute()
+      public name: string;
 
-      @Attribute
-      pluralName: any;
+      @Attribute()
+      public pluralName: string;
 
-      @Attribute
-      sortingId: any;
+      @Attribute()
+      public sortingId: number;
+
+      public locationSecondaryBusinessTypes: SourceRelationship<typeof Location, Relations.ManyToMany>;
+      public locationPrimaryBusinessType: SourceRelationship<typeof Location, Relations.ForeignKey>;
     }
 
-    class Location extends Model {
-      static modelName = 'Location';
+    class Location extends Model<typeof Location, LocationProps> implements LocationProps {
+      static modelName = 'Location' as const;
 
-      @Attribute
-      id: any;
+      @Attribute()
+      public id: string;
 
-      @Attribute
-      deletedAt: any;
+      @Attribute()
+      public deletedAt: string;
 
-      @Attribute
-      displayNewAddress: any;
+      @Attribute()
+      public displayNewAddress: boolean;
 
-      @Attribute
-      name: any;
+      @Attribute()
+      public name: string;
 
-      @Attribute
-      sortingId: any;
+      @Attribute()
+      public sortingId: number;
 
-      @Attribute
-      services: any
+      @Attribute()
+      public services: string[];
+
+      @Attribute()
+      public isOnline: boolean;
 
       @OneToOne('LocationAddress', 'location')
-      address: any;
+      public address: TargetRelationship<LocationAddress, Relations.OneToOne>;
 
       @ManyToMany('Employee', 'locations')
-      employees: any;
+      public employees: TargetRelationship<Employee, Relations.ManyToMany>;
 
       @ManyToMany('NewBusinessType', 'locationSecondaryBusinessTypes')
-      secondaryBusinessTypes: any;
+      public secondaryBusinessTypes: TargetRelationship<NewBusinessType, Relations.ManyToMany>;
 
       @ForeignKey('NewBusinessType', 'locationPrimaryBusinessType')
-      primaryBusinessType: any;
+      public primaryBusinessType: TargetRelationship<NewBusinessType, Relations.ForeignKey>;
 
-      toObject(): any {
+      public rooms: SourceRelationship<typeof Room, Relations.ForeignKey>;
+
+      toObject() {
         return {
-          ...this.ref,
-          rooms: (this as any).rooms.toRefArray(),
+          ...this.ref as any,
+          rooms: this.rooms.toRefArray(),
         }
       }
     }
@@ -940,84 +962,30 @@ describe.only("Selectors performance", () => {
     }
   }
 
-  type RoomProps = {
-    id: string;
-    name: string;
-  }
-  type ServiceProps = {
-    id: string;
-    roomRequired: boolean;
-  }
-  type ServicePricingLevelProps = {
-    id: string;
-    service: ReturnType<typeof getTestModels>['Service'] & ServiceProps;
-    rooms: { id: string }[];
-  }
-  type LocationProps = {
-    id: string;
-    deletedAt: null | string;
-    isOnline: boolean;
-    displayNewAddress: boolean;
-    name: string;
-    sortingId: number;
-    services: string[];
-    rooms: { id: string; name: string }[];
-  };
-  type EmployeeProps = {
-    id: string;
-    appointmentColor: string;
-    calendarTipsReadAt: string | null;
-    confirmedAt: string | null;
-    deletedAt: string | null;
-    email: string;
-    employmentEndDate: string | null;
-    employmentStartDate: string;
-    firstName: string;
-    lastName: string;
-    mobileNumber: null | string;
-    name: string;
-    notes: string | null;
-    providesServices: boolean;
-    sortingId: number;
-    title: string | null;
-    paidPlanCommission: null | number;
-    productCommission: null | number;
-    serviceCommission: null | number;
-    voucherCommission: null | number;
-    services: string[];
-  };
-  type LocationAddressProps = {
-    id: string;
-  };
-  type NewBusinessTypeProps = {
-    id: string;
-    englishName: string;
-    name: string;
-    pluralName: string;
-    sortingId: number;
+
+  type Schema = {
+    Room: ReturnType<typeof getTestModels>['Room'];
+    Service: ReturnType<typeof getTestModels>['Service'];
+    ServicePricingLevel: ReturnType<typeof getTestModels>['ServicePricingLevel'];
+    Location: ReturnType<typeof getTestModels>['Location'];
+    Employee: ReturnType<typeof getTestModels>['Employee'];
+    LocationAddress: ReturnType<typeof getTestModels>['LocationAddress'];
+    NewBusinessType: ReturnType<typeof getTestModels>['NewBusinessType'];
   };
 
-  type CustomSession = {
-    Room: typeof Model & RoomProps;
-    Service: typeof Model & ServiceProps;
-    ServicePricingLevel: typeof Model & ServicePricingLevelProps;
-    Location: typeof Model & LocationProps;
-    Employee: typeof Model & EmployeeProps;
-    LocationAddress: typeof Model & LocationAddressProps;
-    NewBusinessType: typeof Model & NewBusinessTypeProps;
-  };
+  type CustomSession = SessionWithBoundModels<Schema>;
 
-  const createSelectors = (orm: ORM) =>
+  const createSelectors = (orm: ORM<Schema>) =>
   {
     const selectLocations = (session: CustomSession, { withDeleted = false, withOffline = true } = {}) => {
-      let collection = session.Location.filter((location: CustomSession['Location']) => {
+      let collection = session.Location.filter(location => {
         // Filter out incomplete resources that were created with json relationships
         // { id: 1, type: 'Location'} is an incomplete resource
         return Number.isFinite(location.sortingId);
       })
         .orderBy(['sortingId'])
         .toModelArray()
-        .map((location) => (location as InstanceType<ReturnType<typeof getTestModels>['Location']>).toObject());
+        .map((location) => location.toObject());
 
         if (!withDeleted) {
           collection = collection.filter(location => !location.deletedAt);
@@ -1030,16 +998,16 @@ describe.only("Selectors performance", () => {
       return collection;
     };
 
-    const getServicePricingLevelList: OrmSelector<ServicePricingLevelProps[]> = createSelector(orm, (session: CustomSession) =>
+    const getServicePricingLevelList = createSelector(orm, (session) =>
       session.ServicePricingLevel.all()
         .toModelArray()
         // if there is only one key (id) it means that booking was created by relation.
         // In that case it cannot be displayed on calendar
         .filter(spl => Object.keys(spl.ref).length > 1)
-        .map(spl => (spl as InstanceType<ReturnType<typeof getTestModels>['ServicePricingLevel']>).toObject()),
+        .map(spl => spl.toObject()),
     );
 
-    const getLocationRoomDict = createSelector(orm, (session: CustomSession) =>
+    const getLocationRoomDict = createSelector(orm, (session) =>
       selectLocations(session).reduce((memo, location) => {
         memo[location.id] = location.rooms?.map(({ id, name }: { id: string; name: string }) => ({ id, name }));
         return memo;
@@ -1090,13 +1058,13 @@ describe.only("Selectors performance", () => {
     );
   }
 
-  const createEntities = (model: typeof Model, props: any, amount: number) => {
+  const createEntities = (model: typeof AnyModel, props: any, amount: number) => {
     for (let i = 0; i < amount; ++i) {
       model.create({ id: i, ...props });
     }
   }
 
-  const assignEntities1ToN = (session: CustomSession, from: keyof CustomSession, to: keyof CustomSession, descriptorName: string) => {
+  const assignEntities1ToN = (session: CustomSession, from: keyof Schema, to: keyof Schema, descriptorName: string) => {
     const {[from]: SourceModel, [to]: TargetModel} = session;
     const sourceCount = SourceModel.count();
     const targetCount = TargetModel.count();
@@ -1118,7 +1086,7 @@ describe.only("Selectors performance", () => {
     }
   };
 
-  const assignEntitiesNtoM = (session: CustomSession, from: keyof CustomSession, to: keyof CustomSession, propertyDescriptorName: string) => {
+  const assignEntitiesNtoM = (session: CustomSession, from: keyof Schema, to: keyof Schema, propertyDescriptorName: string) => {
     const {[from]: SourceModel, [to]: TargetModel} = session;
     const sourceCount = SourceModel.count();
     const targetCount = TargetModel.count();
@@ -1134,7 +1102,7 @@ describe.only("Selectors performance", () => {
     })
   };
 
-  const assignEntities1to1 = (session: CustomSession, from: keyof CustomSession, to: keyof CustomSession, propertyDescriptorName: string) => {
+  const assignEntities1to1 = (session: CustomSession, from: keyof Schema, to: keyof Schema, propertyDescriptorName: string) => {
     const {[from]: SourceModel, [to]: TargetModel} = session;
     const sourceCount = SourceModel.count();
     const targetCount = TargetModel.count();
@@ -1149,10 +1117,10 @@ describe.only("Selectors performance", () => {
     })
   }
 
-  const setupSession = (models: typeof Model[]) => {
-    const orm = new ORM();
+  const setupSession = (models: Schema[keyof Schema][]) => {
+    const orm = new ORM<Schema>();
     orm.register(...models);
-    const session = castTo<CustomSession>(orm.session(orm.getEmptyState()));
+    const session = orm.session(orm.getEmptyState());
 
     return { session, orm };
   }
@@ -1251,7 +1219,7 @@ describe.only("Selectors performance", () => {
     .map(() => measureMs(() => {
       const selector = createSelectors(orm)
       for (let i = 0; i < repsNumber; ++i) {
-          selector((session as any).state, { locationId: String(i) })
+          selector(session.state, { locationId: String(i) })
         }
       }))
       .map((ms) => ms / 1000);
