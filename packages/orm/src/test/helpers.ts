@@ -143,7 +143,7 @@ export class Book extends Model<typeof Book, BookDescriptors> implements BookDes
   @Attribute()
   public releaseYear?: number;
 
-  @ForeignKey<Book>("Author", "books")
+  @ForeignKey<Book>("Author", 'books')
   public author?: TargetRelationship<Author, Relations.ForeignKey>;
 
   @OneToOne<Book>("Cover")
@@ -178,7 +178,7 @@ export class Author extends Model<typeof Author, AuthorDescriptors> implements A
     to: "Publisher",
     through: "Book",
     relatedName: "authors",
-  })
+  } as any)
   public publishers?: TargetRelationship<Publisher, Relations.ManyToMany>;
 
   public books?: SourceRelationship<typeof Book, Relations.ForeignKey>;
@@ -305,7 +305,7 @@ export class Movie extends Model<typeof Movie, MovieDescriptors> implements Movi
     to: "Publisher",
     as: "publisher",
     relatedName: "movies",
-  })
+  } as any)
   public publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
 }
 

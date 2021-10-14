@@ -5,7 +5,7 @@ import { wrapRegisterDescriptorFn } from "./utils";
 
 export function ManyToMany<MClass extends AnyModel>(
 	toModelName: ModelName<ModelFromModelFields<MClass>>, 
-	relatedName?: PossibleFieldKeys<ModelFromModelFields<MClass>>
+	relatedName?: PossibleFieldKeys<MClass, ModelFromModelFields<MClass>>
 ) {
 	const manyDescriptor = wrapRegisterDescriptorFn(many);
 	return manyDescriptor(toModelName, relatedName);	

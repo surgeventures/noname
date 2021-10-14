@@ -5,7 +5,7 @@ import { wrapRegisterDescriptorFn } from "./utils";
 
 export function ForeignKey<MClass extends AnyModel>(
 	toModelName: ModelName<ModelFromModelFields<MClass>>, 
-	relatedName?: PossibleFieldKeys<ModelFromModelFields<MClass>>
+	relatedName?: PossibleFieldKeys<MClass, ModelFromModelFields<MClass>>
 ) {
 	const fkDescriptor = wrapRegisterDescriptorFn(fk);
 	return fkDescriptor(toModelName, relatedName);

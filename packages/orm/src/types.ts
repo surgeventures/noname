@@ -57,7 +57,22 @@ export type ModelFromModelFields<MClass extends AnyModel, MFields extends Requir
         : never
   }[keyof MFields];
 
-export type PossibleFieldKeys<MClassType extends typeof AnyModel> = MClassType extends typeof AnyModel ? ModelFieldsWithoutNever<InstanceType<MClassType>> : never;
+type SourceRelationshipKeysOfModel<SourceMClass extends AnyModel, MClass extends AnyModel, MFields extends Required<ModelFields<MClass>> = Required<ModelFields<MClass>>> = 
+	{ [K in keyof MFields]:
+    MFields[K] extends SessionBoundModel<infer Z>
+      ? Z extends AnyModel
+        ? Z extends SourceMClass
+          ? K
+          : never
+        : never
+      : MFields[K] extends QuerySet<infer Z>
+        ? Z extends ModelClassType<SourceMClass>
+          ? K
+          : never
+        : never
+  }[keyof MFields];
+
+export type PossibleFieldKeys<SourceMClass extends AnyModel, MClassType extends typeof AnyModel> = MClassType extends typeof AnyModel ? SourceRelationshipKeysOfModel<SourceMClass, InstanceType<MClassType>> : never;
 
 /**
  * Imitates the model bound to the session.

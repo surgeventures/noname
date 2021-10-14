@@ -52,7 +52,7 @@ class Team extends Model<typeof Team, TeamDescriptors> implements TeamDescriptor
   @Attribute()
   public name?: string;
 
-  @ManyToMany<User>("User", "teams")
+  @ManyToMany<Team>("User", "teams")
   public users?: TargetRelationship<User, Relations.ManyToMany>;
 }
 
@@ -350,7 +350,7 @@ describe("Many to many relationships", () => {
           to: "User",
           through: "User2Team",
           relatedName: "teams",
-        })
+        } as any)
         public users: TargetRelationship<User, Relations.ManyToMany>;
 
         public teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
@@ -515,7 +515,7 @@ describe("Many to many relationships", () => {
           to: "UserModel",
           through: "User2TeamModel",
           relatedName: "teams",
-        })
+        } as any)
         public users?: TargetRelationship<User, Relations.ManyToMany>;
 
         public links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
@@ -573,7 +573,7 @@ describe("Many to many relationships", () => {
           to: "UserModel",
           through: "User2UserModel",
           relatedName: "otherUsers",
-        }) 
+        } as any) 
         public users: SourceRelationship<typeof UserModel, Relations.ManyToMany>;
       }
 
