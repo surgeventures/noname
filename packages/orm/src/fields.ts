@@ -19,6 +19,7 @@ import {
 } from "./utils";
 import { castTo } from "./hacks";
 import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
+import { ModelId } from "./types";
 
 /**
  * Contains the logic for how fields on {@link Model}s work
@@ -243,7 +244,7 @@ export abstract class Field {
 }
 
 export type AttributeOptions = {
-  getDefault?: () => any;
+  getDefault?: () => ModelId;
 };
 
 /**
@@ -251,7 +252,7 @@ export type AttributeOptions = {
  */
 export class Attribute extends Field {
   opts: AttributeOptions;
-  getDefault: (() => any) | undefined;
+  getDefault: AttributeOptions['getDefault'];
 
   constructor(opts?: AttributeOptions) {
     super();

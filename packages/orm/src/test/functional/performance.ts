@@ -166,7 +166,7 @@ describe("Many-to-many relationship performance", () => {
       @Attribute()
       public name?: string;
   
-      @ManyToMany("Child", "parent")
+      @ManyToMany<Parent>("Child", "parent")
       public children?: TargetRelationship<Child, Relations.ManyToMany>;
     }
   
@@ -344,13 +344,13 @@ describe("Accessors and models registration performance", () => {
         @Attribute()
         public name: string;
         
-        @OneToOne('Location', randomizedName)
+        @OneToOne<Test>('Location', randomizedName)
         public location: SessionBoundModel;
         
-        @ManyToMany('Employee', randomizedName)
+        @ManyToMany<Test>('Employee', randomizedName)
         public employees: QuerySet;
         
-        @ForeignKey('Resource', randomizedName)
+        @ForeignKey<Test>('Resource', randomizedName)
         public resource: SessionBoundModel;
       }
       
@@ -386,7 +386,7 @@ describe("Accessors and models registration performance", () => {
       @Attribute()
       public name: string;
 
-      @ManyToMany('Employee', 'locations')
+      @ManyToMany<Location>('Employee', 'locations')
       public employees: TargetRelationship<Employee, Relations.ManyToMany>;
     }
     class Employee extends Model<typeof Employee, EmployeeDescriptors> implements EmployeeDescriptors {
@@ -398,7 +398,7 @@ describe("Accessors and models registration performance", () => {
       @Attribute()
       public name: string;
 
-      @ForeignKey('Resource', 'employees')
+      @ForeignKey<Employee>('Resource', 'employees')
       public resource: TargetRelationship<Resource, Relations.ForeignKey>;
 
       public locations: SourceRelationship<typeof Location, Relations.ManyToMany>;
@@ -661,7 +661,7 @@ describe("Accessors and models registration performance", () => {
     const measurements = nTimes(n)
       .map(() => measureMs(() => {
         for (let i = 0; i < repsNumber; ++i) {
-          (session.Employee.first() as any).locations.first()
+          session.Employee.first()?.locations.first()
         }
       }))
       .map((ms) => ms / 1000);
@@ -722,6 +722,7 @@ describe("Selectors performance", () => {
       extraTimeInSeconds: string;
       extraTimeType: string;
       rooms: SourceRelationship<typeof Room, Relations.ManyToMany>;
+      pricingLevels: SourceRelationship<typeof ServicePricingLevel, Relations.ForeignKey>;
     }
     type ServicePricingLevelProps = {
       id: string;
@@ -779,10 +780,10 @@ describe("Selectors performance", () => {
       @Attribute()
       public name: string;
 
-      @ForeignKey('Location', 'rooms')
+      @ForeignKey<Room>('Location', 'rooms')
       public location: TargetRelationship<Location, Relations.ForeignKey>;
 
-      @ManyToMany('Service', 'rooms')
+      @ManyToMany<Room>('Service', 'rooms')
       public services: TargetRelationship<Service, Relations.ManyToMany>;
     }
 
@@ -805,6 +806,7 @@ describe("Selectors performance", () => {
       public roomRequired: boolean;
 
       public rooms: SourceRelationship<typeof Room, Relations.ManyToMany>;
+      public pricingLevels: SourceRelationship<typeof ServicePricingLevel, Relations.ForeignKey>;
     }
 
     class ServicePricingLevel extends Model<typeof ServicePricingLevel, ServicePricingLevelProps> implements ServicePricingLevelProps {
@@ -831,7 +833,7 @@ describe("Selectors performance", () => {
       @Attribute()
       public priceType: string;
 
-      @ForeignKey('Service', 'pricingLevels')
+      @ForeignKey<ServicePricingLevel>('Service', 'pricingLevels')
       public service: TargetRelationship<Service, Relations.ForeignKey>;
 
       toObject() {
@@ -929,16 +931,16 @@ describe("Selectors performance", () => {
       @Attribute()
       public isOnline: boolean;
 
-      @OneToOne('LocationAddress', 'location')
+      @OneToOne<Location>('LocationAddress', 'location')
       public address: TargetRelationship<LocationAddress, Relations.OneToOne>;
 
-      @ManyToMany('Employee', 'locations')
+      @ManyToMany<Location>('Employee', 'locations')
       public employees: TargetRelationship<Employee, Relations.ManyToMany>;
 
-      @ManyToMany('NewBusinessType', 'locationSecondaryBusinessTypes')
+      @ManyToMany<Location>('NewBusinessType', 'locationSecondaryBusinessTypes')
       public secondaryBusinessTypes: TargetRelationship<NewBusinessType, Relations.ManyToMany>;
 
-      @ForeignKey('NewBusinessType', 'locationPrimaryBusinessType')
+      @ForeignKey<Location>('NewBusinessType', 'locationPrimaryBusinessType')
       public primaryBusinessType: TargetRelationship<NewBusinessType, Relations.ForeignKey>;
 
       public rooms: SourceRelationship<typeof Room, Relations.ForeignKey>;

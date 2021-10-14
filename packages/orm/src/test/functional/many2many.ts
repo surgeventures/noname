@@ -52,7 +52,7 @@ class Team extends Model<typeof Team, TeamDescriptors> implements TeamDescriptor
   @Attribute()
   public name?: string;
 
-  @ManyToMany("User", "teams")
+  @ManyToMany<User>("User", "teams")
   public users?: TargetRelationship<User, Relations.ManyToMany>;
 }
 
@@ -324,10 +324,10 @@ describe("Many to many relationships", () => {
         @Attribute()
         public id: ModelId;
       
-        @ForeignKey("User")
+        @ForeignKey<User2TeamModel>("User")
         public user: TargetRelationship<User, Relations.ForeignKey>;
 
-        @ForeignKey("Team")
+        @ForeignKey<User2TeamModel>("Team")
         public team: TargetRelationship<Team, Relations.ForeignKey>;
       }
 
@@ -346,7 +346,7 @@ describe("Many to many relationships", () => {
         @Attribute()
         public name: string;
 
-        @ManyToMany({
+        @ManyToMany<TeamModel>({
           to: "User",
           through: "User2Team",
           relatedName: "teams",
@@ -407,10 +407,10 @@ describe("Many to many relationships", () => {
         @Attribute()
         public id: ModelId;
       
-        @ForeignKey("User")
+        @ForeignKey<User2TeamModel>("User")
         public user: TargetRelationship<User, Relations.ForeignKey>;
 
-        @ForeignKey("Team")
+        @ForeignKey<User2TeamModel>("Team")
         public team: TargetRelationship<Team, Relations.ForeignKey>;
       }
 
@@ -429,7 +429,7 @@ describe("Many to many relationships", () => {
         @Attribute()
         public name: string;
       
-        @ForeignKey("User")
+        @ForeignKey<TeamModel>("User")
         public users: TargetRelationship<User, Relations.ManyToMany>;
       }
 
@@ -489,10 +489,10 @@ describe("Many to many relationships", () => {
         @Attribute()
         public name: string;;
 
-        @ForeignKey("UserModel", "links")
+        @ForeignKey<User2TeamModel>("UserModel", "links")
         public user?: TargetRelationship<User, Relations.ForeignKey>;
 
-        @ForeignKey("TeamModel", "links")
+        @ForeignKey<User2TeamModel>("TeamModel", "links")
         public team?: TargetRelationship<Team, Relations.ForeignKey>;
       }
 
@@ -511,7 +511,7 @@ describe("Many to many relationships", () => {
         @Attribute()
         public name: string;
 
-        @ManyToMany({
+        @ManyToMany<TeamModel>({
           to: "UserModel",
           through: "User2TeamModel",
           relatedName: "teams",
@@ -569,7 +569,7 @@ describe("Many to many relationships", () => {
         @Attribute()
         public name: string;
 
-        @ManyToMany({
+        @ManyToMany<UserModel>({
           to: "UserModel",
           through: "User2UserModel",
           relatedName: "otherUsers",
@@ -734,7 +734,7 @@ describe("Many to many relationships", () => {
       @Attribute()
       public id: ModelId;
 
-      @ManyToMany("User", "subscribers")
+      @ManyToMany<User>("User", "subscribers")
       public subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
 
       public subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;

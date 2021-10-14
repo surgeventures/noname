@@ -33,10 +33,10 @@ describe("ORM", () => {
         @Attribute()
         public id: ModelId;
 
-        @OneToOne("A")
+        @OneToOne<B>("A")
         public field1: TargetRelationship<A, Relations.OneToOne>;
 
-        @OneToOne("A")
+        @OneToOne<B>("A")
         public field2: TargetRelationship<A, Relations.OneToOne>;
       }
 
@@ -66,10 +66,10 @@ describe("ORM", () => {
         @Attribute()
         public id: ModelId;
 
-        @OneToOne("A")
+        @OneToOne<B>("A")
         public field1: TargetRelationship<A, Relations.ForeignKey>;
 
-        @OneToOne("A")
+        @OneToOne<B>("A")
         public field2: TargetRelationship<A, Relations.ForeignKey>;
       }
 
@@ -99,10 +99,10 @@ describe("ORM", () => {
         @Attribute()
         public id: ModelId;
 
-        @OneToOne("A")
+        @OneToOne<B>("A")
         public field1: TargetRelationship<A, Relations.ManyToMany>;
 
-        @OneToOne("A")
+        @OneToOne<B>("A")
         public field2: TargetRelationship<A, Relations.ManyToMany>;
       }
 

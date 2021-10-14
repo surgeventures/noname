@@ -8,7 +8,7 @@ export function OneToOne<
 	MClassTypeFromFields extends ModelFromModelFields<MClass> = ModelFromModelFields<MClass>,
 	MName extends ModelName<MClassTypeFromFields> = ModelName<MClassTypeFromFields>,
 	FKey extends PossibleFieldKeys<MClassTypeFromFields> = PossibleFieldKeys<MClassTypeFromFields>,
->(toModelName: MName, relatedName: FKey) {
+>(toModelName: MName, relatedName?: FKey) {
 	const oneToOneDescriptor = wrapRegisterDescriptorFn(oneToOne);
 	return oneToOneDescriptor(toModelName, relatedName);
 }

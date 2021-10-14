@@ -8,7 +8,7 @@ export function ManyToMany<
 	MClassTypeFromFields extends ModelFromModelFields<MClass> = ModelFromModelFields<MClass>,
 	MName extends ModelName<MClassTypeFromFields> = ModelName<MClassTypeFromFields>,
 	FKey extends PossibleFieldKeys<MClassTypeFromFields> = PossibleFieldKeys<MClassTypeFromFields>,
->(toModelName: MName, relatedName: FKey) {
+>(toModelName: MName, relatedName?: FKey) {
 	const manyDescriptor = wrapRegisterDescriptorFn(many);
 	return manyDescriptor(toModelName, relatedName);	
 }

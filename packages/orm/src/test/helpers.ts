@@ -143,19 +143,19 @@ export class Book extends Model<typeof Book, BookDescriptors> implements BookDes
   @Attribute()
   public releaseYear?: number;
 
-  @ForeignKey("Author", "books")
+  @ForeignKey<Book>("Author", "books")
   public author?: TargetRelationship<Author, Relations.ForeignKey>;
 
-  @OneToOne("Cover")
+  @OneToOne<Book>("Cover")
   public cover?: TargetRelationship<Cover, Relations.OneToOne>;
 
-  @ManyToMany("Genre", "books")
+  @ManyToMany<Book>("Genre", "books")
   public genres?: TargetRelationship<Genre, Relations.ManyToMany>;
 
-  @ManyToMany("Tag", "books")
+  @ManyToMany<Book>("Tag", "books")
   public tags?: TargetRelationship<Tag, Relations.ManyToMany>;
 
-  @ForeignKey("Publisher", "books")
+  @ForeignKey<Book>("Publisher", "books")
   public publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
 }
 
@@ -174,7 +174,7 @@ export class Author extends Model<typeof Author, AuthorDescriptors> implements A
   @Attribute()
   public name?: string;
 
-  @ManyToMany({
+  @ManyToMany<Author>({
     to: "Publisher",
     through: "Book",
     relatedName: "authors",
@@ -235,10 +235,10 @@ export class Tag extends Model<typeof Tag, TagDescriptors> implements TagDescrip
     };
   }
 
-  @Attribute
+  @Attribute()
   public id: string;
 
-  @Attribute
+  @Attribute()
   public name: string;
 
   public subTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
@@ -256,10 +256,10 @@ export type PublisherDescriptors = {
 export class Publisher extends Model<typeof Publisher, PublisherDescriptors> implements PublisherDescriptors {
   static modelName = "Publisher" as const;
 
-  @Attribute
+  @Attribute()
   public id?: string;
 
-  @Attribute
+  @Attribute()
   public name?: string;
 
   authors?: SourceRelationship<typeof Author, Relations.ManyToMany>;
@@ -280,28 +280,28 @@ export type MovieDescriptors = {
 export class Movie extends Model<typeof Movie, MovieDescriptors> implements MovieDescriptors {
   static modelName = "Movie" as const;
 
-  @Attribute
+  @Attribute()
   public id?: ModelId;
 
-  @Attribute
+  @Attribute()
   public name?: string;
 
-  @Attribute
+  @Attribute()
   public rating?: number;
 
-  @Attribute
+  @Attribute()
   public hasPremiered?: boolean;
 
-  @Attribute
+  @Attribute()
   public characters?: string[];
 
-  @Attribute
+  @Attribute()
   public meta?: {};
 
-  @Attribute
+  @Attribute()
   public publisherId?: ModelId;
 
-  @ForeignKey({
+  @ForeignKey<Movie>({
     to: "Publisher",
     as: "publisher",
     relatedName: "movies",
