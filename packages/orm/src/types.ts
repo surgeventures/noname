@@ -38,6 +38,26 @@ export type ModelName<MClassType extends typeof AnyModel> = MClassType['modelNam
 
 export type SingleMClassMap<MClassType extends typeof AnyModel> = { [K in ModelName<MClassType>]: MClassType };
 
+export type SerializableToNever<MClass extends AnyModel, MFields extends Required<ModelFields<MClass>> = Required<ModelFields<MClass>>> = 
+	{ [K in keyof MFields]: MFields[K] extends QuerySet | AnyModel
+    ? MFields[K]
+    : never 
+  };
+
+export type ModelFieldsWithoutNever<MClass extends AnyModel> = { [K in keyof SerializableToNever<MClass>]: SerializableToNever<MClass>[K] extends never ? never : K }[keyof SerializableToNever<MClass>]; 
+
+export type ModelFromModelFields<MClass extends AnyModel, MFields extends Required<ModelFields<MClass>> = Required<ModelFields<MClass>>> = 
+	{ [K in keyof MFields]: MFields[K] extends TargetRelationship<AnyModel, Relations> | SourceRelationship<typeof AnyModel, Relations>
+    ? MFields[K] extends SourceRelationship<infer U, Relations>
+      ? U extends typeof AnyModel 
+        ? U
+        : never
+      : never
+    : never 
+  }[keyof MFields];
+
+export type PossibleFieldKeys<MClassType extends typeof AnyModel> = MClassType extends typeof AnyModel ? ModelFieldsWithoutNever<InstanceType<MClassType>> : never;
+
 /**
  * Imitates the model bound to the session.
  * 

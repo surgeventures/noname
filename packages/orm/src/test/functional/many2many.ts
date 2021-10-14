@@ -16,7 +16,7 @@ registry.clear();
 type UserDescriptors = {
   id?: ModelId;
   name?: string;
-  subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
+  subscribed?: TargetRelationship<User, Relations.ManyToMany>;
   subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
   teams?: SourceRelationship<typeof Team, Relations.ManyToMany>;
 };
@@ -30,8 +30,8 @@ class User extends Model<typeof User, UserDescriptors> implements UserDescriptor
   @Attribute()
   public name?: string;
 
-  @ManyToMany("User", "subscribers")
-  public subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>; // self-referencing
+  @ManyToMany<User>("User", "subscribers")
+  public subscribed?: TargetRelationship<User, Relations.ManyToMany>;
 
   subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
   teams?: SourceRelationship<typeof Team, Relations.ManyToMany>;
