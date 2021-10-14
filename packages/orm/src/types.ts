@@ -47,13 +47,14 @@ export type SerializableToNever<MClass extends AnyModel, MFields extends Require
 export type ModelFieldsWithoutNever<MClass extends AnyModel> = { [K in keyof SerializableToNever<MClass>]: SerializableToNever<MClass>[K] extends never ? never : K }[keyof SerializableToNever<MClass>]; 
 
 export type ModelFromModelFields<MClass extends AnyModel, MFields extends Required<ModelFields<MClass>> = Required<ModelFields<MClass>>> = 
-	{ [K in keyof MFields]: MFields[K] extends TargetRelationship<AnyModel, Relations> | SourceRelationship<typeof AnyModel, Relations>
-    ? MFields[K] extends SourceRelationship<infer U, Relations>
-      ? U extends typeof AnyModel 
-        ? U
+	{ [K in keyof MFields]:
+    MFields[K] extends SessionBoundModel<infer Z>
+      ? Z extends AnyModel
+        ? ModelClassType<Z>
         : never
-      : never
-    : never 
+      : MFields[K] extends QuerySet<infer Z>
+        ? Z
+        : never
   }[keyof MFields];
 
 export type PossibleFieldKeys<MClassType extends typeof AnyModel> = MClassType extends typeof AnyModel ? ModelFieldsWithoutNever<InstanceType<MClassType>> : never;

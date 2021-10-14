@@ -344,12 +344,15 @@ describe("Accessors and models registration performance", () => {
         @Attribute()
         public name: string;
         
-        @OneToOne<Test>('Location', randomizedName)
+        //@ts-ignore
+        @OneToOne('Location', randomizedName)
         public location: SessionBoundModel;
         
+        //@ts-ignore
         @ManyToMany<Test>('Employee', randomizedName)
         public employees: QuerySet;
         
+        //@ts-ignore
         @ForeignKey<Test>('Resource', randomizedName)
         public resource: SessionBoundModel;
       }

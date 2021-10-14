@@ -477,8 +477,8 @@ describe("Many to many relationships", () => {
       type User2TeamModelDescriptors = {
         id?: ModelId;
         name: string;
-        user?: TargetRelationship<User, Relations.ForeignKey>;
-        team?: TargetRelationship<Team, Relations.ForeignKey>;
+        user?: TargetRelationship<UserModel, Relations.ForeignKey>;
+        team?: TargetRelationship<TeamModel, Relations.ForeignKey>;
       }
       class User2TeamModel extends Model<typeof User2TeamModel, User2TeamModelDescriptors> implements User2TeamModelDescriptors {
         static modelName = "User2TeamModel" as const;
@@ -490,10 +490,10 @@ describe("Many to many relationships", () => {
         public name: string;;
 
         @ForeignKey<User2TeamModel>("UserModel", "links")
-        public user?: TargetRelationship<User, Relations.ForeignKey>;
+        public user?: TargetRelationship<UserModel, Relations.ForeignKey>;
 
         @ForeignKey<User2TeamModel>("TeamModel", "links")
-        public team?: TargetRelationship<Team, Relations.ForeignKey>;
+        public team?: TargetRelationship<TeamModel, Relations.ForeignKey>;
       }
 
       type TeamModelDescriptors = {
