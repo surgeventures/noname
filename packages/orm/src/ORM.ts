@@ -161,7 +161,7 @@ export default class ORM<
 
   generateSchemaSpec() {
     const models = this.getModelClasses();
-    const tables = models.reduce<{ [K in keyof Schema]: Schema[K] }>((spec, modelClass) => {
+    const tables = models.reduce<Schema>((spec, modelClass) => {
       const tableName = modelClass.modelName;
       const tableSpec = modelClass._getTableOpts();
       spec[tableName as keyof Schema] = Object.assign(
@@ -170,7 +170,7 @@ export default class ORM<
         tableSpec
       ) as Values<Schema>;
       return spec;
-    }, {} as { [K in keyof Schema]: Schema[K] });
+    }, {} as Schema);
     return { tables };
   }
 
