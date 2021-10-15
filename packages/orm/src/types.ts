@@ -329,11 +329,10 @@ export interface Database<Schema extends ModelClassMap> {
  * ```
  * <br/>
  */
- export interface TableOpts<MClassType extends typeof AnyModel> {
+ export interface TableOpts {
   readonly idAttribute?: string;
   readonly arrName?: string;
   readonly mapName?: string;
-  readonly fields?: MClassType['fields'];
 }
 
 /**
@@ -341,7 +340,7 @@ export interface Database<Schema extends ModelClassMap> {
  */
 export type SchemaSpec<Schema extends ModelClassMap> = {
   tables: {
-    [K in keyof Schema]: TableOpts<Schema[K]>;
+    [K in keyof Schema]: TableOpts;
   };
 };
 
