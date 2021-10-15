@@ -248,10 +248,10 @@ describe("Immutable session", () => {
     const { name, characters, meta } = movie;
     const oldRef = movie.ref;
 
-    movie.update({ name } as any);
+    movie.update({ name });
     expect(oldRef).toBe<Ref<Movie>>(movie.ref);
 
-    movie.update({ meta } as any);
+    movie.update({ meta });
     expect(oldRef).toBe<Ref<Movie>>(movie.ref);
 
     movie.update({ characters });
@@ -296,7 +296,7 @@ describe("Immutable session", () => {
 
     const movie2 = Movie.create({
       characters: ["Joker"],
-    }) as Movie;
+    });
     const oldRef2 = movie2.ref;
     movie2.equals = function characterAmountsEqual(otherModel: AnyModel) {
       return (
@@ -600,7 +600,7 @@ describe("Immutable session", () => {
     // Forward
     const book = Book.first()!;
     const { author } = book;
-    const { author: rawFk } = book.ref as any;
+    const { author: rawFk } = book.ref;
     expect(author).toBeInstanceOf(Author);
     expect(author?.getId()).toBe<ModelId>(rawFk!);
 
@@ -613,7 +613,7 @@ describe("Immutable session", () => {
 
     // Forward with 'as' option
     const movie = Movie.first()!;
-    const { publisher, publisherId } = movie as any;
+    const { publisher, publisherId } = movie;
     expect(publisher).toBeInstanceOf(Publisher);
     expect(publisher!.getId()).toBe(publisherId);
   });
@@ -665,7 +665,7 @@ describe("Immutable session", () => {
     // Forward
     const book = Book.first()!;
     const { cover } = book;
-    const { cover: rawFk } = book.ref as any;
+    const { cover: rawFk } = book.ref;
     expect(cover).toBeInstanceOf(Cover);
     expect(cover!.getId()).toBe(rawFk);
 
