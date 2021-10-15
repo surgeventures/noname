@@ -1,5 +1,5 @@
 import { Model, ORM, QuerySet } from "../..";
-import { AnyModel } from '../../Model';
+import { AnyModel, ModelClassMap } from '../../Model';
 import { ModelId, Relations, SessionBoundModel, SessionWithBoundModels, TargetRelationship, SourceRelationship, ValidateSchema } from "../../types";
 import { createSelector } from "../..";
 import { createSelector as createReselectSelector } from "reselect";
@@ -32,6 +32,78 @@ const createTimeLog = (
 const randomName = (): string => crypto.randomBytes(16).toString("hex");
 const randomInt = (max: number): number => {
   return Math.floor(Math.random() * max);
+}
+
+const assignEntities1ToN = <Schema extends ModelClassMap>(session: Schema, from: keyof Schema, to: keyof Schema, descriptorName: string) => {
+  const {[from]: SourceModel, [to]: TargetModel} = session;
+  const sourceCount = SourceModel.count();
+  const targetCount = TargetModel.count();
+
+  if (sourceCount === 0 || targetCount === 0) {
+    throw Error('Entities are not created');
+  }
+  const sourceModels = SourceModel.all().toModelArray();
+  let sourceIdx = 0;
+  let targetIdx = 0;
+
+  while (sourceIdx < sourceCount) {
+    if (targetIdx >= targetCount) {
+      targetIdx = 0;
+    }
+    sourceModels[sourceIdx].update({ [descriptorName]: targetIdx } as any)
+    targetIdx += 1;
+    sourceIdx += 1;
+  }
+};
+
+const assignEntitiesNtoM = <Schema extends ModelClassMap>(session: SessionWithBoundModels<Schema>, from: keyof Schema, to: keyof Schema, descriptorName: string) => {
+  const {[from]: SourceModel, [to]: TargetModel} = session;
+  const sourceCount = SourceModel.count();
+  const targetCount = TargetModel.count();
+
+  if (sourceCount === 0 || targetCount === 0) {
+    throw Error('Entities are not created');
+  }
+
+  const sourceModels = SourceModel.all().toModelArray();
+  const targetModelsIds = TargetModel.all().toModelArray().map(model => model.id);
+
+  sourceModels.forEach(model => {
+    model.update({ [descriptorName]: targetModelsIds } as any)
+  })
+};
+
+const assignEntities1to1 = <Schema extends ModelClassMap>(session: SessionWithBoundModels<Schema>, from: keyof Schema, to: keyof Schema, propertyDescriptorName: string) => {
+  const {[from]: SourceModel, [to]: TargetModel} = session;
+  const sourceCount = SourceModel.count();
+  const targetCount = TargetModel.count();
+
+  if (sourceCount === 0 || sourceCount !== targetCount) {
+    throw Error('Source and target entities count should be equal and different from 0');
+  }
+
+  const sourceModels = SourceModel.all().toModelArray();
+  sourceModels.forEach((model, idx) => {
+    model.update({ [propertyDescriptorName]: idx } as any)
+  })
+}
+
+const setupSession = <Schema extends ModelClassMap>(models: Schema[keyof Schema][]) => {
+  const orm = new ORM<Schema>();
+  orm.register(...models);
+  const session = orm.session(orm.getEmptyState());
+
+  return { session, orm };
+}
+
+const createEntities = (model: typeof AnyModel, amount: number, props: {} = {}) => {
+  for (let i = 0; i < amount; ++i) {
+    model.create({
+      id: i,
+      name: randomName(),
+      ...props,
+    });
+  }
 }
 
 describe("Big Data Test", () => {
@@ -425,63 +497,7 @@ describe("Accessors and models registration performance", () => {
     }
   }
 
-  const setupSession = (models: (typeof AnyModel)[]) => {
-    const orm = new ORM();
-    orm.register(...models);
-    const session = orm.session(orm.getEmptyState()) as unknown as SessionWithBoundModels<Schema>;
-
-    return { session };
-  }
-
-  const createEntities = (model: typeof AnyModel, amount: number) => {
-    for (let i = 0; i < amount; ++i) {
-      model.create({
-        id: i,
-        name: randomName(),
-      });
-    }
-  }
-
-  const assignEntities1ToN = (session: Schema, from: keyof Schema, to: keyof Schema, descriptorName: string) => {
-    const {[from]: SourceModel, [to]: TargetModel} = session;
-    const sourceCount = SourceModel.count();
-    const targetCount = TargetModel.count();
-
-    if (sourceCount === 0 || targetCount === 0) {
-      throw Error('Entities are not created');
-    }
-    const sourceModels = SourceModel.all().toModelArray();
-    let sourceIdx = 0;
-    let targetIdx = 0;
-
-    while (sourceIdx < sourceCount) {
-      if (targetIdx >= targetCount) {
-        targetIdx = 0;
-      }
-      sourceModels[sourceIdx].update({ [descriptorName]: targetIdx })
-      targetIdx += 1;
-      sourceIdx += 1;
-    }
-  };
-
-  const assignEntitiesNtoM = (session: Schema, from: keyof Schema, to: keyof Schema, descriptorName: string) => {
-    const {[from]: SourceModel, [to]: TargetModel} = session;
-    const sourceCount = SourceModel.count();
-    const targetCount = TargetModel.count();
-
-    if (sourceCount === 0 || targetCount === 0) {
-      throw Error('Entities are not created');
-    }
-
-    const sourceModels = SourceModel.all().toModelArray();
-    const targetModelsIds = TargetModel.all().toModelArray().map(model => (model as any).id as number);
-
-    sourceModels.forEach(model => {
-      model.update({ [descriptorName]: targetModelsIds })
-    })
-  };
-
-  const createDb = (session: Schema) => {
+  const createDb = <Schema extends ModelClassMap>(session: SessionWithBoundModels<Schema>) => {
     createEntities(session.Location, 400);
     createEntities(session.Employee, 200);
     createEntities(session.Resource, 100);
@@ -511,7 +527,7 @@ describe("Accessors and models registration performance", () => {
         registry.clear();
 
         return measureMs(() => {
-          setupSession([...Object.values(getTestModels()), ...createModelsList(repsNumber)]);
+          setupSession<Schema>([...Object.values(getTestModels()), ...createModelsList(repsNumber) as any]);
         });
       })
       .map((ms) => ms / 1000);
@@ -531,7 +547,7 @@ describe("Accessors and models registration performance", () => {
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
     const n = 10;
     const repsNumber = 8000;
-    const { session } = setupSession(models);
+    const { session } = setupSession<Schema>(models);
 
     const measurements = nTimes(n)
       .map(() => measureMs(() => {
@@ -554,7 +570,7 @@ describe("Accessors and models registration performance", () => {
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
     const n = 10;
     const repsNumber = 800;
-    const { session } = setupSession(models);
+    const { session } = setupSession<Schema>(models);
     createDb(session);
 
     const measurements = nTimes(n)
@@ -580,7 +596,7 @@ describe("Accessors and models registration performance", () => {
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
     const n = 10;
     const repsNumber = 800;
-    const { session } = setupSession(models);
+    const { session } = setupSession<Schema>(models);
     createDb(session);
 
     const measurements = nTimes(n)
@@ -606,7 +622,7 @@ describe("Accessors and models registration performance", () => {
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
     const n = 10;
     const repsNumber = 800;
-    const { session } = setupSession(models);
+    const { session } = setupSession<Schema>(models);
     createDb(session);
 
     const measurements = nTimes(n)
@@ -632,7 +648,7 @@ describe("Accessors and models registration performance", () => {
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
     const n = 10;
     const repsNumber = 200;
-    const { session } = setupSession(models);
+    const { session } = setupSession<Schema>(models);
     createDb(session);
 
     const measurements = nTimes(n)
@@ -658,7 +674,7 @@ describe("Accessors and models registration performance", () => {
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
     const n = 10;
     const repsNumber = 200;
-    const { session } = setupSession(models);
+    const { session } = setupSession<Schema>(models);
     createDb(session);
 
     const measurements = nTimes(n)
@@ -684,7 +700,7 @@ describe("Accessors and models registration performance", () => {
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
     const n = 10;
     const repsNumber = 200;
-    const { session } = setupSession(models);
+    const { session } = setupSession<Schema>(models);
     createDb(session);
 
     const measurements = nTimes(n)
@@ -1063,84 +1079,14 @@ describe("Selectors performance", () => {
     );
   }
 
-  const createEntities = (model: typeof AnyModel, props: any, amount: number) => {
-    for (let i = 0; i < amount; ++i) {
-      model.create({ id: i, ...props });
-    }
-  }
-
-  const assignEntities1ToN = (session: CustomSession, from: keyof Schema, to: keyof Schema, descriptorName: string) => {
-    const {[from]: SourceModel, [to]: TargetModel} = session;
-    const sourceCount = SourceModel.count();
-    const targetCount = TargetModel.count();
-
-    if (sourceCount === 0 || targetCount === 0) {
-      throw Error('Entities are not created');
-    }
-    const sourceModels = SourceModel.all().toModelArray();
-    let sourceIdx = 0;
-    let targetIdx = 0;
-
-    while (sourceIdx < sourceCount) {
-      if (targetIdx >= targetCount) {
-        targetIdx = 0;
-      }
-      sourceModels[sourceIdx].update({ [descriptorName]: targetIdx })
-      targetIdx += 1;
-      sourceIdx += 1;
-    }
-  };
-
-  const assignEntitiesNtoM = (session: CustomSession, from: keyof Schema, to: keyof Schema, propertyDescriptorName: string) => {
-    const {[from]: SourceModel, [to]: TargetModel} = session;
-    const sourceCount = SourceModel.count();
-    const targetCount = TargetModel.count();
-
-    if (sourceCount === 0 || targetCount === 0) {
-      throw Error('Entities are not created');
-    }
-
-    const sourceModels = SourceModel.all().toModelArray();
-    const targetModelsIds = TargetModel.all().toModelArray().map(model => (model as any).id as number);
-    sourceModels.forEach(model => {
-      model.update({ [propertyDescriptorName]: targetModelsIds })
-    })
-  };
-
-  const assignEntities1to1 = (session: CustomSession, from: keyof Schema, to: keyof Schema, propertyDescriptorName: string) => {
-    const {[from]: SourceModel, [to]: TargetModel} = session;
-    const sourceCount = SourceModel.count();
-    const targetCount = TargetModel.count();
-
-    if (sourceCount === 0 || sourceCount !== targetCount) {
-      throw Error('Source and target entities count should be equal and different from 0');
-    }
-
-    const sourceModels = SourceModel.all().toModelArray();
-    sourceModels.forEach((model, idx) => {
-      model.update({ [propertyDescriptorName]: idx })
-    })
-  }
-
-  const setupSession = (models: Schema[keyof Schema][]) => {
-    const orm = new ORM<Schema>();
-    orm.register(...models);
-    const session = orm.session(orm.getEmptyState());
-
-    return { session, orm };
-  }
-
   const createDb = (session: CustomSession) => {
-    createEntities(session.Room, {
-      name: randomName(),
-    }, 800);
-    createEntities(session.Location, {
+    createEntities(session.Room, 800);
+    createEntities(session.Location, 400, {
       displayNewAddress: true,
-      name: randomName(),
       sortingId: randomInt(400),
       services: [randomName(), randomName(), randomName()]
-    }, 400);
-    createEntities(session.LocationAddress, {
+    });
+    createEntities(session.LocationAddress, 400, {
       apartmentSuite: randomName(),
       cityName: randomName(),
       countryCode: randomName(),
@@ -1153,9 +1099,8 @@ describe("Selectors performance", () => {
       region1: randomName(),
       region2: randomName(),
       streetAddress: randomName(),
-    }, 400);
-    createEntities(session.Employee, {
-      name: randomName(),
+    });
+    createEntities(session.Employee, 200, {
       firstName: randomName(),
       lastName: randomName(),
       providesServices: true,
@@ -1165,23 +1110,21 @@ describe("Selectors performance", () => {
       title: randomName(),
       calendarTipsReadAt: randomName(),
       confirmedAt: randomName(),
-    }, 200);
-    createEntities(session.NewBusinessType, {
+    });
+    createEntities(session.NewBusinessType, 200, {
       englishName: randomName(),
       name: randomName(),
       pluralName: randomName(),
       sortingId: randomInt(200),
-    }, 200);
-    createEntities(session.ServicePricingLevel, {
+    });
+    createEntities(session.ServicePricingLevel, 200, {
       duration: randomName(),
-      name: randomName(),
       price: randomName(),
       specialPrice: randomName(),
       priceType: randomName(),
       deletedAt: randomName(),
-    }, 200);
-    createEntities(session.Service, {
-      name: randomName(),
+    });
+    createEntities(session.Service, 100, {
       extraTimeInSeconds: randomInt(100),
       extraTimeType: randomName(),
       roomRequired: true,
@@ -1193,14 +1136,14 @@ describe("Selectors performance", () => {
       description: randomName(),
       gender: randomName(),
       voucherExpirationPeriod: randomName(),
-    }, 100);
+    });
 
-    assignEntities1ToN(session, 'Room', 'Location', 'location');
+    assignEntities1ToN<Schema>(session, 'Room', 'Location', 'location');
     assignEntitiesNtoM(session, 'Room', 'Service', 'services');
 
     assignEntitiesNtoM(session, 'Location', 'Employee', 'employees');
-    assignEntities1ToN(session, 'Location', 'NewBusinessType', 'primaryBusinessType');
-    assignEntities1ToN(session, 'ServicePricingLevel', 'Service', 'service');
+    assignEntities1ToN<Schema>(session, 'Location', 'NewBusinessType', 'primaryBusinessType');
+    assignEntities1ToN<Schema>(session, 'ServicePricingLevel', 'Service', 'service');
     assignEntitiesNtoM(session, 'Location', 'NewBusinessType', 'secondaryBusinessTypes');
     assignEntities1to1(session, 'Location', 'LocationAddress', 'address');
   }
@@ -1217,7 +1160,7 @@ describe("Selectors performance", () => {
     const maxSeconds = process.env.TRAVIS ? 13.5 : 1;
     const n = 10;
     const repsNumber = 400;
-    const { session, orm } = setupSession(models);
+    const { session, orm } = setupSession<Schema>(models);
     createDb(session);
 
     const measurements = nTimes(n)
