@@ -1,6 +1,6 @@
 import { many } from "..";
 import { AnyModel } from "../Model";
-import { ModelFromModelFields, ModelName, PossibleFieldKeys } from "../types";
+import { ModelClassTypeFromModelFields, ModelName, PossibleFieldKeys } from "../types";
 import { registerDescriptor } from "./utils";
 
 /**
@@ -20,8 +20,8 @@ import { registerDescriptor } from "./utils";
  * @param relatedName The name of key, you want to create backwards relation for.
  */
 export function ManyToMany<MClass extends AnyModel>(
-	toModelName: ModelName<ModelFromModelFields<MClass>>, 
-	relatedName?: PossibleFieldKeys<MClass, ModelFromModelFields<MClass>>
+	toModelName: ModelName<ModelClassTypeFromModelFields<MClass>>, 
+	relatedName?: PossibleFieldKeys<MClass, ModelClassTypeFromModelFields<MClass>>
 ) {
 	const manyDescriptor = registerDescriptor(many);
 	return manyDescriptor(toModelName, relatedName as string);	
