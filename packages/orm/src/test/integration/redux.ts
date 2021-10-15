@@ -6,7 +6,7 @@ import {
   Model,
 } from "../..";
 import { castTo } from "../../hacks";
-import { ModelId, OrmState, ReduxAction, Ref, SessionWithBoundModels, TableState } from "../../types";
+import { ModelId, OrmState, ReduxAction, Ref, SessionWithBoundModels, TableState, ValidateSchema } from "../../types";
 import {
   Schema,
   createTestModels,
@@ -328,7 +328,7 @@ describe("Redux integration", () => {
         static modelName = "CustomizedModel";
       }
 
-      type Schema = { CustomizedModel: typeof CustomizedModel };
+      type Schema = ValidateSchema<{ CustomizedModel: typeof CustomizedModel }>;
 
       const _orm = new ORM<Schema>();
       _orm.register(CustomizedModel);

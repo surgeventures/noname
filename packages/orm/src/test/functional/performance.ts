@@ -1,6 +1,6 @@
 import { Model, ORM, QuerySet } from "../..";
 import { AnyModel } from '../../Model';
-import { ModelId, Relations, SessionBoundModel, SessionWithBoundModels, TargetRelationship, SourceRelationship } from "../../types";
+import { ModelId, Relations, SessionBoundModel, SessionWithBoundModels, TargetRelationship, SourceRelationship, ValidateSchema } from "../../types";
 import { createSelector } from "../..";
 import { createSelector as createReselectSelector } from "reselect";
 import { measureMs, nTimes, avg, round } from "../helpers";
@@ -41,7 +41,7 @@ describe("Big Data Test", () => {
       name: string;
     }
     class Item extends Model<typeof Item, ItemDescriptors> implements ItemDescriptors {
-      static modelName = "Location" as const;
+      static modelName = "Item" as const;
 
       @Attribute()
       public id: ModelId;
@@ -53,9 +53,9 @@ describe("Big Data Test", () => {
     return { Item };
   }
 
-  type Schema = {
+  type Schema = ValidateSchema<{
     Item: ReturnType<typeof createModel>['Item'];
-  }
+  }>;
   type ExtendedSession = SessionWithBoundModels<Schema>;
 
   let orm: ORM<Schema>;
@@ -186,10 +186,10 @@ describe("Many-to-many relationship performance", () => {
   }
 
 
-  type Schema = {
+  type Schema = ValidateSchema<{
     Child: ReturnType<typeof createModels>['Child'];
     Parent: ReturnType<typeof createModels>['Parent'];
-  }
+  }>;
 
   let orm: ORM<Schema>;
   let session: SessionWithBoundModels<Schema>;
@@ -323,11 +323,11 @@ describe("Many-to-many relationship performance", () => {
 describe("Accessors and models registration performance", () => {
   const logs: string[] = [];
   
-  type Schema = {
+  type Schema = ValidateSchema<{
     Location: ReturnType<typeof getTestModels>['Location'];
     Employee: ReturnType<typeof getTestModels>['Employee'];
     Resource: ReturnType<typeof getTestModels>['Resource'];
-  }
+  }>;
   let models: Schema[keyof Schema][] = [];
   
   const createModelsList = (amount: number) => {
@@ -968,7 +968,7 @@ describe("Selectors performance", () => {
   }
 
 
-  type Schema = {
+  type Schema = ValidateSchema<{
     Room: ReturnType<typeof getTestModels>['Room'];
     Service: ReturnType<typeof getTestModels>['Service'];
     ServicePricingLevel: ReturnType<typeof getTestModels>['ServicePricingLevel'];
@@ -976,7 +976,7 @@ describe("Selectors performance", () => {
     Employee: ReturnType<typeof getTestModels>['Employee'];
     LocationAddress: ReturnType<typeof getTestModels>['LocationAddress'];
     NewBusinessType: ReturnType<typeof getTestModels>['NewBusinessType'];
-  };
+  }>;
 
   type CustomSession = SessionWithBoundModels<Schema>;
 

@@ -1,34 +1,29 @@
-import { ModelClassMap } from "../Model";
 import { attr, Attribute, OneToOne, ManyToMany, ForeignKey } from "..";
 
 export type Descriptors = Attribute | OneToOne | ManyToMany | ForeignKey;
 type DescriptorsMap<DescriptorTypes extends Descriptors> = { id: Attribute } & { [K: string]: DescriptorTypes }
 
-type Registry<
-    Schema extends ModelClassMap,
-    DescriptorTypes extends Descriptors = Descriptors,
-    Models extends keyof Schema = Extract<keyof Schema, Schema[keyof Schema]['modelName']>,
-> = { [Model in Models]: DescriptorsMap<DescriptorTypes> };
+type Registry<DescriptorTypes extends Descriptors = Descriptors> = { [K: string]: DescriptorsMap<DescriptorTypes> };
 
-export class ModelDescriptorsRegistry<Schema extends ModelClassMap> {
-  private static instance: ModelDescriptorsRegistry<any>;
-  public registry: Registry<Schema> = {} as Registry<Schema>;
+export class ModelDescriptorsRegistry {
+  private static instance: ModelDescriptorsRegistry;
+  public registry: Registry = {} as Registry;
 
   private constructor() { }
 
-  public static getInstance<Schema extends ModelClassMap>(): ModelDescriptorsRegistry<Schema> {
+  public static getInstance(): ModelDescriptorsRegistry {
       if (!ModelDescriptorsRegistry.instance) {
         ModelDescriptorsRegistry.instance = new ModelDescriptorsRegistry();
       }
 
-      return ModelDescriptorsRegistry.instance as ModelDescriptorsRegistry<Schema>;
+      return ModelDescriptorsRegistry.instance;
   }
 
-  public add(modelName: keyof Registry<Schema>, descriptors: Registry<Schema>[keyof Registry<Schema>]): void {
+  public add<K extends string>(modelName: K, descriptors: Registry[K]): void {
     this.registry[modelName] = descriptors;
   }
 
-  public getDescriptors(modelName: keyof Registry<Schema>) {
+  public getDescriptors(modelName: string) {
     const descriptors = this.registry[modelName];
     if (!descriptors) {
       this.add(modelName, this.getDefaultDescriptors());
@@ -42,6 +37,6 @@ export class ModelDescriptorsRegistry<Schema extends ModelClassMap> {
   }
 
   public clear(): void {
-    this.registry = {} as Registry<Schema>;
+    this.registry = {} as Registry;
   }
 }

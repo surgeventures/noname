@@ -1,6 +1,6 @@
 import { ORM, Session, Model} from "../..";
 import { createTestModels, Schema } from "../helpers";
-import { ModelId, OrmState, Relations, TargetRelationship } from '../../types';
+import { ModelId, OrmState, Relations, TargetRelationship, ValidateSchema } from '../../types';
 import { Attribute, OneToOne } from "../../decorators";
 import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
@@ -14,10 +14,10 @@ describe("ORM", () => {
 
   describe("throws on invalid model declarations", () => {
     it("with multiple one-to-one fields to the same model without related name", () => {
-      type Schema = {
+      type Schema = ValidateSchema<{
         A: typeof A;
         B: typeof B;
-      }
+      }>;
       class A extends Model<typeof A> {
         static modelName = "A" as const;
       }
@@ -46,10 +46,10 @@ describe("ORM", () => {
     });
 
     it("with multiple foreign keys to the same model without related name", () => {
-      type Schema = {
+      type Schema = ValidateSchema<{
         A: typeof A;
         B: typeof B;
-      }
+      }>;
       class A extends Model<typeof A> {
         static modelName = "A" as const;
       }
@@ -79,10 +79,10 @@ describe("ORM", () => {
     });
 
     it("with multiple many-to-manys to the same model without related name", () => {
-      type Schema = {
+      type Schema = ValidateSchema<{
         A: typeof A;
         B: typeof B;
-      }
+      }>;
       class A extends Model<typeof A> {
         static modelName = "A" as const;
       }
@@ -112,7 +112,7 @@ describe("ORM", () => {
     });
 
     it("correctly throws an error when a model does not have a modelName property", () => {
-      type Schema = { A: typeof A };
+      type Schema = ValidateSchema<{ A: typeof A }>;
       class A extends Model<typeof A> {}
       const orm = new ORM<Schema>();
       expect(() => orm.register(A)).toThrow(

@@ -4,7 +4,7 @@ import Table from "../../db/Table";
 import { getBatchToken } from "../../utils";
 import { FILTER, CREATE, UPDATE, DELETE, SUCCESS } from "../../constants";
 import Model from "../../Model";
-import { ModelId, OrmState, Query, TableState, UpdateSpec, UpdateStatus } from "../../types";
+import { ModelId, OrmState, Query, TableState, UpdateSpec, UpdateStatus, ValidateSchema } from "../../types";
 import { Attribute } from "../../decorators";
 
 describe("createDatabase", () => {
@@ -30,10 +30,10 @@ describe("createDatabase", () => {
     @Attribute()
     public id: ModelId;
   }
-  type Schema = {
+  type Schema = ValidateSchema<{
     Book: typeof Book;
     Author: typeof Author;
-  }
+  }>;
 
   const schema = {
     tables: {

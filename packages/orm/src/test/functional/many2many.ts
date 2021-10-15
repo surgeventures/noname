@@ -3,7 +3,7 @@ import { Attribute, ManyToMany, ForeignKey } from "../../decorators";
 import { castTo } from "../../hacks";
 import { AnyModel, ModelClassMap } from "../../Model";
 import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
-import { ModelId, Relations, SessionWithBoundModels, TargetRelationship, Ref, SourceRelationship, SessionBoundModel } from "../../types";
+import { ModelId, Relations, SessionWithBoundModels, TargetRelationship, Ref, SourceRelationship, SessionBoundModel, ValidateSchema } from "../../types";
 import {
   createTestSessionWithData,
   ExtendedSession,
@@ -58,12 +58,12 @@ class Team extends Model<typeof Team, TeamDescriptors> implements TeamDescriptor
 
 describe("Many to many relationships", () => {
   describe("many-many forward/backward updates", () => {
-    type Schema = {
+    type Schema = ValidateSchema<{
       User: typeof User;
       Team: typeof Team;
       TeamUsers: typeof User;
       User2Team: typeof AnyModel;
-    }
+    }>
 
     type CustomSession = SessionWithBoundModels<Schema>;
     let session: CustomSession;
@@ -302,7 +302,7 @@ describe("Many to many relationships", () => {
         teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
-        static modelName = "User" as const;
+        static modelName = "UserModel" as const;
 
         @Attribute()
         public id: ModelId;
@@ -356,13 +356,13 @@ describe("Many to many relationships", () => {
         public teams: SourceRelationship<typeof Team, Relations.ForeignKey>;
       }
 
-      type Schema = {
+      type Schema = ValidateSchema<{
         UserModel: typeof UserModel;
-        User2TeamModel: typeof User2TeamModel;
+        User2Team: typeof User2TeamModel;
         TeamModel: typeof TeamModel;
         User: typeof User;
         Team: typeof Team;
-      }
+      }>;
 
       const orm = new ORM<Schema>();
       orm.register(User, Team, UserModel, TeamModel, User2TeamModel);
@@ -417,7 +417,7 @@ describe("Many to many relationships", () => {
       type TeamModelDescriptors = {
         id: ModelId;
         name: string;
-        users: TargetRelationship<User, Relations.ManyToMany>;
+        users?: TargetRelationship<User, Relations.ManyToMany>;
       }
 
       class TeamModel extends Model<typeof TeamModel, TeamModelDescriptors> implements TeamModelDescriptors {
@@ -430,18 +430,18 @@ describe("Many to many relationships", () => {
         public name: string;
       
         @ForeignKey<TeamModel>("User")
-        public users: TargetRelationship<User, Relations.ManyToMany>;
+        public users?: TargetRelationship<User, Relations.ManyToMany>;
       }
 
-      type Schema = {
+      type Schema = ValidateSchema<{
         User: typeof User;
-        Team: typeof Team;
+        Team: typeof TeamModel;
         UserModel: typeof UserModel;
-        User2TeamModel: typeof User2TeamModel;
-      }
+        User2Team: typeof User2TeamModel;
+      }>;
 
       const orm = new ORM<Schema>();
-      orm.register(User, Team, UserModel, TeamModel, User2TeamModel);
+      orm.register(User, UserModel, TeamModel, User2TeamModel);
       const session = orm.session(orm.getEmptyState());
 
       session.Team.create({ id: "t0", name: "team0" });
@@ -521,11 +521,11 @@ describe("Many to many relationships", () => {
         public links?: SourceRelationship<typeof User2TeamModel, Relations.ForeignKey>;
       }
 
-      type Schema = {
+      type Schema = ValidateSchema<{
         TeamModel: typeof TeamModel;
         User2TeamModel: typeof User2TeamModel;
         UserModel: typeof UserModel;
-      }
+      }>;
 
       const orm = new ORM<Schema>();
       orm.register(UserModel, TeamModel, User2TeamModel);
@@ -591,10 +591,10 @@ describe("Many to many relationships", () => {
         public name: string;;
       }
 
-      type Schema = {
+      type Schema = ValidateSchema<{
         UserModel: typeof UserModel;
         User2UserModel: typeof User2UserModel;
-      }
+      }>
 
       const orm = new ORM<Schema>();
       expect(() => {
@@ -740,10 +740,10 @@ describe("Many to many relationships", () => {
       public subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
     }
 
-    type Schema = {
+    type Schema = ValidateSchema<{
       User: typeof User;
       UserSubscribed: typeof User;
-    };
+    }>;
 
     let orm: ORM<Schema>;
     let session: SessionWithBoundModels<Schema>;

@@ -79,10 +79,10 @@ export default class ORM<
   }
 
   registerManyToManyModelsFor(model: Schema[keyof Schema]) {
-    const thisModelName = model.modelName as ModelName<Schema[keyof Schema]>;
-    const registry = ModelDescriptorsRegistry.getInstance<Schema>();
-    const fields = registry.getDescriptors(thisModelName);
-    Object.entries(fields).forEach(([fieldName, fieldInstance]) => {
+    const thisModelName = model.modelName;
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const descriptors = registry.getDescriptors(thisModelName);
+    Object.entries(descriptors).forEach(([fieldName, fieldInstance]) => {
       if (!(fieldInstance instanceof ManyToMany)) {
         return;
       }
@@ -162,18 +162,18 @@ export default class ORM<
 
   generateSchemaSpec() {
     const models = this.getModelClasses();
-    const tables = models.reduce<{ [K in ModelName<Schema[keyof Schema]>]: Schema[K] }>((spec, modelClass) => {
-      const tableName = modelClass.modelName as ModelName<Schema[keyof Schema]>;
+    const tables = models.reduce<{ [K in keyof Schema]: Schema[K] }>((spec, modelClass) => {
+      const tableName = modelClass.modelName;
       const tableSpec = modelClass._getTableOpts();
-      const registry = ModelDescriptorsRegistry.getInstance<Schema>();
+      const registry = ModelDescriptorsRegistry.getInstance();
       const descriptors = registry.getDescriptors(tableName);
-      spec[tableName] = Object.assign(
+      spec[tableName as keyof Schema] = Object.assign(
         {},
         { fields: descriptors },
         tableSpec
-      ) as unknown as Schema[ModelName<Schema[keyof Schema]>];
+      ) as unknown as Schema[keyof Schema];
       return spec;
-    }, {} as { [K in ModelName<Schema[keyof Schema]>]: Schema[K] });
+    }, {} as { [K in keyof Schema]: Schema[K] });
     return { tables };
   }
 
@@ -221,8 +221,8 @@ export default class ORM<
     models.forEach((model) => {
       if (!model.isSetUp) {
         const { modelName } = model;
-        const fields = registry.getDescriptors(modelName);
-        Object.entries(fields).forEach(([fieldName, field]) => {
+        const descriptors = registry.getDescriptors(modelName);
+        Object.entries(descriptors).forEach(([fieldName, field]) => {
           if (!this._isFieldInstalled(modelName, fieldName)) {
             this._installField(field, fieldName, model);
             this._setFieldInstalled(modelName, fieldName);

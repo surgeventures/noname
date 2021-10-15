@@ -29,6 +29,8 @@ export enum Relations {
   ManyToMany = "manyToMany"
 }
 
+export type ValidateSchema<Schema extends ModelClassMap> = Schema extends { [K in ModelName<Schema[keyof Schema]>]: Schema[K] } ? Schema : never;
+
 /**
  * Returns the type of the passed model class.
  */

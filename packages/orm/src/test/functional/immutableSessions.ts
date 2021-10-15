@@ -2,7 +2,7 @@ import deepFreeze from "deep-freeze";
 import { Model, QuerySet, ORM } from "../..";
 import { AnyModel } from "../../Model";
 import { castTo } from "../../hacks";
-import { OrmState, Ref, ModelId, SessionBoundModel } from "../../types";
+import { OrmState, Ref, ModelId, SessionBoundModel, ValidateSchema } from "../../types";
 import {
   Author,
   createTestSessionWithData,
@@ -702,9 +702,9 @@ describe("Immutable session", () => {
       public id?: ModelId;
     }
 
-    type Schema = {
+    type Schema = ValidateSchema<{
       DefaultFieldModel: typeof DefaultFieldModel;
-    }
+    }>;
 
     const _orm = new ORM<Schema>();
     _orm.register(DefaultFieldModel);

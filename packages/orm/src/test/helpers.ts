@@ -1,6 +1,6 @@
 import ORM from "../ORM";
-import Model from "../Model";
-import { ModelId, Relations, SessionWithBoundModels, SourceRelationship, TargetRelationship } from "../types";
+import Model, { AnyModel } from "../Model";
+import { ModelId, Relations, SessionWithBoundModels, SourceRelationship, TargetRelationship, ValidateSchema } from "../types";
 import { Attribute, ManyToMany, ForeignKey, OneToOne } from "../decorators";
 import { ModelDescriptorsRegistry } from "../modelDescriptorsRegistry";
 
@@ -278,7 +278,7 @@ export type MovieDescriptors = {
 };
 
 export class Movie extends Model<typeof Movie, MovieDescriptors> implements MovieDescriptors {
-  static modelName = "Movie" as const;
+  static modelName = "Moviee" as const;
 
   @Attribute()
   public id?: ModelId;
@@ -329,7 +329,7 @@ export function createTestModels() {
   };
 }
 
-export type Schema = {
+export type Schema = ValidateSchema<{
   Book: typeof Book;
   Cover: typeof Cover;
   Genre: typeof Genre;
@@ -338,10 +338,10 @@ export type Schema = {
   Movie: typeof Movie;
   Publisher: typeof Publisher;
 
-  BookGenres: typeof Model;
-  BookTags: typeof Model;
+  BookGenres: typeof AnyModel;
+  BookTags: typeof AnyModel;
   TagSubTags: typeof Tag;
-}
+}>
 
 export type ExtendedSession = SessionWithBoundModels<Schema>;
 

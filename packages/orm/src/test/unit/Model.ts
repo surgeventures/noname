@@ -1,6 +1,6 @@
 import { ORM, Model, QuerySet } from "../..";
 import { castTo } from "../../hacks";
-import { ModelId, SessionWithBoundModels } from "../../types";
+import { ModelId, SessionWithBoundModels, ValidateSchema } from "../../types";
 import { Attribute } from "../../decorators";
 import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
@@ -23,9 +23,9 @@ describe("Model", () => {
   };
 
   describe("static method", () => {
-    type Schema = {
+    type Schema = ValidateSchema<{
       UnitTestModel: ReturnType<typeof getTestModelClass>['Test'];
-    };
+    }>;
 
     let Test: ReturnType<typeof getTestModelClass>['Test'];
     let sessionMock: SessionWithBoundModels<Schema>;
@@ -138,9 +138,9 @@ describe("Model", () => {
       array?: any[];
       object?: {};
     }
-    type Schema = {
+    type Schema = ValidateSchema<{
       UnitTestModel: ReturnType<typeof getTestModelClass>['Test'];
-    }
+    }>;
     const getTestModelClass = () => {
       class Test extends Model<typeof Test, TestDescriptors> implements TestDescriptors {
         static modelName = "UnitTestModel" as const;

@@ -249,7 +249,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     const props: Record<string, AnyModel | ModelId | null | (AnyModel | ModelId | null)[]> = { ...userProps };
 
     const m2mRelations: Record<string, (AnyModel | ModelId)[]> = {} as Record<string, (AnyModel | ModelId)[]>;
-    const registry = ModelDescriptorsRegistry.getInstance<Record<ModelName<MClassType>, MClassType>>();
+    const registry = ModelDescriptorsRegistry.getInstance();
     const descriptors = registry.getDescriptors(this.modelName);
     const declaredFieldNames = Object.keys(descriptors);
     const declaredVirtualFieldNames = Object.keys(this.virtualFields);
@@ -259,7 +259,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
       const valuePassed = userProps.hasOwnProperty(key);
       if (!(field instanceof ManyToMany)) {
         if (valuePassed) {
-          const value = userProps[key];
+          const value = userProps[key as keyof RefWithFields<InstanceType<MClassType>>];
           props[key] = normalizeEntity(value);
         } else if ((field as Attribute).getDefault) {
           props[key] = (field as any).getDefault();
@@ -473,7 +473,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
   toString(): string {
     const ThisModel = this.getClass();
     const className = ThisModel.modelName;
-    const registry = ModelDescriptorsRegistry.getInstance<SingleMClassMap<MClassType>>();
+    const registry = ModelDescriptorsRegistry.getInstance();
     const descriptors = registry.getDescriptors(className);
     const fieldNames = Object.keys(descriptors);
     const fields = fieldNames
@@ -542,8 +542,8 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
 
     const mergeObj = { ...userMergeObj };
 
-    const registry = ModelDescriptorsRegistry.getInstance<SingleMClassMap<MClassType>>();
-    const fields = registry.getDescriptors(ThisModel.modelName);
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const descriptors = registry.getDescriptors(ThisModel.modelName);
     const { virtualFields } = ThisModel;
 
     const m2mRelations: Record<string, ModelId[]> = {} as Record<string, ModelId[]>;
@@ -553,10 +553,10 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     // and add the new ones.
     for (const mergeKey in mergeObj) {
       // eslint-disable-line no-restricted-syntax, guard-for-in
-      const isRealField = fields.hasOwnProperty(mergeKey);
+      const isRealField = descriptors.hasOwnProperty(mergeKey);
 
       if (isRealField) {
-        const field = fields[mergeKey];
+        const field = descriptors[mergeKey];
 
         if (field instanceof ForeignKey || field instanceof OneToOne) {
           // update one-one/fk relations
@@ -657,10 +657,10 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
   _refreshMany2Many(relations: Record<string, (ModelId | AnyModel)[]>): void {
     const ThisModel = this.getClass();
     const { virtualFields, modelName } = ThisModel;
-    const registry = ModelDescriptorsRegistry.getInstance<SingleMClassMap<MClassType>>();
-    const fields = registry.getDescriptors(ThisModel.modelName);
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const descriptors = registry.getDescriptors(ThisModel.modelName);
     Object.keys(relations).forEach((name) => {
-      const reverse = !fields.hasOwnProperty(name);
+      const reverse = !descriptors.hasOwnProperty(name);
       const field = virtualFields[name];
       const values = relations[name];
 
