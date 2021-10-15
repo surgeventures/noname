@@ -152,7 +152,7 @@ type ExcludeUndefined<T> = Exclude<T, undefined>;
 /**
  * Optional ordering direction.
  */
-export type SortOrder = 'asc' | 'desc' | true | false;
+export type SortOrder = 'asc' | 'desc' | boolean;
 
 /**
  * Ordering clause.
