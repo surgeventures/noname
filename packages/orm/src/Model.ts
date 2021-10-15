@@ -8,7 +8,7 @@ import {
   objectShallowEquals,
   m2mName,
 } from "./utils";
-import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref, ModelName, SingleMClassMap } from "./types";
+import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
 import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";

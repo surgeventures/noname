@@ -1,6 +1,6 @@
 import ORM from "../ORM";
 import Model, { AnyModel } from "../Model";
-import { ModelId, Relations, SessionWithBoundModels, SourceRelationship, TargetRelationship, ValidateSchema } from "../types";
+import { ModelId, Relations, SessionWithBoundModels, SourceRelationship, TargetRelationship } from "../types";
 import { Attribute, ManyToMany, ForeignKey, OneToOne } from "../decorators";
 import { ModelDescriptorsRegistry } from "../modelDescriptorsRegistry";
 
@@ -329,7 +329,7 @@ export function createTestModels() {
   };
 }
 
-export type Schema = ValidateSchema<{
+export type Schema = {
   Book: typeof Book;
   Cover: typeof Cover;
   Genre: typeof Genre;
@@ -341,7 +341,7 @@ export type Schema = ValidateSchema<{
   BookGenres: typeof AnyModel;
   BookTags: typeof AnyModel;
   TagSubTags: typeof Tag;
-}>
+};
 
 export type ExtendedSession = SessionWithBoundModels<Schema>;
 

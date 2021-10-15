@@ -58,12 +58,12 @@ class Team extends Model<typeof Team, TeamDescriptors> implements TeamDescriptor
 
 describe("Many to many relationships", () => {
   describe("many-many forward/backward updates", () => {
-    type Schema = ValidateSchema<{
+    type Schema = {
       User: typeof User;
       Team: typeof Team;
       TeamUsers: typeof User;
       User2Team: typeof AnyModel;
-    }>
+    };
 
     type CustomSession = SessionWithBoundModels<Schema>;
     let session: CustomSession;
@@ -739,10 +739,10 @@ describe("Many to many relationships", () => {
       public subscribers?: SourceRelationship<typeof User, Relations.ManyToMany>;
     }
 
-    type Schema = ValidateSchema<{
+    type Schema = {
       User: typeof User;
       UserSubscribed: typeof User;
-    }>;
+    };
 
     let orm: ORM<Schema>;
     let session: SessionWithBoundModels<Schema>;
