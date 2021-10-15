@@ -3,7 +3,7 @@ import Model, { AnyModel, ModelClassMap } from "./Model";
 import { createDatabase as defaultCreateDatabase } from "./db";
 import { ForeignKey, ManyToMany, attr, Field } from "./fields";
 
-import { m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
+import { Values, m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
 import { DatabaseCreator } from "./db/Database";
 import { Database, OrmState, SessionWithBoundModels } from "./types";
 import { castTo } from "./hacks";
@@ -38,7 +38,7 @@ export default class ORM<
   Schema extends ModelClassMap,
 > {
   private readonly createDatabase: DatabaseCreator<Schema>;
-  readonly registry: Schema[keyof Schema][];
+  readonly registry: Values<Schema>[];
   readonly implicitThroughModels: typeof AnyModel[];
   private readonly installedFields: Record<string, Record<string, boolean>>;
   private db: Database<Schema>;
@@ -64,7 +64,7 @@ export default class ORM<
    * @param  {...Model} model - a {@link Model} class to register
    * @return {undefined}
    */
-  register(...models: ReadonlyArray<Schema[keyof Schema]>) {
+  register(...models: ReadonlyArray<Values<Schema>>) {
     models.forEach((model) => {
       if (model.modelName === undefined) {
         throw new Error("A model was passed that doesn't have a modelName set");
@@ -77,7 +77,7 @@ export default class ORM<
     });
   }
 
-  registerManyToManyModelsFor(model: Schema[keyof Schema]) {
+  registerManyToManyModelsFor(model: Values<Schema>) {
     const { fields } = model;
     const thisModelName = model.modelName;
 
@@ -156,7 +156,7 @@ export default class ORM<
   getModelClasses() {
     this._setupModelPrototypes(this.registry);
     this._setupModelPrototypes(this.implicitThroughModels);
-    return this.registry.concat(this.implicitThroughModels as Schema[keyof Schema][]);
+    return this.registry.concat(this.implicitThroughModels as Values<Schema>[]);
   }
 
   generateSchemaSpec() {
@@ -168,7 +168,7 @@ export default class ORM<
         {},
         { fields: modelClass.fields },
         tableSpec
-      ) as Schema[keyof Schema];
+      ) as Values<Schema>;
       return spec;
     }, {} as { [K in keyof Schema]: Schema[K] });
     return { tables };

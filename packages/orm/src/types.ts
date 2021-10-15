@@ -14,6 +14,7 @@ import Table from "./db/Table";
 import { AnyModel, ModelClassMap } from "./Model";
 import Session from "./Session";
 import QuerySet from "./QuerySet";
+import { Values } from "./utils";
 
 export type AnyObject = Record<string, any>;
 export type AnySchema = Record<string, typeof AnyModel>;
@@ -266,9 +267,9 @@ export interface Transaction {
  * A database definition parametrized by schema made of models types
  */
 export interface Database<Schema extends ModelClassMap> {
-  describe(modelName: keyof Schema): Table<Schema[keyof Schema]>;
+  describe(modelName: keyof Schema): Table<Values<Schema>>;
   getEmptyState(): OrmState<Schema>;
-  query<Payload extends object = {}>(query: Query<Schema, Payload>, state: OrmState<Schema>): { rows: Ref<InstanceType<Schema[keyof Schema]>>[] };
+  query<Payload extends object = {}>(query: Query<Schema, Payload>, state: OrmState<Schema>): { rows: Ref<InstanceType<Values<Schema>>>[] };
   update<Payload extends object = object>(
     updateSpec: UpdateSpec<Schema>,
     tx: Transaction,

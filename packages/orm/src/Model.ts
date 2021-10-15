@@ -7,6 +7,7 @@ import {
   arrayDiffActions,
   objectShallowEquals,
   m2mName,
+  Values,
 } from "./utils";
 import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
@@ -69,7 +70,7 @@ export default class Model<MClass extends typeof AnyModel = typeof AnyModel, MFi
   static isSetUp: boolean;
   static _session: SessionWithBoundModels<any>;
   _fields: ModelRefLike<MFieldMap>;
-  static reducer: <Schema extends AnySchema, ModelClassType extends Schema[keyof Schema]>(
+  static reducer: <Schema extends AnySchema, ModelClassType extends Values<Schema>>(
     action: ReduxAction<Ref<InstanceType<ModelClassType>>>,
     modelClass: ModelClassType,
     session: Session<Schema>

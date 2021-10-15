@@ -15,11 +15,11 @@ import {
 
 import Table from "./Table";
 import { ModelClassMap } from "../Model";
-import { Entries } from "../utils";
+import { Entries, Values } from "../utils";
 
 function replaceTableState<Schema extends ModelClassMap>(
   tableName: keyof Schema,
-  newTableState: TableState<Schema[keyof Schema]>,
+  newTableState: TableState<Values<Schema>>,
   tx: Transaction,
   state: OrmState<Schema>
 ): OrmState<Schema> {
@@ -44,21 +44,21 @@ function query<Schema extends ModelClassMap>(tables: TableMap<Schema>, querySpec
 
 function update<Schema extends ModelClassMap>(
   tables: TableMap<Schema>,
-  updateSpec: UpdateSpec<Schema, Ref<InstanceType<Schema[keyof Schema]>>>,
+  updateSpec: UpdateSpec<Schema, Ref<InstanceType<Values<Schema>>>>,
   tx: Transaction,
   state: OrmState<Schema>
-  ): { status: typeof SUCCESS; state: OrmState<Schema>; payload: Ref<InstanceType<Schema[keyof Schema]>> | Ref<InstanceType<Schema[keyof Schema]>>[] } {
+  ): { status: typeof SUCCESS; state: OrmState<Schema>; payload: Ref<InstanceType<Values<Schema>>> | Ref<InstanceType<Values<Schema>>>[] } {
   const { action, payload } = updateSpec;
 
   let tableName: keyof Schema;
-  let nextTableState: TableState<Schema[keyof Schema]>;
-  let resultPayload: Ref<InstanceType<Schema[keyof Schema]>> | Ref<InstanceType<Schema[keyof Schema]>>[];
+  let nextTableState: TableState<Values<Schema>>;
+  let resultPayload: Ref<InstanceType<Values<Schema>>> | Ref<InstanceType<Values<Schema>>>[];
 
   if (action === CREATE) {
     tableName = updateSpec.table!;
     const table = tables[tableName];
     const currTableState = state[tableName];
-    const result = table.insert(tx, currTableState, payload || {} as Ref<InstanceType<Schema[keyof Schema]>>);
+    const result = table.insert(tx, currTableState, payload || {} as Ref<InstanceType<Values<Schema>>>);
     nextTableState = result.state;
     resultPayload = result.created;
   } else {
@@ -100,7 +100,7 @@ export function createDatabase<Schema extends ModelClassMap>(schemaSpec: SchemaS
   const tables = (Object.entries(tableSpecs) as Entries<typeof tableSpecs>).reduce(
     (map, [tableName, tableSpec]) => ({
       ...map,
-      [tableName]: new Table<Schema[keyof Schema]>(tableSpec),
+      [tableName]: new Table<Values<Schema>>(tableSpec),
     }),
     {} as TableMap<Schema>
   );
