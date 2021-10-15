@@ -8,5 +8,5 @@ export function ManyToMany<MClass extends AnyModel>(
 	relatedName?: PossibleFieldKeys<MClass, ModelFromModelFields<MClass>>
 ) {
 	const manyDescriptor = wrapRegisterDescriptorFn(many);
-	return manyDescriptor(toModelName, relatedName);	
+	return manyDescriptor(toModelName, relatedName as string);	
 }

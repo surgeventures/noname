@@ -8,5 +8,5 @@ export function ForeignKey<MClass extends AnyModel>(
 	relatedName?: PossibleFieldKeys<MClass, ModelFromModelFields<MClass>>
 ) {
 	const fkDescriptor = wrapRegisterDescriptorFn(fk);
-	return fkDescriptor(toModelName, relatedName);
+	return fkDescriptor(toModelName, relatedName as string);
 }
