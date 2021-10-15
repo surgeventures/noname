@@ -1,10 +1,18 @@
-import { attr, Attribute, OneToOne, ManyToMany, ForeignKey } from "..";
+import { attr, Attribute } from "../fields";
+import { Descriptors } from '../types';
 
-export type Descriptors = Attribute | OneToOne | ManyToMany | ForeignKey;
-type DescriptorsMap<DescriptorTypes extends Descriptors> = { id: Attribute } & { [K: string]: DescriptorTypes }
+/**
+ * Represents a map with descriptors for a specific model
+ */
+type DescriptorsMap<DescriptorTypes extends Descriptors> = { id: Attribute } & { [DescriptorName: string]: DescriptorTypes }
+/**
+ * Stores descriptors maps for each registered model
+ */
+type Registry<DescriptorTypes extends Descriptors = Descriptors> = { [ModelName: string]: DescriptorsMap<DescriptorTypes> };
 
-type Registry<DescriptorTypes extends Descriptors = Descriptors> = { [K: string]: DescriptorsMap<DescriptorTypes> };
-
+/**
+ * A singleton storing descriptors for each registered model.
+ */
 export class ModelDescriptorsRegistry {
   private static instance: ModelDescriptorsRegistry;
   public registry: Registry = {} as Registry;

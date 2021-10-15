@@ -14,11 +14,17 @@ import Table from "./db/Table";
 import { AnyModel, ModelClassMap } from "./Model";
 import Session from "./Session";
 import QuerySet from "./QuerySet";
+import { Attribute, OneToOne, ManyToMany, ForeignKey } from "./fields";
 
 export type AnyObject = Record<string, any>;
 export type AnySchema = Record<string, typeof AnyModel>;
 
 export type ModelId = number | string;
+
+/**
+ * Defines possible descriptors defined on the ORM side
+ */
+export type Descriptors = Attribute | OneToOne | ManyToMany | ForeignKey;
 
 /**
  * Enumeration of possible relations used for defining interfaces with descriptors.

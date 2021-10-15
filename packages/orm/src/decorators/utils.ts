@@ -1,22 +1,27 @@
 import { Attribute } from '..';
 import { AttributeOptions, RelationalFieldOpts } from '../fields';
 import { AnyModel } from '../Model';
-import { ModelDescriptorsRegistry, Descriptors } from '../modelDescriptorsRegistry';
+import { ModelDescriptorsRegistry } from '../modelDescriptorsRegistry';
+import { Descriptors } from '../types';
 
+// Types of accepted descriptors
 type AttrsDescriptorFn = (opts: AttributeOptions) => Attribute;
-type RegularDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (toModelName: string, relatedName?: string) => DescriptorTypes;
-type ComplexDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (opts: RelationalFieldOpts) => DescriptorTypes;
+type BasicRelationalFieldDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (toModelName: string, relatedName?: string) => DescriptorTypes;
+type ComplexRelationalFieldDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (opts: RelationalFieldOpts) => DescriptorTypes;
 
-type A = (opts: AttributeOptions) => (target: AnyModel, propertyName: string) => void;
-type B = (toModelName: string, relatedName?: string) => (target: AnyModel, propertyName: string) => void;
-type C = (opts: RelationalFieldOpts) => (target: AnyModel, propertyName: string) => void;
+type TargetHandler = (target: AnyModel, propertyName: string) => void;
 
-export function wrapRegisterDescriptorFn(descriptorFn: AttrsDescriptorFn): A;
-export function wrapRegisterDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: RegularDescriptorFn<DescriptorTypes>): B;
-export function wrapRegisterDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: ComplexDescriptorFn<DescriptorTypes>): C;
-export function wrapRegisterDescriptorFn(descriptorFn: any) {
-	function registerDescriptor(arg1: AttributeOptions | RelationalFieldOpts | string, arg2?: string) {
-		return function register(target: AnyModel, propertyName: string): void {
+// Types of possible decorator factories
+type AttrDecoratorFactory = (opts: AttributeOptions) => TargetHandler;
+type BasicRelationalFieldDecoratorFactory = (toModelName: string, relatedName?: string) => TargetHandler;
+type ComplexRelationalFieldDecoratorFactory = (opts: RelationalFieldOpts) => TargetHandler;
+
+export function registerDescriptor(descriptorFn: AttrsDescriptorFn): AttrDecoratorFactory;
+export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: BasicRelationalFieldDescriptorFn<DescriptorTypes>): BasicRelationalFieldDecoratorFactory;
+export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: ComplexRelationalFieldDescriptorFn<DescriptorTypes>): ComplexRelationalFieldDecoratorFactory;
+export function registerDescriptor(descriptorFn: any) {
+	function register(arg1: AttributeOptions | RelationalFieldOpts | string, arg2?: string) {
+		return function target(target: AnyModel, propertyName: string): void {
 			const model = target.getClass();
 			const modelName = model.modelName;
 			const registry = ModelDescriptorsRegistry.getInstance();
@@ -28,5 +33,5 @@ export function wrapRegisterDescriptorFn(descriptorFn: any) {
 		}
 	}
 
-	return registerDescriptor;
+	return register;
 }
