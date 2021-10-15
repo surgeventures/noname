@@ -278,7 +278,7 @@ export type MovieDescriptors = {
 };
 
 export class Movie extends Model<typeof Movie, MovieDescriptors> implements MovieDescriptors {
-  static modelName = "Moviee" as const;
+  static modelName = "Movie" as const;
 
   @Attribute()
   public id?: ModelId;

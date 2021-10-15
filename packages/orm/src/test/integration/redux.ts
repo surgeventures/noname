@@ -325,7 +325,7 @@ describe("Redux integration", () => {
         name: string;
       }
       class CustomizedModel extends Model<typeof CustomizedModel, CustomizedModelDescriptors> {
-        static modelName = "CustomizedModel";
+        static modelName = "CustomizedModel" as const;
       }
 
       type Schema = ValidateSchema<{ CustomizedModel: typeof CustomizedModel }>;

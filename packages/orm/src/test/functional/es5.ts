@@ -10,7 +10,7 @@ describe("ES5 library code", () => {
       title: string;
     }
     class Book extends Model<typeof Book, BookDescriptors> implements BookDescriptors {
-      static modelName = "Book";
+      static readonly modelName = "Book";
 
       @Attribute()
       public id: ModelId;

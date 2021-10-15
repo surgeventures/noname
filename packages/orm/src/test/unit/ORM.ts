@@ -115,6 +115,7 @@ describe("ORM", () => {
       type Schema = ValidateSchema<{ A: typeof A }>;
       class A extends Model<typeof A> {}
       const orm = new ORM<Schema>();
+      //@ts-ignore
       expect(() => orm.register(A)).toThrow(
         "A model was passed that doesn't have a modelName set"
       );

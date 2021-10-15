@@ -29,7 +29,7 @@ export enum Relations {
   ManyToMany = "manyToMany"
 }
 
-export type ValidateSchema<Schema extends ModelClassMap> = Schema extends { [K in ModelName<Schema[keyof Schema]>]: Schema[K] } ? Schema : never;
+export type ValidateSchema<Schema extends ModelClassMap> = { [K in keyof Schema]: ModelName<Schema[K]> extends K ? Schema[K] : never };
 
 /**
  * Returns the type of the passed model class.

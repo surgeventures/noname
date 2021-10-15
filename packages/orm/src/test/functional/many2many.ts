@@ -434,14 +434,13 @@ describe("Many to many relationships", () => {
       }
 
       type Schema = ValidateSchema<{
-        User: typeof User;
         Team: typeof TeamModel;
-        UserModel: typeof UserModel;
+        User: typeof UserModel;
         User2Team: typeof User2TeamModel;
       }>;
 
       const orm = new ORM<Schema>();
-      orm.register(User, UserModel, TeamModel, User2TeamModel);
+      orm.register(UserModel, TeamModel, User2TeamModel);
       const session = orm.session(orm.getEmptyState());
 
       session.Team.create({ id: "t0", name: "team0" });
