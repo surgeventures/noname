@@ -4,10 +4,12 @@ import { ModelId, OrmState, Relations, TargetRelationship, ValidateSchema } from
 import { Attribute, OneToOne } from "../../decorators";
 import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
-const registry = ModelDescriptorsRegistry.getInstance();
-registry.clear()
-
 describe("ORM", () => {
+  beforeEach(() => {
+    const registry = ModelDescriptorsRegistry.getInstance();
+    registry.clear()
+  });
+
   it("constructor works", () => {
     new ORM();
   });
