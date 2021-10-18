@@ -2,7 +2,7 @@
   "compilerOptions": {
     "experimentalDecorators": true,
     "allowJs": true,
-    "declaration": true,
+    "declaration": false,
     "target": "es6",
     "module": "esnext",
     "esModuleInterop": true,
