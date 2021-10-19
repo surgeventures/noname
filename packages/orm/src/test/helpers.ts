@@ -277,7 +277,7 @@ export function createTestModels() {
     hasPremiered?: boolean;
     characters?: string[];
     meta?: {};
-    publisherId?: ModelId;
+    publisherId?: TargetRelationship<Publisher, Relations.ForeignKey>;
     publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
   };
   
@@ -302,14 +302,14 @@ export function createTestModels() {
     @Attribute()
     public meta?: {};
   
-    @Attribute()
-    public publisherId?: ModelId;
-  
+    
     @ForeignKey<Movie>({
       to: "Publisher",
       as: "publisher",
       relatedName: "movies",
     } as any)
+    public publisherId?: TargetRelationship<Publisher, Relations.ForeignKey>;
+  
     public publisher?: TargetRelationship<Publisher, Relations.ForeignKey>;
   }
 
