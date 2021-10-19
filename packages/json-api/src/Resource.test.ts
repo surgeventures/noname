@@ -1,3 +1,8 @@
+import {
+  JSONAPIDocument,
+  JSONAPIResource,
+  JSONAPIResourceAttributes
+} from "@fresha/noname-core";
 import Registry, { KeyTransforms } from "./Registry";
 import { Resource } from "./types";
 
@@ -277,8 +282,35 @@ describe("Resource", () => {
 
 describe("Resource.parse", () => {
   let registry: Registry;
+  const buildRelatedIncludeResource = ({
+    id,
+    attributes
+  }: {
+    id: string;
+    attributes: JSONAPIResourceAttributes;
+  }) => ({
+    type: "nested-child-type",
+    id,
+    attributes,
+    relationships: {
+      children: {
+        data: { type: "child-type", id: "11" }
+      }
+    }
+  });
 
-  const testData = {
+  const testDataIncludes: JSONAPIResource[] = [
+    {
+      type: "child-type",
+      id: "11",
+      relationships: {
+        parent: {
+          data: { type: "parent-type", id: "1" }
+        }
+      }
+    }
+  ];
+  const testData: JSONAPIDocument = {
     data: {
       type: "parent-type",
       id: "1",
@@ -288,21 +320,11 @@ describe("Resource.parse", () => {
         }
       }
     },
-    included: [
-      {
-        type: "child-type",
-        id: "11",
-        relationships: {
-          parent: {
-            data: { type: "parent-type", id: "1" }
-          }
-        }
-      }
-    ]
+    included: testDataIncludes
   };
 
   beforeEach(() => {
-    registry = new Registry();
+    registry = new Registry({ keyTransform: KeyTransforms.Kebab });
     registry.define("parent-type", {
       attributes: [],
       relationships: {
@@ -315,12 +337,24 @@ describe("Resource.parse", () => {
         parent: "parent-type"
       }
     });
+
+    registry.define("nested-child-type", {
+      attributes: ["some-attr"],
+      relationships: {
+        children: "child-type"
+      }
+    });
   });
 
   it("does not include resource type by default", () => {
     expect(registry.parse(testData)).toEqual({
       id: "1",
-      children: [{ id: "11", parent: "1" }]
+      children: [
+        {
+          id: "11",
+          parent: "1"
+        }
+      ]
     });
   });
 
@@ -328,8 +362,168 @@ describe("Resource.parse", () => {
     expect(registry.parse(testData, { typeAttr: "type_" })).toEqual({
       type_: "parent-type",
       id: "1",
-      children: [{ type_: "child-type", id: "11", parent: "1" }]
+      children: [
+        {
+          type_: "child-type",
+          id: "11",
+          parent: "1"
+        }
+      ]
     });
+  });
+
+  it("properly resolve single nested related resource", () => {
+    const parserOptions = { typeAttr: "type_" };
+    const parsed = registry.parse(
+      {
+        ...testData,
+        included: [
+          ...testDataIncludes,
+          buildRelatedIncludeResource({
+            id: "122",
+            attributes: {
+              "some-attr": "some attr value 1"
+            }
+          })
+        ]
+      },
+      parserOptions
+    );
+    const expected = {
+      type_: "parent-type",
+      id: "1",
+      children: [
+        {
+          type_: "child-type",
+          id: "11",
+          parent: "1",
+          nestedChildType: {
+            type_: "nested-child-type",
+            children: "11",
+            id: "122",
+            someAttr: "some attr value 1"
+          }
+        }
+      ]
+    };
+    expect(parsed).toEqual(expected);
+  });
+
+  it("properly resolve two nested related resources", () => {
+    const parserOptions = { typeAttr: "type_" };
+    const parsed = registry.parse(
+      {
+        ...testData,
+        included: [
+          ...testDataIncludes,
+          buildRelatedIncludeResource({
+            id: "122",
+            attributes: {
+              "some-attr": "some attr value 1"
+            }
+          }),
+          buildRelatedIncludeResource({
+            id: "123",
+            attributes: {
+              "some-attr": "some attr value 2"
+            }
+          })
+        ]
+      },
+      parserOptions
+    );
+    const expected = {
+      type_: "parent-type",
+      id: "1",
+      children: [
+        {
+          type_: "child-type",
+          id: "11",
+          parent: "1",
+          nestedChildType: [
+            {
+              type_: "nested-child-type",
+              children: "11",
+              id: "122",
+              someAttr: "some attr value 1"
+            },
+            {
+              type_: "nested-child-type",
+              children: "11",
+              id: "123",
+              someAttr: "some attr value 2"
+            }
+          ]
+        }
+      ]
+    };
+    expect(parsed).toEqual(expected);
+  });
+
+  it("properly resolve three nested related resources", () => {
+    const parsed = registry.parse({
+      ...testData,
+      included: [
+        ...testDataIncludes,
+        buildRelatedIncludeResource({
+          id: "122",
+          attributes: {
+            "some-attr": "some attr value 1"
+          }
+        }),
+        buildRelatedIncludeResource({
+          id: "123",
+          attributes: {
+            "some-attr": "some attr value 2"
+          }
+        }),
+        buildRelatedIncludeResource({
+          id: "124",
+          attributes: {
+            "some-attr": "some attr value 3"
+          }
+        })
+      ]
+    });
+    const expected = {
+      id: "1",
+      children: [
+        {
+          id: "11",
+          parent: "1",
+          nestedChildType: [
+            {
+              children: "11",
+              id: "122",
+              someAttr: "some attr value 1"
+            },
+            {
+              children: "11",
+              id: "123",
+              someAttr: "some attr value 2"
+            },
+            {
+              children: "11",
+              id: "124",
+              someAttr: "some attr value 3"
+            }
+          ]
+        }
+      ]
+    };
+    expect(parsed).toEqual(expected);
+  });
+
+  it("properly resolve missing resources", () => {
+    const parsed = registry.parse({
+      ...testData,
+      included: []
+    });
+    const expected = {
+      id: "1",
+      children: ["11"]
+    };
+    expect(parsed).toEqual(expected);
   });
 });
 
