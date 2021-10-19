@@ -2,13 +2,9 @@ import mapValues from "lodash/mapValues";
 import { normalizeEntity } from "./utils";
 
 import { UPDATE, DELETE, FILTER, EXCLUDE, ORDER_BY } from "./constants";
-import Model from "./Model";
-import { ModelData, ModelId, TableRow } from "./types";
+import { AnyModel } from "./Model";
+import { ModelConstructor, ModelId, QueryClause, Ref, SortIteratee, SortOrder, QuerySetConstructor, RefWithFields, SessionBoundModel } from "./types";
 import { castTo } from "./hacks";
-
-type QuerySetConstructor = {
-  new (modelClass: typeof Model, clauses?: any[], opts?: object): QuerySet;
-};
 
 /**
  * This class is used to build and make queries to the database
@@ -31,11 +27,11 @@ type QuerySetConstructor = {
  * QuerySet instances also return copies, so chaining filters doesn't
  * mutate the previous instances.
  */
-export default class QuerySet {
-  private modelClass: typeof Model;
-  private clauses: any[];
-  rows: TableRow[];
-  private _opts?: object;
+export default class QuerySet<MClassType extends typeof AnyModel = typeof AnyModel> {
+  public modelClass: MClassType;
+  private clauses: QueryClause[];
+  rows: Ref<InstanceType<MClassType>>[];
+  private _opts?: {};
   private _evaluated: boolean;
 
   /**
@@ -46,25 +42,25 @@ export default class QuerySet {
    * @param  {any[]} clauses - query clauses needed to evaluate the set.
    * @param {Object} [opts] - additional options
    */
-  constructor(modelClass: typeof Model, clauses?: any[], opts?: object) {
+  constructor(modelClass: MClassType, clauses?: QueryClause[], opts?: {}) {
     this.modelClass = modelClass;
     this.clauses = clauses || [];
     this._opts = opts;
   }
 
-  _new(clauses: any[], userOpts?: object) {
+  _new<Payload extends object>(clauses: QueryClause<Payload>[], userOpts?: {}): QuerySet<MClassType> {
     const opts = Object.assign({}, this._opts, userOpts);
-    return new (castTo<QuerySetConstructor>(this.constructor))(
+    return new (castTo<QuerySetConstructor<MClassType, Payload>>(this.constructor))(
       this.modelClass,
       clauses,
       opts
     );
   }
 
-  toString() {
+  toString(): string {
     this._evaluate();
     const contents = this.rows
-      .map(({ id }) => this.modelClass.withId(id)!.toString())
+      .map(({ id }) => this.modelClass.withId<typeof AnyModel>(id!)!.toString())
       .join("\n    - ");
     return `QuerySet contents:\n    - ${contents}`;
   }
@@ -76,7 +72,7 @@ export default class QuerySet {
    * @return {Object[]} references to the plain JS objects represented by
    *                    the QuerySet
    */
-  toRefArray() {
+  toRefArray(): Ref<InstanceType<MClassType>>[] {
     return this._evaluate();
   }
 
@@ -84,9 +80,12 @@ export default class QuerySet {
    * Returns an array of {@link Model} instances represented by the QuerySet.
    * @return {Model[]} model instances represented by the QuerySet
    */
-  toModelArray() {
-    const { modelClass: ModelClass } = this;
-    return this._evaluate().map((props) => new ModelClass(props));
+  toModelArray(): SessionBoundModel<InstanceType<MClassType>>[] {
+    const { modelClass } = this;
+    return this._evaluate().map((props) => {
+      const ModelClass = castTo<ModelConstructor<InstanceType<MClassType>>>(modelClass);
+      return new ModelClass(props);
+    });
   }
 
   /**
@@ -94,7 +93,7 @@ export default class QuerySet {
    *
    * @return {number} length of the QuerySet
    */
-  count() {
+  count(): number {
     this._evaluate();
     return this.rows.length;
   }
@@ -105,7 +104,7 @@ export default class QuerySet {
    *
    * @return {Boolean} `true` if the {@link QuerySet} instance contains entities, else `false`.
    */
-  exists() {
+  exists(): boolean {
     return Boolean(this.count());
   }
 
@@ -119,11 +118,12 @@ export default class QuerySet {
    *                           `index` in the {@link QuerySet} instance,
    *                           or undefined if the index is out of bounds.
    */
-  at(index: number) {
-    const { modelClass: ModelClass } = this;
+  at(index: number): SessionBoundModel<InstanceType<MClassType>> | undefined {
+    const { modelClass } = this;
 
     const rows = this._evaluate();
     if (index >= 0 && index < rows.length) {
+      const ModelClass = castTo<ModelConstructor<InstanceType<MClassType>>>(modelClass);
       return new ModelClass(rows[index]);
     }
 
@@ -134,7 +134,7 @@ export default class QuerySet {
    * Returns the {@link Model} instance at index 0 in the {@link QuerySet} instance.
    * @return {Model}
    */
-  first() {
+  first(): SessionBoundModel<InstanceType<MClassType>> | undefined {
     return this.at(0);
   }
 
@@ -142,7 +142,7 @@ export default class QuerySet {
    * Returns the {@link Model} instance at index `QuerySet.count() - 1`
    * @return {Model}
    */
-  last() {
+  last(): SessionBoundModel<InstanceType<MClassType>> | undefined {
     const rows = this._evaluate();
     return this.at(rows.length - 1);
   }
@@ -151,7 +151,7 @@ export default class QuerySet {
    * Returns a new {@link QuerySet} instance with the same entities.
    * @return {QuerySet} a new QuerySet with the same entities.
    */
-  all() {
+  all(): QuerySet<MClassType> {
     return this._new(this.clauses);
   }
 
@@ -161,7 +161,7 @@ export default class QuerySet {
    * @param  {Object} lookupObj - the properties to match objects with. Can also be a function.
    * @return {QuerySet} a new {@link QuerySet} instance with objects that passed the filter.
    */
-  filter(lookupObj: object | ((model: typeof Model) => true)): QuerySet {
+  filter(lookupObj: Partial<RefWithFields<InstanceType<MClassType>>> | ((row: RefWithFields<InstanceType<MClassType>>) => boolean)): QuerySet<MClassType> {
     /**
      * allow foreign keys to be specified as model instances,
      * transform model instances to their primary keys
@@ -174,7 +174,7 @@ export default class QuerySet {
     const filterDescriptor = {
       type: FILTER,
       payload: normalizedLookupObj,
-    };
+    } as const;
     /**
      * create a new QuerySet
      * including only rows matching the lookupObj
@@ -189,7 +189,7 @@ export default class QuerySet {
    * @param  {Object} lookupObj - the properties to unmatch objects with. Can also be a function.
    * @return {QuerySet} a new {@link QuerySet} instance with objects that did not pass the filter.
    */
-  exclude(lookupObj: object) {
+  exclude(lookupObj: Partial<RefWithFields<InstanceType<MClassType>>> | ((row: RefWithFields<InstanceType<MClassType>>) => boolean)): QuerySet<MClassType> {
     /**
      * allow foreign keys to be specified as model instances,
      * transform model instances to their primary keys
@@ -201,7 +201,7 @@ export default class QuerySet {
     const excludeDescriptor = {
       type: EXCLUDE,
       payload: normalizedLookupObj,
-    };
+    } as const;
 
     /**
      * create a new QuerySet
@@ -215,7 +215,7 @@ export default class QuerySet {
    * @private
    * @return {Array} rows corresponding to the QuerySet's clauses
    */
-  _evaluate() {
+  _evaluate(): Ref<InstanceType<MClassType>>[] {
     if (typeof this.modelClass.session === "undefined") {
       throw new Error(
         [
@@ -231,7 +231,7 @@ export default class QuerySet {
         table,
         clauses: this.clauses,
       };
-      this.rows = session.query(querySpec).rows;
+      this.rows = session.query(querySpec).rows as Ref<InstanceType<MClassType>>[];
       this._evaluated = true;
     }
     return this.rows;
@@ -253,13 +253,14 @@ export default class QuerySet {
    * @return {QuerySet} a new {@link QuerySet} with objects ordered by `iteratees`.
    */
   orderBy(
-    iteratees: string[] | ((model: ModelData) => boolean)[],
-    orders?: (boolean | "asc" | "desc")[]
-  ) {
+    iteratees: SortIteratee<InstanceType<MClassType>> | ReadonlyArray<SortIteratee<InstanceType<MClassType>>>,
+    orders?: SortOrder | ReadonlyArray<SortOrder>
+  ): QuerySet<MClassType>    
+ {
     const orderByDescriptor = {
       type: ORDER_BY,
       payload: [iteratees, orders],
-    };
+    } as const;
 
     /**
      * create a new QuerySet
@@ -276,7 +277,7 @@ export default class QuerySet {
    *                             queryset.
    * @return {undefined}
    */
-  update(mergeObj: object) {
+  update(mergeObj: Partial<Ref<InstanceType<MClassType>>>): void {
     const { session, modelName: table } = this.modelClass;
 
     session.applyUpdate({
@@ -295,11 +296,11 @@ export default class QuerySet {
    * Records a deletion of all the objects in this {@link QuerySet} instance.
    * @return {undefined}
    */
-  delete() {
+  delete(): void {
     const { session, modelName: table } = this.modelClass;
 
     this.toModelArray().forEach(
-      (model) => model._onDelete() // eslint-disable-line no-underscore-dangle
+      (model) => model._onDelete()
     );
 
     session.applyUpdate({
@@ -313,7 +314,7 @@ export default class QuerySet {
     this._evaluated = false;
   }
 
-  add: (...objs: (ModelId | Model)[]) => void;
-  remove: (...objs: (ModelId | Model)[]) => void;
+  add: <QSet extends QuerySet>(this: QSet, ...entities: (ModelId | (QSet extends QuerySet<infer MClassType> ? SessionBoundModel<InstanceType<MClassType>> : never))[]) => void;
+  remove: <QSet extends QuerySet>(this: QSet, ...entities: (ModelId | (QSet extends QuerySet<infer MClassType> ? SessionBoundModel<InstanceType<MClassType>> : never))[]) => void;
   clear: () => void;
 }

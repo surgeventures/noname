@@ -1,19 +1,20 @@
 import Session from "./Session";
-import Model from "./Model";
+import Model, { AnyModel, ModelClassMap } from "./Model";
 import { createDatabase as defaultCreateDatabase } from "./db";
 import { ForeignKey, ManyToMany, attr, Field } from "./fields";
 
-import { m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
+import { Values, m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
 import { DatabaseCreator } from "./db/Database";
-import { Database, ObjectMap, OrmState, TableSpec } from "./types";
+import { Database, OrmState, SessionWithBoundModels } from "./types";
+import { castTo } from "./hacks";
 
 /**
  * ORM instantiation opts.
  *
  * Enables customization of database creation.
  */
-export type ORMOpts = {
-  createDatabase: DatabaseCreator;
+export type ORMOpts<Schema extends ModelClassMap> = {
+  createDatabase: DatabaseCreator<Schema>;
 };
 
 const ORM_DEFAULTS = {
@@ -33,17 +34,19 @@ const ORM_DEFAULTS = {
  * Internally, this class handles generating a schema specification from models
  * to the database.
  */
-export default class ORM {
-  private readonly createDatabase: DatabaseCreator;
-  readonly registry: typeof Model[];
-  readonly implicitThroughModels: typeof Model[];
-  private readonly installedFields: ObjectMap<ObjectMap<boolean>>;
-  private db: Database;
+export default class ORM<
+  Schema extends ModelClassMap,
+> {
+  private readonly createDatabase: DatabaseCreator<Schema>;
+  readonly registry: Values<Schema>[];
+  readonly implicitThroughModels: typeof AnyModel[];
+  private readonly installedFields: Record<string, Record<string, boolean>>;
+  private db: Database<Schema>;
 
   /**
    * Creates a new ORM instance.
    */
-  constructor(opts?: ORMOpts) {
+  constructor(opts?: ORMOpts<Schema>) {
     const { createDatabase } = Object.assign({}, ORM_DEFAULTS, opts || {});
     this.createDatabase = createDatabase;
     this.registry = [];
@@ -61,7 +64,7 @@ export default class ORM {
    * @param  {...Model} model - a {@link Model} class to register
    * @return {undefined}
    */
-  register(...models: typeof Model[]) {
+  register(...models: ReadonlyArray<Values<Schema>>) {
     models.forEach((model) => {
       if (model.modelName === undefined) {
         throw new Error("A model was passed that doesn't have a modelName set");
@@ -74,7 +77,7 @@ export default class ORM {
     });
   }
 
-  registerManyToManyModelsFor(model: typeof Model) {
+  registerManyToManyModelsFor(model: Values<Schema>) {
     const { fields } = model;
     const thisModelName = model.modelName;
 
@@ -138,8 +141,8 @@ export default class ORM {
    * @throws If {@link Model} class is not found.
    * @return {Model} the {@link Model} class, if found
    */
-  get(modelName: string): typeof Model {
-    const allModels = this.registry.concat(this.implicitThroughModels);
+  get<K extends keyof Schema>(modelName: K): Schema[K] {
+    const allModels = this.registry.concat(this.implicitThroughModels as any) as Schema[K][] & AnyModel[];
     const found = Object.values(allModels).find(
       (model) => model.modelName === modelName
     );
@@ -147,27 +150,27 @@ export default class ORM {
     if (typeof found === "undefined") {
       throw new Error(`Did not find model ${modelName} from registry.`);
     }
-    return found;
+    return found as Schema[K];
   }
 
   getModelClasses() {
     this._setupModelPrototypes(this.registry);
     this._setupModelPrototypes(this.implicitThroughModels);
-    return this.registry.concat(this.implicitThroughModels);
+    return this.registry.concat(this.implicitThroughModels as Values<Schema>[]);
   }
 
   generateSchemaSpec() {
     const models = this.getModelClasses();
-    const tables = models.reduce<Record<string, TableSpec>>((spec, modelClass) => {
+    const tables = models.reduce<Schema>((spec, modelClass) => {
       const tableName = modelClass.modelName;
-      const tableSpec = modelClass._getTableOpts(); // eslint-disable-line no-underscore-dangle
-      spec[tableName] = Object.assign(
+      const tableSpec = modelClass._getTableOpts();
+      spec[tableName as keyof Schema] = Object.assign(
         {},
         { fields: modelClass.fields },
         tableSpec
-      ) as TableSpec;
+      ) as Values<Schema>;
       return spec;
-    }, {});
+    }, {} as Schema);
     return { tables };
   }
 
@@ -192,8 +195,8 @@ export default class ORM {
    * @param  {Object} state  - the state the database manages
    * @return {Session} a new {@link Session} instance
    */
-  session(state?: OrmState) {
-    return new Session(this, this.getDatabase(), state);
+  session(state?: OrmState<Schema>): SessionWithBoundModels<Schema> {
+    return new Session(this, this.getDatabase(), state) as SessionWithBoundModels<Schema>;
   }
 
   /**
@@ -202,14 +205,14 @@ export default class ORM {
    * @param  {Object} state  - the state the database manages
    * @return {Session} a new {@link Session} instance
    */
-  mutableSession(state?: OrmState) {
-    return new Session(this, this.getDatabase(), state, true);
+  mutableSession(state?: OrmState<Schema>): SessionWithBoundModels<Schema> {
+    return new Session(this, this.getDatabase(), state, true) as SessionWithBoundModels<Schema>; 
   }
 
   /**
    * @private
    */
-  _setupModelPrototypes(models: typeof Model[]) {
+  _setupModelPrototypes<Models extends typeof AnyModel[]>(models: Models) {
     models.forEach((model) => {
       if (!model.isSetUp) {
         const { fields, modelName } = model;
@@ -247,13 +250,13 @@ export default class ORM {
    * Installs a field on a model and its related models if necessary.
    * @private
    */
-  _installField(field: Field, fieldName: string, model: typeof Model) {
+  _installField(field: Field, fieldName: string, model: typeof AnyModel) {
     const FieldInstaller = field.installerClass;
     new FieldInstaller({
       field,
       fieldName,
       model,
-      orm: this,
+      orm: castTo<ORM<ModelClassMap>>(this),
     }).run();
   }
 }

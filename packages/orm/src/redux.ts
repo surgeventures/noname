@@ -1,9 +1,10 @@
-import { createSelectorCreator } from "reselect";
 import { Session } from ".";
+import { ModelClassMap } from './Model';
 
+import { Values } from "./utils";
 import { memoize } from "./memoize";
 import ORM from "./ORM";
-import { OrmState, ReduxAction } from "./types";
+import { OrmState, OrmSelector, Selector, ReduxAction, Ref } from "./types";
 
 /**
  * @module redux
@@ -13,7 +14,7 @@ import { OrmState, ReduxAction } from "./types";
  * Calls all models' reducers if they exist.
  * @return {undefined}
  */
-export function defaultUpdater(session: Session, action: ReduxAction) {
+export function defaultUpdater<Schema extends ModelClassMap>(session: Session<Schema>, action: ReduxAction<Ref<InstanceType<Values<Schema>>>>) {
   session.sessionBoundModels.forEach((modelClass) => {
     if (typeof modelClass.reducer === "function") {
       // This calls this.applyUpdate to update this.state
@@ -31,10 +32,10 @@ export function defaultUpdater(session: Session, action: ReduxAction) {
  * @param {Function} [updater] - the function updating the ORM state based on the given action.
  * @return {Function} reducer that will update the ORM state.
  */
-export function createReducer(orm: ORM, updater = defaultUpdater) {
-  return (state: OrmState | undefined, action: ReduxAction): OrmState => {
+export function createReducer<Schema extends ModelClassMap>(orm: ORM<Schema>, updater = defaultUpdater) {
+  return (state: OrmState<Schema> | undefined, action: ReduxAction<Ref<InstanceType<Values<Schema>>>>): OrmState<Schema> => {
     const session = orm.session(state || orm.getEmptyState());
-    updater(session, action);
+    updater<Schema>(session, action);
     return session.state;
   };
 }
@@ -90,14 +91,14 @@ export function createReducer(orm: ORM, updater = defaultUpdater) {
  *                              and the selector function.
  * @return {Function} memoized selector
  */
-export function createSelector(orm: ORM, ...args: any[]) {
-  if (args.length === 1) {
-    return memoize(args[0], undefined, orm);
-  }
-
-  // FIXME derive these types automatically
-  type TMemoize = <F extends Function>(func: F, option1: undefined, option2: ORM) => F;
-  type TCreateSelector = (...args: unknown[]) => (...args: unknown[]) => unknown;
-
-  return (createSelectorCreator(memoize as TMemoize, undefined, orm) as TCreateSelector)(...args);
+export function createSelector<
+  Result,
+  Schema extends ModelClassMap = any,
+  O extends ORM<Schema> = ORM<Schema>,
+  Args extends unknown[] = []
+>(
+  orm: O,
+  ormStateSelector: OrmSelector<O extends ORM<infer S> ? S : never, Result, Args>,
+): Selector<O extends ORM<infer S> ? S : never, Result, Args> {
+  return memoize(ormStateSelector, undefined, orm);
 }

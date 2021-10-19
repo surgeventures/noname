@@ -1,5 +1,5 @@
 import { BatchToken, getBatchToken } from "immutable-ops";
-import Model, { ModelClassMap } from "./Model";
+import { AnyModel, ModelClassMap} from "./Model";
 
 import { SUCCESS, UPDATE, DELETE } from "./constants";
 import ORM from "./ORM";
@@ -9,25 +9,30 @@ import {
   Query,
   UpdateSpec,
   ModelId,
-  TableRow,
-  WithForEach,
-  QueryClause,
-  ObjectMap,
-  ModelData,
+  Ref
 } from "./types";
-import { clauseFiltersByAttribute } from "./utils";
+import { clauseFiltersByAttribute, Values } from "./utils";
 import { castTo } from "./hacks";
 
-export default class Session {
-  readonly schema: ORM;
-  db: Database;
-  state: OrmState;
-  readonly initialState: OrmState;
+type WithForEach<T> = {
+  forEach: (cb: {
+    (elem: T): void;
+  }) => void;
+}
+
+type Data = { accessedInstances: Record<ModelId, boolean>, fullTableScanned: boolean };
+type ModelData<Schema extends ModelClassMap> = Record<keyof Schema, Data>
+
+export default class Session<Schema extends ModelClassMap = ModelClassMap> {
+  readonly schema: ORM<Schema>;
+  db: Database<Schema>;
+  state: OrmState<Schema>;
+  readonly initialState: OrmState<Schema>;
   readonly withMutations: boolean;
   private readonly batchToken: BatchToken;
-  private readonly modelData: ModelData;
-  private readonly models: typeof Model[];
-  sessionBoundModels: typeof Model[];
+  private readonly modelData: ModelData<Schema>;
+  private readonly models: Values<Schema>[];
+  sessionBoundModels: Values<Schema>[];
 
   /**
    * Creates a new Session.
@@ -39,9 +44,9 @@ export default class Session {
    *                                 mutated.
    */
   constructor(
-    schema: ORM,
-    db: Database,
-    state?: OrmState,
+    schema: ORM<Schema>,
+    db: Database<Schema>,
+    state?: OrmState<Schema>,
     withMutations: boolean = false,
     batchToken: BatchToken = null
   ) {
@@ -53,17 +58,17 @@ export default class Session {
     this.withMutations = !!withMutations;
     this.batchToken = batchToken || getBatchToken();
 
-    this.modelData = {};
+    this.modelData = {} as ModelData<Schema>;
 
     this.models = schema.getModelClasses();
 
-    this.sessionBoundModels = this.models.map((modelClass: typeof Model) => {
-      function SessionBoundModel(): typeof Model {
+    this.sessionBoundModels = this.models.map((modelClass) => {
+      function SessionBoundModel(): Values<Schema> {
         return Reflect.construct(
           modelClass,
           arguments,
           SessionBoundModel
-        ) as typeof Model; // eslint-disable-line prefer-rest-params
+        );
       }
       Reflect.setPrototypeOf(SessionBoundModel.prototype, modelClass.prototype);
       Reflect.setPrototypeOf(SessionBoundModel, modelClass);
@@ -72,20 +77,20 @@ export default class Session {
         get: () => SessionBoundModel,
       });
 
-      const result = castTo<typeof Model>(SessionBoundModel);
+      const result = castTo<Values<Schema>>(SessionBoundModel);
       result.connect(this);
       return result;
     });
   }
 
-  getDataForModel(modelName: string) {
+  getDataForModel(modelName: keyof Schema) {
     if (!this.modelData[modelName]) {
-      this.modelData[modelName] = {};
+      this.modelData[modelName] = {} as Data;
     }
     return this.modelData[modelName];
   }
 
-  markAccessed(modelName: string, modelIds: WithForEach<ModelId>) {
+  markAccessed(modelName: keyof Schema, modelIds: WithForEach<ModelId>) {
     const data = this.getDataForModel(modelName);
     if (!data.accessedInstances) {
       data.accessedInstances = {};
@@ -105,16 +110,16 @@ export default class Session {
           ...result,
           [modelName]: this.getDataForModel(modelName).accessedInstances,
         }),
-        {}
+        {} as Record<keyof Schema, Data['accessedInstances']>
       );
   }
 
-  markFullTableScanned(modelName: string) {
+  markFullTableScanned(modelName: keyof Schema) {
     const data = this.getDataForModel(modelName);
     data.fullTableScanned = true;
   }
 
-  get fullTableScannedModels() {
+  get fullTableScannedModels(): (keyof Schema)[] {
     return this.sessionBoundModels
       .filter(
         ({ modelName }) => !!this.getDataForModel(modelName).fullTableScanned
@@ -129,9 +134,9 @@ export default class Session {
    * @param {Object} update - the update object. Must have keys
    *                          `type`, `payload`.
    */
-  applyUpdate(updateSpec: UpdateSpec) {
+  applyUpdate<MClass extends AnyModel>(updateSpec: UpdateSpec<Schema, Partial<Ref<MClass>>>): Ref<MClass> {
     const tx = this._getTransaction(updateSpec);
-    const result = this.db.update(updateSpec, tx, this.state);
+    const result = this.db.update<Ref<MClass>>(updateSpec, tx, this.state);
     const { status, state, payload } = result;
 
     if (status !== SUCCESS) {
@@ -145,7 +150,9 @@ export default class Session {
     return payload;
   }
 
-  query(querySpec: Query) {
+  query(querySpec: Query<Schema>): {
+    rows: Ref<InstanceType<Values<Schema>>>[];
+} {
     const result = this.db.query(querySpec, this.state);
 
     this._markAccessedByQuery(querySpec, result);
@@ -153,7 +160,7 @@ export default class Session {
     return result;
   }
 
-  _getTransaction(updateSpec: UpdateSpec) {
+  _getTransaction(updateSpec: UpdateSpec<Schema>) {
     const { withMutations } = this;
     const { action } = updateSpec;
     let { batchToken } = this;
@@ -163,17 +170,17 @@ export default class Session {
     return { batchToken, withMutations };
   }
 
-  _markAccessedByQuery(querySpec: Query, result: { rows: TableRow[] }) {
+  _markAccessedByQuery(querySpec: Query<Schema, Record<string, ModelId>>, result: { rows: Ref<InstanceType<Values<Schema>>>[] }) {
     const { table, clauses } = querySpec;
     const { rows } = result;
 
-    const { idAttribute } = castTo<ModelClassMap>(this)[table];
+    const { idAttribute } = castTo<Schema>(this)[table];
     const accessedIds = new Set<ModelId>(
-      rows.map((row: TableRow) => row[idAttribute])
+      rows.map((row) => row[idAttribute] as ModelId)
     );
 
     const anyClauseFilteredById = clauses.some(
-      (clause: QueryClause<ObjectMap<any>>) => {
+      (clause) => {
         if (!clauseFiltersByAttribute(clause, idAttribute)) {
           return false;
         }
@@ -181,7 +188,7 @@ export default class Session {
          * we previously knew which row we wanted to access,
          * so there was no need to scan the entire table
          */
-        const id = clause.payload[idAttribute];
+        const id = clause.payload![idAttribute];
         accessedIds.add(id);
         return true;
       }

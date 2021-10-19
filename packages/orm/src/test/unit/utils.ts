@@ -11,6 +11,7 @@ import {
 } from "../../utils";
 import { FILTER } from "../../constants";
 import { Model } from "../../index";
+import { QueryClause } from "../../types";
 
 describe("Utils", () => {
   describe("arrayDiffActions", () => {
@@ -18,27 +19,27 @@ describe("Utils", () => {
       const target = [2, 3];
       const source = [1, 2, 4];
 
-      const actions = arrayDiffActions(source, target) as ArrayDiffActionsResult;
-      expect(actions.add).toEqual([3]);
-      expect(actions.delete).toEqual([1, 4]);
+      const actions = arrayDiffActions(source, target);
+      expect(actions?.add).toEqual<ArrayDiffActionsResult['add']>([3]);
+      expect(actions?.delete).toEqual<ArrayDiffActionsResult['delete']>([1, 4]);
     });
 
     it("only add", () => {
       const target = [2, 3];
       const source = [2];
 
-      const actions = arrayDiffActions(source, target) as ArrayDiffActionsResult;
-      expect(actions.add).toEqual([3]);
-      expect(actions.delete).toEqual([]);
+      const actions = arrayDiffActions(source, target);
+      expect(actions?.add).toEqual<ArrayDiffActionsResult['add']>([3]);
+      expect(actions?.delete).toEqual<ArrayDiffActionsResult['delete']>([]);
     });
 
     it("only remove", () => {
       const target = [2, 3];
       const source = [2, 3, 4];
 
-      const actions = arrayDiffActions(source, target) as ArrayDiffActionsResult;
-      expect(actions.add).toEqual([]);
-      expect(actions.delete).toEqual([4]);
+      const actions = arrayDiffActions(source, target);
+      expect(actions?.add).toEqual<ArrayDiffActionsResult['add']>([]);
+      expect(actions?.delete).toEqual<ArrayDiffActionsResult['delete']>([4]);
     });
 
     it("identical", () => {
@@ -46,58 +47,55 @@ describe("Utils", () => {
       const source = [2, 3];
 
       const actions = arrayDiffActions(source, target);
-      expect(actions).toBe(null);
+      expect(actions).toBe<ReturnType<typeof arrayDiffActions>>(null);
     });
   });
 
   describe("m2mName", () => {
     it("returns combined string", () => {
-      expect(m2mName("", "")).toBe("");
-      expect(m2mName("ModelA", "")).toBe("ModelA");
-      expect(m2mName("Author", "books")).toBe("AuthorBooks");
-      expect(m2mName("mOVIE", "Actors")).toBe("mOVIEActors");
+      expect(m2mName("", "")).toBe<string>("");
+      expect(m2mName("ModelA", "")).toBe<string>("ModelA");
+      expect(m2mName("Author", "books")).toBe<string>("AuthorBooks");
+      expect(m2mName("mOVIE", "Actors")).toBe<string>("mOVIEActors");
     });
   });
 
   describe("m2mFromFieldName", () => {
     it("returns combined string", () => {
-      expect(m2mFromFieldName("")).toBe("fromId");
-      expect(m2mFromFieldName("ModelA")).toBe("fromModelAId");
-      expect(m2mFromFieldName("Author")).toBe("fromAuthorId");
-      expect(m2mFromFieldName("mOVIE")).toBe("frommOVIEId");
+      expect(m2mFromFieldName("")).toBe<string>("fromId");
+      expect(m2mFromFieldName("ModelA")).toBe<string>("fromModelAId");
+      expect(m2mFromFieldName("Author")).toBe<string>("fromAuthorId");
+      expect(m2mFromFieldName("mOVIE")).toBe<string>("frommOVIEId");
     });
   });
 
   describe("m2mToFieldName", () => {
     it("returns combined string", () => {
-      expect(m2mToFieldName("")).toBe("toId");
-      expect(m2mToFieldName("ModelA")).toBe("toModelAId");
-      expect(m2mToFieldName("Author")).toBe("toAuthorId");
-      expect(m2mToFieldName("mOVIE")).toBe("tomOVIEId");
+      expect(m2mToFieldName("")).toBe<string>("toId");
+      expect(m2mToFieldName("ModelA")).toBe<string>("toModelAId");
+      expect(m2mToFieldName("Author")).toBe<string>("toAuthorId");
+      expect(m2mToFieldName("mOVIE")).toBe<string>("tomOVIEId");
     });
   });
 
   describe("reverseFieldName", () => {
     it("returns combined string", () => {
-      expect(reverseFieldName("")).toBe("Set");
-      expect(reverseFieldName("ModelA")).toBe("modelaSet");
-      expect(reverseFieldName("Author")).toBe("authorSet");
-      expect(reverseFieldName("mOVIE")).toBe("movieSet");
+      expect(reverseFieldName("")).toBe<string>("Set");
+      expect(reverseFieldName("ModelA")).toBe<string>("modelaSet");
+      expect(reverseFieldName("Author")).toBe<string>("authorSet");
+      expect(reverseFieldName("mOVIE")).toBe<string>("movieSet");
     });
   });
 
   describe("normalizeEntity", () => {
-    let Book: typeof Model;
-    beforeEach(() => {
-      Book = class BookModel extends Model {
+    it("returns id of model instances", () => {
+      type BookDescriptors = {}
+      class Book extends Model<typeof Book, BookDescriptors> implements BookDescriptors {
         static get idAttribute() {
           return "title";
         }
-      };
-    });
-
-    it("returns id of model instances", () => {
-      const book = new Book({ title: "book title" });
+      }
+      const book = new Book({ title: "book title" } as any);
       expect(normalizeEntity(book)).toBe("book title");
     });
 
@@ -189,22 +187,21 @@ describe("Utils", () => {
       ).toBe(true);
     });
 
-    // it("false if type is not filter", () => {
-    //   expect(clauseFiltersByAttribute({})).toBe(false);
-    //   expect(clauseFiltersByAttribute({}, "")).toBe(false);
-    //   expect(clauseFiltersByAttribute({ type: "not filter" }, "")).toBe(false);
-    //   expect(
-    //     clauseFiltersByAttribute(
-    //       {
-    //         type: "not filter",
-    //         payload: {
-    //           someAttribute: "someValue",
-    //         },
-    //       },
-    //       "someAttribute"
-    //     )
-    //   ).toBe(false);
-    // });
+    it("false if type is not filter", () => {
+      expect(clauseFiltersByAttribute({} as QueryClause)).toBe(false);
+      expect(clauseFiltersByAttribute({ type: "not filter" as any })).toBe(false);
+      expect(
+        clauseFiltersByAttribute(
+          {
+            type: "not filter" as any,
+            payload: {
+              someAttribute: "someValue",
+            },
+          },
+          "someAttribute"
+        )
+      ).toBe(false);
+    });
 
     it("false if attribute value is not specified", () => {
       expect(
