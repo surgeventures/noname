@@ -44,7 +44,6 @@ describe("Model", () => {
       }
 
       expect(enumerableProps.modelName).toBe(true);
-      expect(enumerableProps.create).toBe(true);
     });
 
     it("session getter works correctly", () => {
