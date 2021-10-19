@@ -432,6 +432,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    *
    * @return {Object} a reference to the plain JS object in the store
    */
+  //@ts-ignore
   get ref(): Ref<this> {
     const ThisModel = this.getClass();
 
