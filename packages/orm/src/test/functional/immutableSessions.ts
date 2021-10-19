@@ -11,16 +11,16 @@ import {
 import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 import { Attribute } from "../../decorators";
 
+const registry = ModelDescriptorsRegistry.getInstance();
+
 describe("Immutable session", () => {
   let session: ExtendedSession;
   let state: OrmState<Schema>;
 
   beforeEach(() => {
-    const registry = ModelDescriptorsRegistry.getInstance();
     registry.clear()
     // Deep freeze state. This will raise an error if we
     // mutate the state.
-
     const result = createTestSessionWithData();
     session = result.session;
     state = result.state;

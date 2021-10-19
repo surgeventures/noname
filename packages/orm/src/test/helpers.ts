@@ -224,7 +224,7 @@ export function createTestModels() {
   type TagDescriptors = {
     id?: ModelId;
     name: string;
-    subTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
+    subTags?: TargetRelationship<Tag, Relations.ManyToMany>;
     parentTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
     books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
   };
@@ -241,8 +241,11 @@ export function createTestModels() {
   
     @Attribute()
     public name: string;
+
+    //@ts-ignore
+    @ManyToMany("this", "parentTags")
+    public subTags?: TargetRelationship<Tag, Relations.ManyToMany>;
   
-    public subTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
     public parentTags?: SourceRelationship<typeof Tag, Relations.ManyToMany>;
     public books?: SourceRelationship<typeof Book, Relations.ManyToMany>;
   }
