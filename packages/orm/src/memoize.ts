@@ -29,22 +29,22 @@ const rowsAreEqual = (
 
 const accessedModelInstancesAreEqual = <Schema extends ModelClassMap>(
   previous: MemoizeState<Schema>,
-  _ormState: OrmState<Schema>,
-  _orm: ORM<Schema>
+  ormState: OrmState<Schema>,
 ) => {
   const { accessedModelInstances } = previous;
 
   return Object.entries(accessedModelInstances).every(
     ([modelName, accessedInstances]) => {
-      const ormState2 = previous.ormState!;
+      const previousModelState = previous.ormState?.[modelName];
+      const modelState = ormState[modelName];
 
       // if the entire table has not been changed, we have nothing to do
-      if (ormState2[modelName] === ormState2[modelName]) {
+      if (previousModelState === modelState) {
         return true;
       }
 
-      const { itemsById: previousRows } = ormState2[modelName];
-      const { itemsById: rows } = ormState2[modelName];
+      const { itemsById: previousRows } = previousModelState!;
+      const { itemsById: rows } = modelState;
 
       const accessedIds = Object.keys(accessedInstances);
       return rowsAreEqual(accessedIds, previousRows, rows);
@@ -136,7 +136,7 @@ export function memoize<Schema extends ModelClassMap>(
       selectorWasCalledBefore &&
       argsAreEqual(previous.args!, args, argEqualityCheck) &&
       fullTableScannedModelsAreEqual(previous, ormState) &&
-      accessedModelInstancesAreEqual(previous, ormState, orm)
+      accessedModelInstancesAreEqual(previous, ormState)
     ) {
       /**
        * the instances that were accessed as well as
