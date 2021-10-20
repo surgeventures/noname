@@ -9,7 +9,7 @@ import {
   Schema,
   createTestModels,
 } from "../helpers";
-import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
 describe("Redux integration", () => {
   let orm: ORM<Schema>;

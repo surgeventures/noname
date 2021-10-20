@@ -1,1 +1,1 @@
-export { ModelDescriptorsRegistry } from './modelDescriptorsRegistry';
+export { ModelDescriptorsRegistry } from './ModelDescriptorsRegistry';

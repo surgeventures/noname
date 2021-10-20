@@ -5,7 +5,7 @@ import { createSelector } from "../..";
 import { createSelector as createReselectSelector } from "reselect";
 import { measureMs, nTimes, avg, round } from "../helpers";
 import { Attribute, ManyToMany, ForeignKey, OneToOne } from "../../decorators";
-import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
 const crypto = require("crypto");
 

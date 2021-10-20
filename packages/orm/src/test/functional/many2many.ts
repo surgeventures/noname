@@ -2,7 +2,7 @@ import { Model, QuerySet, ORM } from "../..";
 import { Attribute, ManyToMany, ForeignKey } from "../../decorators";
 import { castTo } from "../../hacks";
 import { AnyModel } from "../../Model";
-import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 import { ModelId, Relations, SessionWithBoundModels, TargetRelationship, Ref, SourceRelationship, SessionBoundModel, ValidateSchema } from "../../types";
 import {
   createTestSessionWithData,

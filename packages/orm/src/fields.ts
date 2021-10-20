@@ -18,7 +18,7 @@ import {
   reverseFieldErrorMessage,
 } from "./utils";
 import { castTo } from "./hacks";
-import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
 import { ModelId } from "./types";
 
 /**
