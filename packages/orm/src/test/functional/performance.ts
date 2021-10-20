@@ -1,6 +1,6 @@
 import { Model, ORM, QuerySet } from "../..";
 import { AnyModel, ModelClassMap } from '../../Model';
-import { ModelId, Relations, SessionBoundModel, SessionWithBoundModels, TargetRelationship, SourceRelationship, ValidateSchema } from "../../types";
+import { ModelId, Relations, SessionBoundModel, SessionWithBoundModels, TargetRelationship, SourceRelationship, ValidateSchema, OrmState } from "../../types";
 import { createSelector } from "../..";
 import { createSelector as createReselectSelector } from "reselect";
 import { measureMs, nTimes, avg, round } from "../helpers";
@@ -413,7 +413,7 @@ describe("Accessors and models registration performance", () => {
         static modelName = randomizedName;
         
         @Attribute()
-        public id: string;
+        public id: ModelId;
         
         @Attribute()
         public name: string;
@@ -439,18 +439,18 @@ describe("Accessors and models registration performance", () => {
   
   const getTestModels = () => {
     type LocationDescriptors = {
-      id: string;
+      id: ModelId;
       name: string;
       employees: TargetRelationship<Employee, Relations.ManyToMany>;
     };
     type EmployeeDescriptors = {
-      id: string;
+      id: ModelId;
       name: string;
       resource: TargetRelationship<Resource, Relations.ForeignKey>;
       locations: SourceRelationship<typeof Location, Relations.ManyToMany>;
     };
     type ResourceDescriptors = {
-      id: string;
+      id: ModelId;
       name: string;
       employees: SourceRelationship<typeof Employee, Relations.ForeignKey>;
     };
@@ -458,7 +458,7 @@ describe("Accessors and models registration performance", () => {
       static modelName = "Location" as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       @Attribute()
       public name: string;
@@ -470,7 +470,7 @@ describe("Accessors and models registration performance", () => {
       static modelName = "Employee" as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       @Attribute()
       public name: string;
@@ -484,7 +484,7 @@ describe("Accessors and models registration performance", () => {
       static modelName = "Resource" as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       @Attribute()
       public name: string;
@@ -730,13 +730,13 @@ describe("Selectors performance", () => {
 
   const getTestModels = () => {
     type RoomProps = {
-      id: string;
+      id: ModelId;
       name: string;
       location: TargetRelationship<Location, Relations.ForeignKey>;
       services: TargetRelationship<Service, Relations.ManyToMany>;
     }
     type ServiceProps = {
-      id: string;
+      id: ModelId;
       roomRequired: boolean;
       name: string;
       extraTimeInSeconds: string;
@@ -745,7 +745,7 @@ describe("Selectors performance", () => {
       pricingLevels: SourceRelationship<typeof ServicePricingLevel, Relations.ForeignKey>;
     }
     type ServicePricingLevelProps = {
-      id: string;
+      id: ModelId;
       duration: string;
       name: string;
       price: string;
@@ -755,7 +755,7 @@ describe("Selectors performance", () => {
       service: TargetRelationship<Service, Relations.ForeignKey>;
     }
     type LocationProps = {
-      id: string;
+      id: ModelId;
       deletedAt: string;
       isOnline: boolean;
       displayNewAddress: boolean;
@@ -769,7 +769,7 @@ describe("Selectors performance", () => {
       primaryBusinessType: TargetRelationship<NewBusinessType, Relations.ForeignKey>;
     };
     type EmployeeProps = {
-      id: string;
+      id: ModelId;
       appointmentColor: string;
       calendarTipsReadAt: string;
       confirmedAt: string;
@@ -778,11 +778,11 @@ describe("Selectors performance", () => {
       locations: SourceRelationship<typeof Location, Relations.ManyToMany>;
     };
     type LocationAddressProps = {
-      id: string;
+      id: ModelId;
       location: SourceRelationship<typeof Location, Relations.OneToOne>;
     };
     type NewBusinessTypeProps = {
-      id: string;
+      id: ModelId;
       englishName: string;
       name: string;
       pluralName: string;
@@ -795,7 +795,7 @@ describe("Selectors performance", () => {
       static modelName = 'Room' as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       @Attribute()
       public name: string;
@@ -811,7 +811,7 @@ describe("Selectors performance", () => {
       static modelName = 'Service' as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       @Attribute()
       public name: string;
@@ -833,7 +833,7 @@ describe("Selectors performance", () => {
       static modelName = 'ServicePricingLevel' as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       @Attribute()
       public duration: string;
@@ -863,7 +863,7 @@ describe("Selectors performance", () => {
 
         return {
           ...serviceRef,
-          ...this.ref as any,
+          ...this.ref,
           service: serviceRef,
           serviceName: serviceRef.name,
           serviceId: serviceRef.id,
@@ -876,7 +876,7 @@ describe("Selectors performance", () => {
       static modelName = 'Employee' as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       @Attribute()
       public appointmentColor: string;
@@ -900,7 +900,7 @@ describe("Selectors performance", () => {
       static modelName = 'LocationAddress' as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       public location: SourceRelationship<typeof Location, Relations.OneToOne>;
     }
@@ -909,7 +909,7 @@ describe("Selectors performance", () => {
       static modelName = 'NewBusinessType' as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       @Attribute()
       public englishName: string;
@@ -931,7 +931,7 @@ describe("Selectors performance", () => {
       static modelName = 'Location' as const;
 
       @Attribute()
-      public id: string;
+      public id: ModelId;
 
       @Attribute()
       public deletedAt: string;
@@ -967,7 +967,7 @@ describe("Selectors performance", () => {
 
       toObject() {
         return {
-          ...this.ref as any,
+          ...this.ref,
           rooms: this.rooms.toRefArray(),
         }
       }
@@ -1031,9 +1031,9 @@ describe("Selectors performance", () => {
 
     const getLocationRoomDict = createSelector(orm, (session) =>
       selectLocations(session).reduce((memo, location) => {
-        memo[location.id] = location.rooms?.map(({ id, name }: { id: string; name: string }) => ({ id, name }));
+        memo[location.id] = location.rooms?.map(({ id, name }) => ({ id, name }));
         return memo;
-      }, {} as Record<string, { id: string, name: string }[]>)
+      }, {} as Record<string, { id: ModelId, name: string }[]>)
     );
 
     const getServicePricingLevelRoomDict = createReselectSelector(
@@ -1042,24 +1042,30 @@ describe("Selectors performance", () => {
         return servicePricingLevels.reduce((memo, servicePricingLevel) => {
           if (servicePricingLevel.service.roomRequired) {
             const rooms = servicePricingLevel.rooms || [];
-            memo[servicePricingLevel.id] = rooms.map((r: any) => r.id);
+            memo[servicePricingLevel.id] = rooms.map(r => r.id);
           } else {
             memo[servicePricingLevel.id] = null;
           }
           return memo;
-        }, {} as Record<string, string[] | null>);
+        }, {} as Record<ModelId, ModelId[] | null>);
       }
     );
 
+    type PricingLevelRooms = { 
+      rooms: { id: ModelId; name: string; available: boolean }[]; 
+      defaultRoomId: ModelId | null; 
+      defaultAvailable?: boolean; 
+    }
+
     return createReselectSelector(
-      state => (getServicePricingLevelRoomDict as any)(state),
-      (state: any, { locationId }: { locationId: string }) => getLocationRoomDict(state)[locationId],
+      (state: OrmState<Schema>) => getServicePricingLevelRoomDict(state),
+      (state: OrmState<Schema>, { locationId }: { locationId: string }) => getLocationRoomDict(state)[locationId],
       (servicePricingLevelRooms, locationRooms) => {
         return Object.entries(servicePricingLevelRooms).reduce((memo, [splId, roomIds]) => {
           if (roomIds != null) {
             memo[splId] = locationRooms.reduce(
-              (submemo: any, room: any, index: number) => {
-                const available = (roomIds as string[]).includes(room.id);
+              (submemo, room, index) => {
+                const available = roomIds.includes(room.id);
                 submemo.rooms.push({
                   ...room,
                   available,
@@ -1071,11 +1077,11 @@ describe("Selectors performance", () => {
                 }
                 return submemo;
               },
-              { rooms: [], defaultRoomId: null },
+              { rooms: [], defaultRoomId: null } as PricingLevelRooms,
             );
           }
           return memo;
-        }, {} as any);
+        }, {} as Record<string, PricingLevelRooms>);
       }
     );
   }
