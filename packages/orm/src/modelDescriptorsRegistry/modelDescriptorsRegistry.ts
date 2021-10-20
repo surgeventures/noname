@@ -15,7 +15,7 @@ type Registry<DescriptorTypes extends Descriptors = Descriptors> = { [ModelName:
  */
 export class ModelDescriptorsRegistry {
   private static instance: ModelDescriptorsRegistry;
-  public registry: Registry = {} as Registry;
+  private registry: Registry = {} as Registry;
 
   private constructor() { }
 
@@ -42,6 +42,10 @@ export class ModelDescriptorsRegistry {
 
   public getDefaultDescriptors() {
     return { id: attr() };
+  }
+
+  public getRegistry(): Readonly<Registry> {
+    return this.registry;
   }
 
   public clear(): void {
