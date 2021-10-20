@@ -9,11 +9,9 @@ function addDescriptorsForTest(registry: ModelDescriptorsRegistry) {
 
 describe("ModelDescriptorsRegistry", () => {
 	const registry = ModelDescriptorsRegistry.getInstance();
+	registry.clear();
 
-	beforeEach(() => {
-		registry.clear();
-	});
-	afterAll(() =>{
+	afterEach(() =>{
 		registry.clear();
 	})
 
@@ -42,4 +40,15 @@ describe("ModelDescriptorsRegistry", () => {
 	it("gets descriptors with defaults for a given model name", () => {
 		expect(registry.getDescriptors(modelName)).toMatchInlineSnapshot();
 	});
+
+	it('enables to add descriptors with overwritten defaults', () => {
+		const descriptors = registry.getDescriptors(modelName);
+		expect(descriptors).toEqual({});
+
+		const getDefault = () => 'uuid';
+		registry.add(modelName, { id: attr({ getDefault }) });
+
+		const AttrClass = registry.getDescriptors(modelName).id;
+		expect(AttrClass.getDefault!()).toEqual(getDefault());
+	})
 });

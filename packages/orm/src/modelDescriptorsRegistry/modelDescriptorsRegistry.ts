@@ -28,19 +28,16 @@ export class ModelDescriptorsRegistry {
   }
 
   public add<K extends string>(modelName: K, descriptors: Registry[K]): void {
-    this.registry[modelName] = descriptors;
+    const defaultDescriptors = this.getDefaultDescriptors();
+    this.registry[modelName] = { ...defaultDescriptors, ...descriptors };
   }
 
   public getDescriptors(modelName: string) {
     const descriptors = this.registry[modelName];
-    if (!descriptors) {
-      this.add(modelName, this.getDefaultDescriptors());
-      return this.registry[modelName];
-    }
-    return descriptors;
+    return descriptors || {};
   }
 
-  public getDefaultDescriptors() {
+  private getDefaultDescriptors() {
     return { id: attr() };
   }
 
