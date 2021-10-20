@@ -388,7 +388,7 @@ describe("Many to many relationships", () => {
       type UserDescriptors = {
         id: ModelId;
         name: string;
-        teams: SourceRelationship<typeof User2Team, Relations.ForeignKey>;
+        teams: SourceRelationship<typeof User2Team, Relations.ManyToMany>;
       }
       class User extends Model<typeof User, UserDescriptors> implements UserDescriptors {
         static modelName = "User" as const;
@@ -399,7 +399,7 @@ describe("Many to many relationships", () => {
         @Attribute()
         public name: string;
 
-        public teams: SourceRelationship<typeof User2Team, Relations.ForeignKey>;
+        public teams: SourceRelationship<typeof User2Team, Relations.ManyToMany>;
       }
 
       type User2TeamDescriptors = {
@@ -435,7 +435,12 @@ describe("Many to many relationships", () => {
         @Attribute()
         public name: string;
       
-        @ForeignKey<Team>("User")
+        @ManyToMany<Team>({
+          to: 'User',
+          through: 'User2Team',
+          relatedName: 'teams',
+          throughFields: ['user', 'team'],
+      } as any)
         public users?: TargetRelationship<User, Relations.ManyToMany>;
       }
 
