@@ -1,8 +1,8 @@
 import deepFreeze from "deep-freeze";
-import { Model, QuerySet, ORM, attr } from "../..";
+import { Model, QuerySet, ORM } from "../..";
 import { AnyModel } from "../../Model";
 import { castTo } from "../../hacks";
-import { OrmState, Ref, ModelId, SessionBoundModel } from "../../types";
+import { OrmState, Ref, ModelId, SessionBoundModel, ValidateSchema } from "../../types";
 import {
   Author,
   createTestSessionWithData,
@@ -12,7 +12,11 @@ import {
   Schema,
   Publisher,
 } from "../helpers";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
+import { Attribute } from "../../decorators";
 
+const registry = ModelDescriptorsRegistry.getInstance();
+registry.clear()
 
 describe("Immutable session", () => {
   let session: ExtendedSession;
@@ -692,17 +696,15 @@ describe("Immutable session", () => {
     let returnId = 1;
 
     class DefaultFieldModel extends Model<typeof DefaultFieldModel, { id?: ModelId }> {
-      static modelName = "DefaultFieldModel";
-      static fields = {
-        id: attr({ getDefault: () => returnId }),
-      };
+      static modelName = "DefaultFieldModel" as const;
 
-      id?: ModelId;
+      @Attribute({ getDefault: () => returnId })
+      public id?: ModelId;
     }
 
-    type Schema = {
+    type Schema = ValidateSchema<{
       DefaultFieldModel: typeof DefaultFieldModel;
-    }
+    }>;
 
     const _orm = new ORM<Schema>();
     _orm.register(DefaultFieldModel);

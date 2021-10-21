@@ -19,6 +19,8 @@ import {
   Values,
 } from "./utils";
 import { castTo } from "./hacks";
+import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
+import { ModelId } from "./types";
 
 /**
  * Contains the logic for how fields on {@link Model}s work
@@ -243,7 +245,7 @@ export abstract class Field {
 }
 
 export type AttributeOptions = {
-  getDefault?: () => any;
+  getDefault?: () => ModelId;
 };
 
 /**
@@ -251,7 +253,7 @@ export type AttributeOptions = {
  */
 export class Attribute extends Field {
   opts: AttributeOptions;
-  getDefault: (() => any) | undefined;
+  getDefault: AttributeOptions['getDefault'];
 
   constructor(opts?: AttributeOptions) {
     super();
@@ -510,9 +512,11 @@ export class ManyToMany extends RelationalField {
     toModel: typeof AnyModel,
     throughModel: typeof AnyModel
   ): { from: string; to: string } {
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const descriptors = registry.getDescriptors(throughModel.modelName);
     if (this.throughFields) {
       const [fieldAName, fieldBName] = this.throughFields as [string, string];
-      const fieldA = throughModel.fields[fieldAName];
+      const fieldA = descriptors[fieldAName];
       return {
         to: fieldA.references(toModel) ? fieldAName : fieldBName,
         from: fieldA.references(toModel) ? fieldBName : fieldAName,
@@ -537,8 +541,8 @@ export class ManyToMany extends RelationalField {
      * and infer the directions from that
      */
     const throughModelFieldReferencing = (otherModel: typeof AnyModel) =>
-      Object.keys(throughModel.fields).find((someFieldName) =>
-        throughModel.fields[someFieldName].references(otherModel)
+      Object.keys(descriptors).find((someFieldName) =>
+        descriptors[someFieldName].references(otherModel)
       );
 
     return {

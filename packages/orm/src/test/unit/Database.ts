@@ -4,8 +4,8 @@ import Table from "../../db/Table";
 import { getBatchToken } from "../../utils";
 import { FILTER, CREATE, UPDATE, DELETE, SUCCESS } from "../../constants";
 import Model from "../../Model";
-import { ModelId, OrmState, Query, TableState, UpdateSpec, UpdateStatus } from "../../types";
-import { attr } from "../..";
+import { ModelId, OrmState, Query, TableState, UpdateSpec, UpdateStatus, ValidateSchema } from "../../types";
+import { Attribute } from "../../decorators";
 
 describe("createDatabase", () => {
   type BookDescriptors = {
@@ -15,20 +15,25 @@ describe("createDatabase", () => {
   type AuthorDescriptors = {
     id: ModelId;
   }
-  class Book extends Model<typeof Book, BookDescriptors> {
+  class Book extends Model<typeof Book, BookDescriptors> implements BookDescriptors {
     static modelName = "Book" as const;
-    static fields = {
-      id: attr(),
-      name: attr(),
-    }
+
+    @Attribute()
+    public id: ModelId;
+
+    @Attribute()
+    public name: string;
   }
-  class Author extends Model<typeof Author, AuthorDescriptors> {
+  class Author extends Model<typeof Author, AuthorDescriptors> implements AuthorDescriptors {
     static modelName = "Author" as const;
+
+    @Attribute()
+    public id: ModelId;
   }
-  type Schema = {
+  type Schema = ValidateSchema<{
     Book: typeof Book;
     Author: typeof Author;
-  }
+  }>;
 
   const schema = {
     tables: {

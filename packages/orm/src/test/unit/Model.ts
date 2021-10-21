@@ -1,34 +1,46 @@
-import { ORM, Model, QuerySet, attr } from "../..";
+import { ORM, Model, QuerySet } from "../..";
 import { castTo } from "../../hacks";
-import { ModelId, SessionWithBoundModels } from "../../types";
+import { ModelId, SessionWithBoundModels, ValidateSchema } from "../../types";
+import { Attribute } from "../../decorators";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
+const registry = ModelDescriptorsRegistry.getInstance();
+registry.clear();
 
 describe("Model", () => {
   const getTestModelClass = () => {
-    return class Test extends Model<typeof Test, {}> {
+    type TestDescriptors = {
+      id?: ModelId;
+    }
+    class Test extends Model<typeof Test, TestDescriptors> implements TestDescriptors {
       static modelName = "UnitTestModel" as const;
-    };
+
+      @Attribute()
+      public id?: ModelId;
+    }
+
+    return { Test };
   };
 
   describe("static method", () => {
-    type Schema = {
-      UnitTestModel: ReturnType<typeof getTestModelClass>;
-    };
+    type Schema = ValidateSchema<{
+      UnitTestModel: ReturnType<typeof getTestModelClass>['Test'];
+    }>;
 
-    let TestModel: ReturnType<typeof getTestModelClass>;
+    let Test: ReturnType<typeof getTestModelClass>['Test'];
     let sessionMock: SessionWithBoundModels<Schema>;
 
     beforeEach(() => {
-      TestModel = getTestModelClass();
+      ({ Test } = getTestModelClass());
       const orm = new ORM<Schema>();
-      orm.register(TestModel);
+      orm.register(Test);
       sessionMock = orm.session();
     });
 
     it("make sure instance methods are enumerable", () => {
-      const enumerableProps: Record<keyof typeof TestModel, boolean> = {} as Record<keyof typeof TestModel, boolean>;
-      for (const propName in TestModel) {
-        enumerableProps[propName as keyof typeof TestModel] = true;
+      const enumerableProps: Record<keyof typeof Test, boolean> = {} as Record<keyof typeof Test, boolean>;
+      for (const propName in Test) {
+        enumerableProps[propName as keyof typeof Test] = true;
       }
 
       expect(enumerableProps.modelName).toBe(true);
@@ -36,15 +48,15 @@ describe("Model", () => {
     });
 
     it("session getter works correctly", () => {
-      expect(TestModel.session).toBeUndefined();
-      TestModel._session = sessionMock;
-      expect(TestModel.session).toBe<SessionWithBoundModels<Schema>>(sessionMock);
+      expect(Test.session).toBeUndefined();
+      Test._session = sessionMock;
+      expect(Test.session).toBe<SessionWithBoundModels<Schema>>(sessionMock);
     });
 
     it("connect defines session statically on Model", () => {
-      expect(TestModel.session).toBeUndefined();
-      TestModel.connect(sessionMock);
-      expect(TestModel.session).toBe<SessionWithBoundModels<Schema>>(sessionMock);
+      expect(Test.session).toBeUndefined();
+      Test.connect(sessionMock);
+      expect(Test.session).toBe<SessionWithBoundModels<Schema>>(sessionMock);
     });
 
     it("connect throws if not passing a session", () => {
@@ -57,24 +69,24 @@ describe("Model", () => {
     });
 
     it("toString works correctly", () => {
-      expect(TestModel.toString()).toBe("ModelClass: UnitTestModel");
+      expect(Test.toString()).toBe("ModelClass: UnitTestModel");
     });
 
     it("query returns QuerySet", () => {
-      expect(TestModel.query).toBeInstanceOf(QuerySet);
+      expect(Test.query).toBeInstanceOf(QuerySet);
     });
 
     it("getQuerySet returns QuerySet", () => {
-      expect(TestModel.getQuerySet()).toBeInstanceOf(QuerySet);
+      expect(Test.getQuerySet()).toBeInstanceOf(QuerySet);
     });
 
     it("all returns QuerySet", () => {
-      expect(TestModel.all()).toBeInstanceOf(QuerySet);
+      expect(Test.all()).toBeInstanceOf(QuerySet);
     });
 
     it("markAccessed correctly proxies to Session", () => {
-      TestModel.connect(sessionMock);
-      TestModel.markAccessed([1, 3]);
+      Test.connect(sessionMock);
+      Test.markAccessed([1, 3]);
       expect(sessionMock.accessedModelInstances).toEqual<Record<keyof Schema, Record<ModelId, boolean>>>({
         UnitTestModel: {
           1: true,
@@ -84,8 +96,8 @@ describe("Model", () => {
     });
 
     it("markFullTableScanned correctly proxies to Session", () => {
-      TestModel.connect(sessionMock);
-      TestModel.markFullTableScanned();
+      Test.connect(sessionMock);
+      Test.markFullTableScanned();
       expect(sessionMock.fullTableScannedModels).toEqual<(keyof Schema)[]>(["UnitTestModel"]);
     });
 
@@ -96,22 +108,22 @@ describe("Model", () => {
         number: 123,
         boolean: false,
       };
-      expect(() => TestModel.create(attributes)).toThrow(
+      expect(() => Test.create(attributes)).toThrow(
         'Tried to create a UnitTestModel model instance without a session. Create a session using `session = orm.session()` and call `session["UnitTestModel"].create` instead.'
       );
-      expect(() => TestModel.upsert(attributes)).toThrow(
+      expect(() => Test.upsert(attributes)).toThrow(
         'Tried to upsert a UnitTestModel model instance without a session. Create a session using `session = orm.session()` and call `session["UnitTestModel"].upsert` instead.'
       );
-      expect(() => TestModel.exists(attributes)).toThrow(
+      expect(() => Test.exists(attributes)).toThrow(
         'Tried to check if a UnitTestModel model instance exists without a session. Create a session using `session = orm.session()` and call `session["UnitTestModel"].exists` instead.'
       );
-      expect(() => TestModel.withId(0)).toThrow(
+      expect(() => Test.withId(0)).toThrow(
         'Tried to get the UnitTestModel model\'s id attribute without a session. Create a session using `session = orm.session()` and access `session["UnitTestModel"].idAttribute` instead.'
       );
-      expect(() => new TestModel({}).update(attributes)).toThrow(
+      expect(() => new Test({}).update(attributes)).toThrow(
         "Tried to update a UnitTestModel model instance without a session. You cannot call `.update` on an instance that you did not receive from the database."
       );
-      expect(() => new TestModel({}).delete()).toThrow(
+      expect(() => new Test({}).delete()).toThrow(
         "Tried to delete a UnitTestModel model instance without a session. You cannot call `.delete` on an instance that you did not receive from the database."
       );
     });
@@ -126,33 +138,45 @@ describe("Model", () => {
       array?: any[];
       object?: {};
     }
-    type Schema = {
-      UnitTestModel: ReturnType<typeof getTestModelClass>; 
-    }
+    type Schema = ValidateSchema<{
+      UnitTestModel: ReturnType<typeof getTestModelClass>['Test'];
+    }>;
     const getTestModelClass = () => {
-      return class Test extends Model<typeof Test, TestDescriptors> {
+      class Test extends Model<typeof Test, TestDescriptors> implements TestDescriptors {
         static modelName = "UnitTestModel" as const;
-        static fields = {
-          id: attr(),
-          name: attr(),
-          number: attr(),
-          boolean: attr(),
-          array: attr(),
-          object: attr(),
-        };
-      };
+
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name?: string;
+
+        @Attribute()
+        public number?: number;
+
+        @Attribute()
+        public boolean?: boolean;
+
+        @Attribute()
+        public array?: any[];
+
+        @Attribute()
+        public object?: {};
+      }
+
+      return { Test };
     };
 
-    let TestModel: ReturnType<typeof getTestModelClass>;
+    let Test: ReturnType<typeof getTestModelClass>['Test'];
 
     beforeEach(() => {
-      TestModel = getTestModelClass();
+      ({ Test } = getTestModelClass());
       const orm = new ORM<Schema>();
-      orm.register(TestModel);
+      orm.register(Test);
     });
 
     it("getClass works correctly", () => {
-      const instance = new TestModel({
+      const instance = new Test({
         id: 0,
         name: "Tommi",
         array: [],
@@ -160,24 +184,24 @@ describe("Model", () => {
         number: 123,
         boolean: false,
       });
-      expect(instance.getClass()).toBe(TestModel);
+      expect(instance.getClass()).toBe(Test);
     });
 
     it("equals compares primitive types correctly", () => {
-      const instance1 = new TestModel({
+      const instance1 = new Test({
         id: 0,
         name: "Tommi",
         number: 123,
         boolean: true,
       });
-      const instance2 = new TestModel({
+      const instance2 = new Test({
         id: 0,
         name: "Tommi",
         number: 123,
         boolean: true,
       });
       expect(instance1.equals(instance2)).toBeTruthy();
-      const instance3 = new TestModel({
+      const instance3 = new Test({
         id: 0,
         name: "Tommi",
         number: 123,
@@ -187,20 +211,20 @@ describe("Model", () => {
     });
 
     it("equals does not deeply compare array fields", () => {
-      const instance1 = new TestModel({ id: 0, array: [] });
-      const instance2 = new TestModel({ id: 0, array: [] });
+      const instance1 = new Test({ id: 0, array: [] });
+      const instance2 = new Test({ id: 0, array: [] });
       expect(instance1.equals(instance2)).toBeFalsy();
     });
 
     it("equals does not deeply compare object fields", () => {
-      const instance1 = new TestModel({ id: 0, object: {} });
-      const instance2 = new TestModel({ id: 0, object: {} });
+      const instance1 = new Test({ id: 0, object: {} });
+      const instance2 = new Test({ id: 0, object: {} });
       expect(instance1.equals(instance2)).toBeFalsy();
     });
 
     it("constructing with random attributes assigns these attributes", () => {
       const randomNumber = Math.random();
-      const model = new TestModel({
+      const model = new Test({
         randomNumber,
         someString: "some string",
       } as any);

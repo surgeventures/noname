@@ -1,6 +1,11 @@
-import { ORM, Session, Model, oneToOne, fk, many, attr } from "../..";
+import { ORM, Session, Model} from "../..";
 import { createTestModels, Schema } from "../helpers";
-import { OrmState } from '../../types';
+import { ModelId, OrmState, Relations, TargetRelationship, ValidateSchema } from '../../types';
+import { Attribute, OneToOne } from "../../decorators";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
+
+const registry = ModelDescriptorsRegistry.getInstance();
+registry.clear()
 
 describe("ORM", () => {
   it("constructor works", () => {
@@ -9,21 +14,30 @@ describe("ORM", () => {
 
   describe("throws on invalid model declarations", () => {
     it("with multiple one-to-one fields to the same model without related name", () => {
-      type Schema = {
+      type Schema = ValidateSchema<{
         A: typeof A;
         B: typeof B;
-      }
+      }>;
       class A extends Model<typeof A> {
         static modelName = "A" as const;
       }
 
-      class B extends Model {
+      type BDescriptors = {
+        id: ModelId;
+        field1: TargetRelationship<A, Relations.OneToOne>;
+        field2: TargetRelationship<A, Relations.OneToOne>;
+      }
+      class B extends Model<typeof B, BDescriptors> implements BDescriptors {
         static modelName = "B" as const;
-        static fields = {
-          id: attr(),
-          field1: oneToOne("A"),
-          field2: oneToOne("A"),
-        };
+
+        @Attribute()
+        public id: ModelId;
+
+        @OneToOne<B>("A")
+        public field1: TargetRelationship<A, Relations.OneToOne>;
+
+        @OneToOne<B>("A")
+        public field2: TargetRelationship<A, Relations.OneToOne>;
       }
 
       const orm = new ORM<Schema>();
@@ -32,21 +46,31 @@ describe("ORM", () => {
     });
 
     it("with multiple foreign keys to the same model without related name", () => {
-      type Schema = {
+      type Schema = ValidateSchema<{
         A: typeof A;
         B: typeof B;
-      }
+      }>;
       class A extends Model<typeof A> {
         static modelName = "A" as const;
       }
 
-      class B extends Model<typeof B> {
+      type BDescriptors = {
+        id: ModelId;
+        field1: TargetRelationship<A, Relations.ForeignKey>;
+        field2: TargetRelationship<A, Relations.ForeignKey>;
+      }
+
+      class B extends Model<typeof B, BDescriptors> implements BDescriptors {
         static modelName = "B" as const;
-        static fields = {
-          id: attr(),
-          field1: fk("A"),
-          field2: fk("A"),
-        };
+
+        @Attribute()
+        public id: ModelId;
+
+        @OneToOne<B>("A")
+        public field1: TargetRelationship<A, Relations.ForeignKey>;
+
+        @OneToOne<B>("A")
+        public field2: TargetRelationship<A, Relations.ForeignKey>;
       }
 
       const orm = new ORM<Schema>();
@@ -55,21 +79,31 @@ describe("ORM", () => {
     });
 
     it("with multiple many-to-manys to the same model without related name", () => {
-      type Schema = {
+      type Schema = ValidateSchema<{
         A: typeof A;
         B: typeof B;
-      }
+      }>;
       class A extends Model<typeof A> {
         static modelName = "A" as const;
       }
 
-      class B extends Model<typeof B> {
+      type BDescriptors = {
+        id: ModelId;
+        field1: TargetRelationship<A, Relations.ManyToMany>;
+        field2: TargetRelationship<A, Relations.ManyToMany>;
+      }
+
+      class B extends Model<typeof B, BDescriptors> implements BDescriptors {
         static modelName = "B" as const;
-        static fields = {
-          id: attr(),
-          field1: many("A"),
-          field2: many("A"),
-        };
+
+        @Attribute()
+        public id: ModelId;
+
+        @OneToOne<B>("A")
+        public field1: TargetRelationship<A, Relations.ManyToMany>;
+
+        @OneToOne<B>("A")
+        public field2: TargetRelationship<A, Relations.ManyToMany>;
       }
 
       const orm = new ORM<Schema>();
@@ -78,9 +112,10 @@ describe("ORM", () => {
     });
 
     it("correctly throws an error when a model does not have a modelName property", () => {
-      type Schema = { A: typeof A };
+      type Schema = ValidateSchema<{ A: typeof A }>;
       class A extends Model<typeof A> {}
       const orm = new ORM<Schema>();
+      //@ts-ignore
       expect(() => orm.register(A)).toThrow(
         "A model was passed that doesn't have a modelName set"
       );

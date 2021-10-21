@@ -55,7 +55,7 @@ export default class Table<MClassType extends typeof AnyModel> {
    * @param  {Object} userOpts - options to use.
    * @param  {string} [userOpts.idAttribute=id] - the id attribute of the entity.
    */
-  constructor(userOpts?: TableOpts<MClassType>) {
+  constructor(userOpts?: TableOpts) {
     Object.assign(this, DEFAULT_TABLE_OPTIONS, userOpts);
   }
 

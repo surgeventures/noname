@@ -14,12 +14,18 @@ import Table from "./db/Table";
 import { AnyModel, ModelClassMap } from "./Model";
 import Session from "./Session";
 import QuerySet from "./QuerySet";
+import { Attribute, OneToOne, ManyToMany, ForeignKey } from "./fields";
 import { Values } from "./utils";
 
 export type AnyObject = Record<string, any>;
 export type AnySchema = Record<string, typeof AnyModel>;
 
 export type ModelId = number | string;
+
+/**
+ * Defines possible descriptors defined on the ORM side
+ */
+export type Descriptors = Attribute | OneToOne | ManyToMany | ForeignKey;
 
 /**
  * Enumeration of possible relations used for defining interfaces with descriptors.
@@ -31,9 +37,69 @@ export enum Relations {
 }
 
 /**
+ * An utility type, created for two purposes:
+ *  1. Checks if each model have defined modelName field with a string literal type of that value.
+ *  2. Checks if the modelName value matches with the key under which we add a model to the Schema type.
+ *
+ * Handling both cases preserves from possible typo's or modelName duplicates that can be caught by static checks.
+ * Another value it brings, is a naming consistency.
+ */
+export type ValidateSchema<Schema extends ModelClassMap> = { [K in keyof Schema]: ModelName<Schema[K]> extends K ? Schema[K] : never };
+
+/**
  * Returns the type of the passed model class.
  */
-export type ModelClassType<M extends AnyModel> = ReturnType<M["getClass"]>;
+export type ModelClassType<MClass extends AnyModel> = ReturnType<MClass["getClass"]>;
+
+/**
+ * Returns the type of static modelName field. This field should be described by a string literal type.
+ */
+export type ModelName<MClassType extends typeof AnyModel> = MClassType['modelName'];
+
+/**
+ * Extracts all non-serializable types from the model's fields.
+ *
+ * It is being used to determine to which model types, the relationship can be created.
+ */
+export type ModelClassTypeFromModelFields<MClass extends AnyModel, MFields extends Required<ModelFields<MClass>> = Required<ModelFields<MClass>>> =
+	{ [K in keyof MFields]:
+    MFields[K] extends SessionBoundModel<infer Z>
+      ? Z extends AnyModel
+        ? ModelClassType<Z>
+        : never
+      : MFields[K] extends QuerySet<infer Z>
+        ? Z
+        : never
+  }[keyof MFields];
+
+/**
+ * Extracts all keys of relationships that match with the source model.
+ *
+ * For given target model, it takes all relationship keys that matches the type of the source model.
+ * It is being used to validate if provided related name matches any of the relation keys in target models.
+ */
+type SourceRelationshipKeysOfModel<
+  SourceMClass extends AnyModel,
+  TargetMClass extends AnyModel,
+  MFields extends Required<ModelFields<TargetMClass>> = Required<ModelFields<TargetMClass>>
+> = { [K in keyof MFields]:
+    MFields[K] extends SessionBoundModel<infer Z>
+      ? Z extends AnyModel
+        ? Z extends SourceMClass
+          ? K
+          : never
+        : never
+      : MFields[K] extends QuerySet<infer Z>
+        ? Z extends ModelClassType<SourceMClass>
+          ? K
+          : never
+        : never
+  }[keyof MFields];
+
+/**
+ * Iterates over the union of target model types and gives all field keys that are possible to set in the relations decorator.
+ */
+export type PossibleFieldKeys<SourceMClass extends AnyModel, TargetMClassType extends typeof AnyModel> = TargetMClassType extends typeof AnyModel ? SourceRelationshipKeysOfModel<SourceMClass, InstanceType<TargetMClassType>> : never;
 
 /**
  * Imitates the model bound to the session.
@@ -290,11 +356,10 @@ export interface Database<Schema extends ModelClassMap> {
  * ```
  * <br/>
  */
- export interface TableOpts<MClassType extends typeof AnyModel> {
+ export interface TableOpts {
   readonly idAttribute?: string;
   readonly arrName?: string;
   readonly mapName?: string;
-  readonly fields?: MClassType['fields'];
 }
 
 /**
@@ -302,7 +367,7 @@ export interface Database<Schema extends ModelClassMap> {
  */
 export type SchemaSpec<Schema extends ModelClassMap> = {
   tables: {
-    [K in keyof Schema]: TableOpts<Schema[K]>;
+    [K in keyof Schema]: TableOpts;
   };
 };
 

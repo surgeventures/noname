@@ -255,7 +255,7 @@ export default class QuerySet<MClassType extends typeof AnyModel = typeof AnyMod
   orderBy(
     iteratees: SortIteratee<InstanceType<MClassType>> | ReadonlyArray<SortIteratee<InstanceType<MClassType>>>,
     orders?: SortOrder | ReadonlyArray<SortOrder>
-  ): QuerySet<MClassType>    
+  ): QuerySet<MClassType>
  {
     const orderByDescriptor = {
       type: ORDER_BY,

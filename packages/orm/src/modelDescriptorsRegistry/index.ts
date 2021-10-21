@@ -1,0 +1,1 @@
+export { ModelDescriptorsRegistry } from './modelDescriptorsRegistry';

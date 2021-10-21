@@ -1,6 +1,7 @@
 import ORM from "../../ORM";
 import Model from "../../Model";
-import { ModelId, SessionBoundModel, SessionWithBoundModels } from "../../types";
+import { ModelId, SessionBoundModel, SessionWithBoundModels, ValidateSchema } from "../../types";
+import { Attribute } from "../../decorators";
 
 describe("ES5 library code", () => {
   describe("With ES6 client code", () => {
@@ -8,12 +9,18 @@ describe("ES5 library code", () => {
       id: ModelId;
       title: string;
     }
-    class Book extends Model<typeof Book, BookDescriptors> {
-      static modelName = "Book";
+    class Book extends Model<typeof Book, BookDescriptors> implements BookDescriptors {
+      static readonly modelName = "Book";
+
+      @Attribute()
+      public id: ModelId;
+
+      @Attribute()
+      public title: string;
     }
-    type Schema = {
+    type Schema = ValidateSchema<{
       Book: typeof Book;
-    };
+    }>;
     let orm: ORM<Schema>;
     let session: SessionWithBoundModels<Schema>;
 
