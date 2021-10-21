@@ -14,7 +14,7 @@
     "prepublishOnly": "npm run build",
     "transpile:es": "tsc -p tsconfig.json",
     "build:docs": "jsdoc src -d docs -c ./jsdoc.conf.json --verbose",
-    "build": "npm run clean && npm run transpile:es && npm run build:docs",
+    "build": "npm run clean && npm run transpile:es",
     "pub": "npm run lint && npm run test && npm run build && npm run test:es5 && npm version patch && npm publish && git push origin && gulp deploy && npm run clean",
     "lint": "eslint src --ext .ts",
     "deploydocs": "npm run build && gulp deploy",
