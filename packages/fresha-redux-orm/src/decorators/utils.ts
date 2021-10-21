@@ -1,5 +1,4 @@
-import { Attribute } from '..';
-import { AttributeOptions, RelationalFieldOpts } from '../fields';
+import { Attribute, AttributeOptions, RelationalFieldOpts } from '../fields';
 import { AnyModel } from '../Model';
 import { ModelDescriptorsRegistry } from '../ModelDescriptorsRegistry';
 import { Descriptors } from '../types';
