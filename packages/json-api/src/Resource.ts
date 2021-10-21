@@ -4,7 +4,9 @@ import {
   JSONObject,
   JSONValue,
   JSONAPIResourceRelationship,
-  JSONAPIResourceId
+  JSONAPIResourceId,
+  isJSONObject,
+  isJSONValueArray
 } from "@fresha/noname-core";
 import {
   IncludesMap,
@@ -132,6 +134,42 @@ function normalizeRelationships(
   return null;
 }
 
+const resolveRelatedNestedResources = (
+  includesMapKeys: JSONValue,
+  link: JSONAPIResourceId,
+  relatedToName: string,
+  typeAttr: undefined | string
+) => {
+  return Object.entries(includesMapKeys || {}).reduce(
+    (acc: MapObject<JSONValue>, [key, value]: [string, JSONValue]) => {
+      const [resourceType] = key.split(":");
+
+      if (isJSONObject(value) && value[relatedToName] === link.id) {
+        const resource: JSONValue | ArrayLike<JSONValue> = acc[resourceType];
+        let myValue;
+
+        if (typeAttr) {
+          const { type, ...rest } = value;
+          myValue = { ...rest, [typeAttr]: type };
+        } else {
+          myValue = value;
+        }
+
+        if (resource && isJSONValueArray(resource)) {
+          acc[resourceType] = [...resource, myValue];
+        } else if (resource && isJSONObject(resource)) {
+          acc[resourceType] = [resource, myValue];
+        } else {
+          acc[resourceType] = myValue;
+        }
+      }
+
+      return acc;
+    },
+    {}
+  );
+};
+
 export default class ResourceImpl implements Resource {
   private readonly registry: Registry;
 
@@ -224,12 +262,23 @@ export default class ResourceImpl implements Resource {
       result[name] = value;
     });
 
-    const getRelatedObject = (link: JSONAPIResourceId) => {
+    const includesMapKeys = this.registry.keyParseFunc(includesMap || {});
+
+    const getRelatedObject = (link: JSONAPIResourceId, name: string) => {
       if (link) {
         if (includesMap) {
           const obj = includesMap[`${link.type}:${link.id}`];
+
           if (obj) {
-            return obj;
+            return Object.assign(
+              obj,
+              resolveRelatedNestedResources(
+                includesMapKeys,
+                link,
+                name,
+                options && options.typeAttr
+              )
+            );
           }
         }
         return this.idSpec.parse(link);
@@ -246,10 +295,12 @@ export default class ResourceImpl implements Resource {
     ).forEach(([name, value]) => {
       if (Array.isArray(value.data)) {
         // TODO in debug version check for heterogeneous collections
-        result[name] = value.data.map(getRelatedObject);
+        result[name] = value.data.map((v: JSONAPIResourceId) =>
+          getRelatedObject(v, name)
+        );
       } else if (value.data) {
         result[name] =
-          value.data.id != null ? getRelatedObject(value.data) : null;
+          value.data.id != null ? getRelatedObject(value.data, name) : null;
       } else if (value.data == null) {
         result[name] = null;
       }

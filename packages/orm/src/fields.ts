@@ -16,6 +16,7 @@ import {
   m2mFromFieldName,
   reverseFieldName,
   reverseFieldErrorMessage,
+  Values,
 } from "./utils";
 import { castTo } from "./hacks";
 import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
@@ -35,7 +36,7 @@ import { ModelId } from "./types";
 type FieldInstallerTemplateOptions<Schema extends ModelClassMap> = {
   field: Field;
   fieldName: string;
-  model: Schema[keyof Schema];
+  model: Values<Schema>;
   orm: ORM<Schema>;
 };
 
@@ -47,9 +48,9 @@ type FieldInstallerTemplateOptions<Schema extends ModelClassMap> = {
 abstract class FieldInstallerTemplate<Schema extends ModelClassMap = ModelClassMap> {
   field: Field;
   fieldName: string;
-  model: Schema[keyof Schema];
+  model: Values<Schema>;
   orm: ORM<Schema>;
-  _toModel: Schema[keyof Schema] | null;
+  _toModel: Values<Schema> | null;
   _throughModel: typeof AnyModel | null;
 
   constructor(opts: FieldInstallerTemplateOptions<Schema>) {

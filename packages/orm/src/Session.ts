@@ -11,7 +11,7 @@ import {
   ModelId,
   Ref
 } from "./types";
-import { clauseFiltersByAttribute } from "./utils";
+import { clauseFiltersByAttribute, Values } from "./utils";
 import { castTo } from "./hacks";
 
 type WithForEach<T> = {
@@ -31,8 +31,8 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
   readonly withMutations: boolean;
   private readonly batchToken: BatchToken;
   private readonly modelData: ModelData<Schema>;
-  private readonly models: Schema[keyof Schema][];
-  sessionBoundModels: Schema[keyof Schema][];
+  private readonly models: Values<Schema>[];
+  sessionBoundModels: Values<Schema>[];
 
   /**
    * Creates a new Session.
@@ -63,7 +63,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
     this.models = schema.getModelClasses();
 
     this.sessionBoundModels = this.models.map((modelClass) => {
-      function SessionBoundModel(): Schema[keyof Schema] {
+      function SessionBoundModel(): Values<Schema> {
         return Reflect.construct(
           modelClass,
           arguments,
@@ -77,7 +77,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
         get: () => SessionBoundModel,
       });
 
-      const result = castTo<Schema[keyof Schema]>(SessionBoundModel);
+      const result = castTo<Values<Schema>>(SessionBoundModel);
       result.connect(this);
       return result;
     });
@@ -151,7 +151,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
   }
 
   query(querySpec: Query<Schema>): {
-    rows: Ref<InstanceType<Schema[keyof Schema]>>[];
+    rows: Ref<InstanceType<Values<Schema>>>[];
 } {
     const result = this.db.query(querySpec, this.state);
 
@@ -170,7 +170,7 @@ export default class Session<Schema extends ModelClassMap = ModelClassMap> {
     return { batchToken, withMutations };
   }
 
-  _markAccessedByQuery(querySpec: Query<Schema, Record<string, ModelId>>, result: { rows: Ref<InstanceType<Schema[keyof Schema]>>[] }) {
+  _markAccessedByQuery(querySpec: Query<Schema, Record<string, ModelId>>, result: { rows: Ref<InstanceType<Values<Schema>>>[] }) {
     const { table, clauses } = querySpec;
     const { rows } = result;
 
