@@ -15,6 +15,8 @@ export type Entries<T> = {
   [K in keyof T]: [K, T[K]];
 }[keyof T][];
 
+export type Values<T> = T[keyof T];
+
 /**
  * Returns the branch name for a many-to-many relation.
  * The name is the combination of the model name and the field name the relation

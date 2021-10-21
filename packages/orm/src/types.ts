@@ -15,6 +15,7 @@ import { AnyModel, ModelClassMap } from "./Model";
 import Session from "./Session";
 import QuerySet from "./QuerySet";
 import { Attribute, OneToOne, ManyToMany, ForeignKey } from "./fields";
+import { Values } from "./utils";
 
 export type AnyObject = Record<string, any>;
 export type AnySchema = Record<string, typeof AnyModel>;
@@ -39,7 +40,7 @@ export enum Relations {
  * An utility type, created for two purposes:
  *  1. Checks if each model have defined modelName field with a string literal type of that value.
  *  2. Checks if the modelName value matches with the key under which we add a model to the Schema type.
- * 
+ *
  * Handling both cases preserves from possible typo's or modelName duplicates that can be caught by static checks.
  * Another value it brings, is a naming consistency.
  */
@@ -57,10 +58,10 @@ export type ModelName<MClassType extends typeof AnyModel> = MClassType['modelNam
 
 /**
  * Extracts all non-serializable types from the model's fields.
- * 
+ *
  * It is being used to determine to which model types, the relationship can be created.
  */
-export type ModelClassTypeFromModelFields<MClass extends AnyModel, MFields extends Required<ModelFields<MClass>> = Required<ModelFields<MClass>>> = 
+export type ModelClassTypeFromModelFields<MClass extends AnyModel, MFields extends Required<ModelFields<MClass>> = Required<ModelFields<MClass>>> =
 	{ [K in keyof MFields]:
     MFields[K] extends SessionBoundModel<infer Z>
       ? Z extends AnyModel
@@ -73,13 +74,13 @@ export type ModelClassTypeFromModelFields<MClass extends AnyModel, MFields exten
 
 /**
  * Extracts all keys of relationships that match with the source model.
- * 
+ *
  * For given target model, it takes all relationship keys that matches the type of the source model.
  * It is being used to validate if provided related name matches any of the relation keys in target models.
  */
 type SourceRelationshipKeysOfModel<
-  SourceMClass extends AnyModel, 
-  TargetMClass extends AnyModel, 
+  SourceMClass extends AnyModel,
+  TargetMClass extends AnyModel,
   MFields extends Required<ModelFields<TargetMClass>> = Required<ModelFields<TargetMClass>>
 > = { [K in keyof MFields]:
     MFields[K] extends SessionBoundModel<infer Z>
@@ -218,7 +219,7 @@ type ExcludeUndefined<T> = Exclude<T, undefined>;
 /**
  * Optional ordering direction.
  */
-export type SortOrder = 'asc' | 'desc' | true | false;
+export type SortOrder = 'asc' | 'desc' | boolean;
 
 /**
  * Ordering clause.
@@ -332,9 +333,9 @@ export interface Transaction {
  * A database definition parametrized by schema made of models types
  */
 export interface Database<Schema extends ModelClassMap> {
-  describe(modelName: keyof Schema): Table<Schema[keyof Schema]>;
+  describe(modelName: keyof Schema): Table<Values<Schema>>;
   getEmptyState(): OrmState<Schema>;
-  query<Payload extends object = {}>(query: Query<Schema, Payload>, state: OrmState<Schema>): { rows: Ref<InstanceType<Schema[keyof Schema]>>[] };
+  query<Payload extends object = {}>(query: Query<Schema, Payload>, state: OrmState<Schema>): { rows: Ref<InstanceType<Values<Schema>>>[] };
   update<Payload extends object = object>(
     updateSpec: UpdateSpec<Schema>,
     tx: Transaction,

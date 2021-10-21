@@ -9,6 +9,7 @@ import {
   Schema,
   createTestModels,
 } from "../helpers";
+import { Values } from '../../utils';
 import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
 describe("Redux integration", () => {
@@ -22,7 +23,7 @@ describe("Redux integration", () => {
   let Movie: Schema['Movie'];
   let emptyState: OrmState<Schema>;
   let nextState: OrmState<Schema>;
-  let ormReducer: <MClassType extends Schema[keyof Schema]>(
+  let ormReducer: <MClassType extends Values<Schema>>(
     state: OrmState<Schema> | undefined,
     action: ReduxAction<Ref<InstanceType<MClassType>>>
   ) => OrmState<Schema>;
@@ -37,7 +38,7 @@ describe("Redux integration", () => {
     Genre.reducer = jest.fn();
     Tag.reducer = jest.fn();
     Movie.reducer = jest.fn(
-      ((action: ReduxAction<Ref<InstanceType<Schema[keyof Schema]>>>, Model: Schema['Movie']) => {
+      ((action: ReduxAction<Ref<InstanceType<Values<Schema>>>>, Model: Schema['Movie']) => {
         switch (action.type) {
           case CREATE_MOVIE:
             Model.create(action.payload || {});
