@@ -1,6 +1,6 @@
 import Session from "./Session";
 import QuerySet from "./QuerySet";
-import { ManyToMany, ForeignKey, OneToOne, RelationalField } from "./fields";
+import { Attribute, ManyToMany, ForeignKey, OneToOne, RelationalField } from "./fields";
 import { CREATE, UPDATE, DELETE, FILTER } from "./constants";
 import {
   normalizeEntity,
@@ -11,7 +11,6 @@ import {
 } from "./utils";
 import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
-import { Attribute } from ".";
 import { ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
 
 /**

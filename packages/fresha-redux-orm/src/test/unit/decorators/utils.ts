@@ -1,6 +1,5 @@
-import { Attribute, ManyToMany } from "../../..";
 import { registerDescriptor } from "../../../decorators/utils";
-import { AttributeOptions, RelationalFieldOpts } from "../../../fields";
+import { Attribute, ManyToMany, AttributeOptions, RelationalFieldOpts } from "../../../fields";
 import Model from "../../../Model";
 import { ModelDescriptorsRegistry } from "../../../ModelDescriptorsRegistry";
 
