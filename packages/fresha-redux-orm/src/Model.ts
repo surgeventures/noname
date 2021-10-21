@@ -434,11 +434,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * @return {Object} a reference to the plain JS object in the store
    */
   //@ts-ignore
-  get ref(): ReturnType<typeof this.getRef> {
-    return this.getRef();
-  }
-
-  private getRef(): Ref<InstanceType<MClassType>> {
+  get ref(): Ref<InstanceType<MClassType>> {
     const ThisModel = this.getClass();
 
     return ThisModel._findDatabaseRows<InstanceType<MClassType>>({
