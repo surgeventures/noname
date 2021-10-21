@@ -1,25 +1,42 @@
 import QuerySet from "./QuerySet";
-import Model from "./Model";
+import Model, { AnyModel, ModelClassMap } from "./Model";
 import ORM from "./ORM";
 import Session from "./Session";
 import { createReducer, createSelector } from "./redux";
 import {
-  ForeignKey,
-  ManyToMany,
-  OneToOne,
+  ForeignKey as ForeignKeyClass,
+  ManyToMany as ManyToManyClass,
+  OneToOne as OneToOneClass,
   fk,
   many,
   oneToOne,
   attr,
-  Attribute,
+  Attribute as AttributeClass,
 } from "./fields";
+import { Attribute, ForeignKey, ManyToMany, OneToOne, registerDescriptor } from "./decorators";
+import { ValidateSchema, Relations, ModelId, SessionBoundModel, TargetRelationship,
+  SourceRelationship,
+  ModelFieldMap,
+  Ref,
+  SessionWithBoundModels,
+  OrmState,
+  ReduxAction,
+  Descriptors,
+  ModelClassType,
+  OrmSelector,
+} from "./types";
 
 export {
-  Attribute,
   QuerySet,
   Model,
+  AnyModel,
   ORM,
   Session,
+  AttributeClass,
+  ForeignKeyClass,
+  ManyToManyClass,
+  OneToOneClass,
+  Attribute,
   ForeignKey,
   ManyToMany,
   OneToOne,
@@ -29,6 +46,25 @@ export {
   oneToOne,
   createReducer,
   createSelector,
+  registerDescriptor,
 };
+
+export type {
+  ModelClassMap,
+  ValidateSchema,
+  Relations,
+  ModelId,
+  SessionBoundModel,
+  TargetRelationship,
+  SourceRelationship,
+  ModelFieldMap,
+  Ref,
+  SessionWithBoundModels,
+  OrmState,
+  ReduxAction,
+  Descriptors,
+  ModelClassType,
+  OrmSelector,
+}
 
 export default Model;
