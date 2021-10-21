@@ -2,17 +2,15 @@ import {
   ORM,
   createReducer,
   createSelector,
-  QuerySet,
   Model,
 } from "../..";
-import { castTo } from "../../hacks";
 import { ModelId, OrmState, ReduxAction, Ref, SessionWithBoundModels, TableState, ValidateSchema } from "../../types";
 import {
   Schema,
   createTestModels,
-  Publisher,
 } from "../helpers";
 import { Values } from '../../utils';
+import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
 describe("Redux integration", () => {
   let orm: ORM<Schema>;
@@ -39,7 +37,6 @@ describe("Redux integration", () => {
     Cover.reducer = jest.fn();
     Genre.reducer = jest.fn();
     Tag.reducer = jest.fn();
-    Movie.reducer<Schema, Schema['Movie']>({ type: 'asdas', payload: null }, Movie, orm.session())
     Movie.reducer = jest.fn(
       ((action: ReduxAction<Ref<InstanceType<Values<Schema>>>>, Model: Schema['Movie']) => {
         switch (action.type) {
@@ -65,6 +62,8 @@ describe("Redux integration", () => {
   };
 
   beforeEach(() => {
+    const registry = ModelDescriptorsRegistry.getInstance();
+    registry.clear();
     ({
       Book,
       Cover,
@@ -261,7 +260,7 @@ describe("Redux integration", () => {
               ...map,
               [movie.id!]: movie.publisher ? movie.publisher.ref : null,
             }),
-            {} as Record<ModelId, Ref<Publisher> | null>
+            {} as Record<ModelId, Ref<InstanceType<Schema['Publisher']>> | null>
           )
       );
       const selector = createSelector(orm, memoized);
@@ -316,8 +315,7 @@ describe("Redux integration", () => {
 
       const session = orm.session(nextState);
       expect(
-        // Movies is backwards relation key
-        castTo<QuerySet<typeof Movie>>(session.Publisher.withId(123)!.movies).count()
+        session.Publisher.withId(123)!.movies!.count()
       ).toBe(1);
     });
 

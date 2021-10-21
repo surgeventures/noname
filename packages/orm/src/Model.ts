@@ -12,7 +12,7 @@ import {
 import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
 import { Attribute } from ".";
-import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
 
 /**
  * Generates a query specification to get the instance's
@@ -433,6 +433,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    *
    * @return {Object} a reference to the plain JS object in the store
    */
+  //@ts-ignore
   get ref(): Ref<this> {
     const ThisModel = this.getClass();
 

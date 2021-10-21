@@ -1,7 +1,7 @@
 import { Attribute } from '..';
 import { AttributeOptions, RelationalFieldOpts } from '../fields';
 import { AnyModel } from '../Model';
-import { ModelDescriptorsRegistry } from '../modelDescriptorsRegistry';
+import { ModelDescriptorsRegistry } from '../ModelDescriptorsRegistry';
 import { Descriptors } from '../types';
 
 // Types of accepted descriptors
@@ -20,7 +20,7 @@ export function registerDescriptor(descriptorFn: AttrsDescriptorFn): AttrDecorat
 export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: BasicRelationalFieldDescriptorFn<DescriptorTypes>): BasicRelationalFieldDecoratorFactory;
 export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: ComplexRelationalFieldDescriptorFn<DescriptorTypes>): ComplexRelationalFieldDecoratorFactory;
 export function registerDescriptor(descriptorFn: any) {
-	function register(arg1: AttributeOptions | RelationalFieldOpts | string, arg2?: string) {
+	function decoratorFactory(arg1: AttributeOptions | RelationalFieldOpts | string, arg2?: string) {
 		return function target(target: AnyModel, propertyName: string): void {
 			const model = target.getClass();
 			const modelName = model.modelName;
@@ -33,5 +33,5 @@ export function registerDescriptor(descriptorFn: any) {
 		}
 	}
 
-	return register;
+	return decoratorFactory;
 }

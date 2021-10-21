@@ -5,7 +5,9 @@ import { createSelector } from "../..";
 import { createSelector as createReselectSelector } from "reselect";
 import { measureMs, nTimes, avg, round } from "../helpers";
 import { Attribute, ManyToMany, ForeignKey, OneToOne } from "../../decorators";
-import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
+
+const registry = ModelDescriptorsRegistry.getInstance();
 
 const crypto = require("crypto");
 
@@ -507,7 +509,6 @@ describe("Accessors and models registration performance", () => {
   }
 
   beforeEach(() => {
-    const registry = ModelDescriptorsRegistry.getInstance();
     registry.clear();
     models = Object.values(getTestModels());
   })
@@ -1041,7 +1042,7 @@ describe("Selectors performance", () => {
         return servicePricingLevels.reduce((memo, servicePricingLevel) => {
           if (servicePricingLevel.service.roomRequired) {
             const rooms = servicePricingLevel.rooms || [];
-            memo[servicePricingLevel.id] = rooms.map(r => r.id);
+            memo[servicePricingLevel.id] = rooms.map((r: any) => r.id);
           } else {
             memo[servicePricingLevel.id] = null;
           }
@@ -1149,6 +1150,7 @@ describe("Selectors performance", () => {
   }
 
   beforeEach(() => {
+    registry.clear();
     models = Object.values(getTestModels());
   })
 
@@ -1174,7 +1176,7 @@ describe("Selectors performance", () => {
 
     const tookSeconds = round(avg(measurements, n), PRECISION);
     const log = createTimeLog(
-      `Creating ${repsNumber} entities of Resource type`,
+      `Creating and using the selector ${repsNumber} times`,
       tookSeconds,
       maxSeconds,
       measurements

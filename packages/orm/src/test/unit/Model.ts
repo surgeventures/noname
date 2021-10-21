@@ -2,7 +2,7 @@ import { ORM, Model, QuerySet } from "../..";
 import { castTo } from "../../hacks";
 import { ModelId, SessionWithBoundModels, ValidateSchema } from "../../types";
 import { Attribute } from "../../decorators";
-import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 registry.clear();
@@ -44,7 +44,6 @@ describe("Model", () => {
       }
 
       expect(enumerableProps.modelName).toBe(true);
-      expect(enumerableProps.create).toBe(true);
     });
 
     it("session getter works correctly", () => {

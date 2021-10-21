@@ -4,28 +4,23 @@ import { AnyModel } from "../../Model";
 import { castTo } from "../../hacks";
 import { OrmState, Ref, ModelId, SessionBoundModel, ValidateSchema } from "../../types";
 import {
-  Author,
   createTestSessionWithData,
   ExtendedSession,
-  Book,
-  Movie,
   Schema,
-  Publisher,
 } from "../helpers";
-import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 import { Attribute } from "../../decorators";
 
 const registry = ModelDescriptorsRegistry.getInstance();
-registry.clear()
 
 describe("Immutable session", () => {
   let session: ExtendedSession;
   let state: OrmState<Schema>;
 
   beforeEach(() => {
+    registry.clear()
     // Deep freeze state. This will raise an error if we
     // mutate the state.
-
     const result = createTestSessionWithData();
     session = result.session;
     state = result.state;
@@ -94,7 +89,7 @@ describe("Immutable session", () => {
       publisher: 0,
     });
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe<Ref<Book>>(book.ref);
+    expect(session.Book.last()!.ref).toBe<Ref<InstanceType<Schema['Book']>>>(book.ref);
   });
 
   it("Model.getId works", () => {
@@ -197,7 +192,7 @@ describe("Immutable session", () => {
       publisher: 0,
     });
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe<Ref<Book>>(book.ref);
+    expect(session.Book.last()!.ref).toBe<Ref<InstanceType<Schema['Book']>>>(book.ref);
     expect(book).toBeInstanceOf<typeof Book>(Book);
   });
 
@@ -211,7 +206,7 @@ describe("Immutable session", () => {
       publisher: 0,
     });
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe<Ref<Book>>(book.ref);
+    expect(session.Book.last()!.ref).toBe<Ref<InstanceType<Schema['Book']>>>(book.ref);
     expect(book).toBeInstanceOf<typeof Book>(Book);
   });
 
@@ -224,7 +219,7 @@ describe("Immutable session", () => {
       publisher: 0,
     });
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe<Ref<Book>>(book.ref);
+    expect(session.Book.last()!.ref).toBe<Ref<InstanceType<Schema['Book']>>>(book.ref);
     expect(session.Book.last()!.releaseYear).toBe<number>(2015);
 
     const { ref: storedRef } = book;
@@ -234,10 +229,10 @@ describe("Immutable session", () => {
     });
 
     expect(session.Book.count()).toBe(4);
-    expect(session.Book.last()!.ref).toBe<Ref<Book>>(nextBook.ref);
+    expect(session.Book.last()!.ref).toBe<Ref<InstanceType<Schema['Book']>>>(nextBook.ref);
     expect(session.Book.last()!.releaseYear).toBe<number>(2016);
-    expect(session.Book.last()!.ref).not.toBe<Ref<Book>>(storedRef);
-    expect(book.ref).toBe<Ref<Book>>(nextBook.ref);
+    expect(session.Book.last()!.ref).not.toBe<Ref<InstanceType<Schema['Book']>>>(storedRef);
+    expect(book.ref).toBe<Ref<InstanceType<Schema['Book']>>>(nextBook.ref);
     expect(nextBook).toBeInstanceOf<typeof Book>(Book);
   });
 
@@ -249,13 +244,13 @@ describe("Immutable session", () => {
     const oldRef = movie.ref;
 
     movie.update({ name });
-    expect(oldRef).toBe<Ref<Movie>>(movie.ref);
+    expect(oldRef).toBe<Ref<InstanceType<Schema['Movie']>>>(movie.ref);
 
     movie.update({ meta });
-    expect(oldRef).toBe<Ref<Movie>>(movie.ref);
+    expect(oldRef).toBe<Ref<InstanceType<Schema['Movie']>>>(movie.ref);
 
     movie.update({ characters });
-    expect(oldRef).toBe<Ref<Movie>>(movie.ref);
+    expect(oldRef).toBe<Ref<InstanceType<Schema['Movie']>>>(movie.ref);
   });
 
   it("Model updates change instance reference if string field changes", () => {
@@ -265,7 +260,7 @@ describe("Immutable session", () => {
     const oldRef = movie.ref;
 
     movie.update({ name: "New name" });
-    expect(oldRef).not.toBe<Ref<Movie>>(movie.ref);
+    expect(oldRef).not.toBe<Ref<InstanceType<Schema['Movie']>>>(movie.ref);
   });
 
   it("Model updates change instance reference if object field changes reference", () => {
@@ -275,7 +270,7 @@ describe("Immutable session", () => {
     const oldRef = movie.ref;
 
     movie.update({ meta: {} });
-    expect(oldRef).not.toBe<Ref<Movie>>(movie.ref);
+    expect(oldRef).not.toBe<Ref<InstanceType<Schema['Movie']>>>(movie.ref);
   });
 
   it("Model updates only change instance reference if equals returns false", () => {
@@ -292,7 +287,7 @@ describe("Immutable session", () => {
       characters: [],
       meta: {},
     });
-    expect(oldRef).toBe<Ref<Movie>>(movie.ref);
+    expect(oldRef).toBe<Ref<InstanceType<Schema['Movie']>>>(movie.ref);
 
     const movie2 = Movie.create({
       characters: ["Joker"],
@@ -306,16 +301,16 @@ describe("Immutable session", () => {
 
     // length of characters array is equal, should not cause change of reference
     movie2.update({ characters: ["Joker"] });
-    expect(oldRef2).toBe<Ref<Movie>>(movie2.ref);
+    expect(oldRef2).toBe<Ref<InstanceType<Schema['Movie']>>>(movie2.ref);
 
     // length of characters array has changed, should cause change of reference
     movie2.update({ characters: ["Joker", "Mickey Mouse"] });
-    expect(oldRef2).not.toBe<Ref<Movie>>(movie2.ref);
+    expect(oldRef2).not.toBe<Ref<InstanceType<Schema['Movie']>>>(movie2.ref);
     const newRef2 = movie2.ref;
 
     // length of characters array has not changed, should cause change of reference
     movie2.update({ characters: ["Batman", "Catwoman"] });
-    expect(newRef2).toBe<Ref<Movie>>(movie2.ref);
+    expect(newRef2).toBe<Ref<InstanceType<Schema['Movie']>>>(movie2.ref);
   });
 
   it("Model updates preserve relations if only other fields are changed", () => {
@@ -637,8 +632,8 @@ describe("Immutable session", () => {
 
     book.author = newAuthor;
 
-    expect(book.author).toEqual<SessionBoundModel<Author>>(newAuthor);
-    expect(book.author.ref).toBe<Ref<Author>>(newAuthor.ref);
+    expect(book.author).toEqual<SessionBoundModel<InstanceType<Schema['Author']>>>(newAuthor);
+    expect(book.author.ref).toBe<Ref<InstanceType<Schema['Author']>>>(newAuthor.ref);
 
     // with 'as' option
     const movie = Movie.first()!;
@@ -646,8 +641,8 @@ describe("Immutable session", () => {
     movie.publisher = newPublisher;
 
     expect(movie.publisherId).toEqual(0);
-    expect(movie.publisher).toEqual<SessionBoundModel<Publisher>>(newPublisher);
-    expect(movie.publisher.ref).toBe<Ref<Publisher>>(newPublisher.ref);
+    expect(movie.publisher).toEqual<SessionBoundModel<InstanceType<Schema['Publisher']>>>(newPublisher);
+    expect(movie.publisher.ref).toBe<Ref<InstanceType<Schema['Publisher']>>>(newPublisher.ref);
   });
 
   it("trying to set backwards foreign key (reverse many-to-one) field throws", () => {

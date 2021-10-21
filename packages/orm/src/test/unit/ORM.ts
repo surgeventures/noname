@@ -2,12 +2,14 @@ import { ORM, Session, Model} from "../..";
 import { createTestModels, Schema } from "../helpers";
 import { ModelId, OrmState, Relations, TargetRelationship, ValidateSchema } from '../../types';
 import { Attribute, OneToOne } from "../../decorators";
-import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
-
-const registry = ModelDescriptorsRegistry.getInstance();
-registry.clear()
+import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
 describe("ORM", () => {
+  beforeEach(() => {
+    const registry = ModelDescriptorsRegistry.getInstance();
+    registry.clear()
+  });
+
   it("constructor works", () => {
     new ORM();
   });
