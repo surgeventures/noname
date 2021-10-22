@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "experimentalDecorators": true,
-    "allowJs": true,
-    "declaration": false,
+    "allowJs": false,
+    "declaration": true,
     "target": "es6",
     "module": "esnext",
     "esModuleInterop": true,
@@ -20,12 +20,10 @@
     "moduleResolution": "node"
   },
   "exclude": [
-    "node_modules/**/*"
+    "node_modules/",
+    "src/test/"
   ],
   "include": [
-    "src/*.js",
-    "src/**/*.js",
-    "src/*.ts",
-    "src/**/*.ts"
+    "src/"
   ]
 }
