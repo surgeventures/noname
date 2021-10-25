@@ -164,7 +164,7 @@ export type SourceRelationship<
 /**
  * Possible types of relations and attributes that describe a single model.
  */
-type ModelField = QuerySet<any> | AnyModel | Serializable;
+type ModelField = QuerySet<any> | AnyModel | Serializable | null;
   
 /**
  * A map of possible types of relations and attributes that describe a single model.
@@ -231,18 +231,14 @@ export type SortIteratee<MClass extends AnyModel> = keyof Ref<MClass> | { (row: 
 /**
  * A primitive value
  */
-export type Primitive = number | string | boolean;
+ export type Primitive = number | string | boolean | undefined | null;
 
-/**
- * Serializable value: a primitive, undefined, a serializable object or an array of those
- */
-export type Serializable =
-  | Primitive
-  | Primitive[]
-  | undefined
-  | {
-      [K: string]: Serializable | Serializable[];
-    };
+ /**
+  * Serializable value: a primitive, undefined, a serializable object or an array of those
+  */
+ export type Serializable = Primitive | Serializable[] | {
+     [K: string]: Serializable;
+ };
 
 /**
  * The state of a specific model's table
