@@ -3,10 +3,10 @@ import { Attribute, ManyToMany, AttributeOptions, RelationalFieldOpts } from "..
 import Model from "../../../Model";
 import { ModelDescriptorsRegistry } from "../../../ModelDescriptorsRegistry";
 
+const registry = ModelDescriptorsRegistry.getInstance();
 
 describe("utils", () => {
 	describe('registerDescriptor', () => {
-		const registry = ModelDescriptorsRegistry.getInstance();
 		registry.clear();
 		
 		const modelName = 'Test';

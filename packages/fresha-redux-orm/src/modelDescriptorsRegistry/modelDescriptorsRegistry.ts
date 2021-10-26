@@ -1,10 +1,8 @@
-import { attr, Attribute } from "../fields";
+import { attr } from "../fields";
 import { Descriptors } from '../types';
+import { DescriptorsMap } from './types';
 
-/**
- * Represents a map with descriptors for a specific model
- */
-type DescriptorsMap<DescriptorTypes extends Descriptors> = { id: Attribute } & { [DescriptorName: string]: DescriptorTypes }
+
 /**
  * Stores descriptors maps for each registered model
  */

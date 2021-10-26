@@ -5,7 +5,6 @@ import { Attribute } from "../../decorators";
 import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
-registry.clear();
 
 describe("Model", () => {
   const getTestModelClass = () => {
@@ -18,19 +17,20 @@ describe("Model", () => {
       @Attribute()
       public id?: ModelId;
     }
-
+    
     return { Test };
   };
-
+  
   describe("static method", () => {
     type Schema = ValidateSchema<{
       UnitTestModel: ReturnType<typeof getTestModelClass>['Test'];
     }>;
-
+    
     let Test: ReturnType<typeof getTestModelClass>['Test'];
     let sessionMock: SessionWithBoundModels<Schema>;
-
+    
     beforeEach(() => {
+      registry.clear();
       ({ Test } = getTestModelClass());
       const orm = new ORM<Schema>();
       orm.register(Test);

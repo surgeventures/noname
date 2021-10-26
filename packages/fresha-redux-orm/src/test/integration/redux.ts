@@ -12,6 +12,8 @@ import {
 import { Values } from '../../utils';
 import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
+const registry = ModelDescriptorsRegistry.getInstance();
+
 describe("Redux integration", () => {
   let orm: ORM<Schema>;
   let Book: Schema['Book'];
@@ -62,7 +64,6 @@ describe("Redux integration", () => {
   };
 
   beforeEach(() => {
-    const registry = ModelDescriptorsRegistry.getInstance();
     registry.clear();
     ({
       Book,
