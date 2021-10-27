@@ -1,5 +1,6 @@
-import { attr } from "../..";
-import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
+import Model, { attr, Attribute, ModelId } from "../..";
+import { Attribute as AttributeClass } from "../../fields";
+import { getDescriptors, ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
 const modelName = 'Test';
 
@@ -52,3 +53,70 @@ describe("ModelDescriptorsRegistry", () => {
 		expect(AttrClass.getDefault!()).toEqual(getDefault());
 	})
 });
+
+describe("utils", () => {
+	const registry = ModelDescriptorsRegistry.getInstance();
+	registry.clear();
+
+	const createTestModelWithStaticFields = () => {
+		class Test extends Model<typeof Test, {}> {
+			static readonly = "Test";
+			
+			static fields = {
+				id: attr(),
+				name: attr(),
+			}
+		}
+
+		return { Test };
+	}
+
+	const createTestModelWithDecorators = () => {
+		class Test extends Model<typeof Test, {}> {
+			static readonly = "Test";
+
+			@Attribute()
+			public id: ModelId;
+
+			@Attribute()
+			public name: string;
+		}
+
+		return { Test };
+	}
+
+	const createTestModelWithoutDescriptors = () => {
+		class Test extends Model<typeof Test, {}> {
+			static readonly = "Test";
+		}
+
+		return { Test };	
+	}
+
+	afterEach(() =>{
+		registry.clear();
+	})
+
+	it("gets descriptors from the static fields object", () => {
+		const { Test } = createTestModelWithStaticFields()
+		const descriptors = getDescriptors(registry, Test);
+
+		expect(descriptors.id).toBeInstanceOf(AttributeClass);
+		expect(descriptors.name).toBeInstanceOf(AttributeClass);
+	})
+
+	it("gets descriptors from the registry", () => {
+		const { Test } = createTestModelWithDecorators()
+		const descriptors = getDescriptors(registry, Test);
+
+		expect(descriptors.id).toBeInstanceOf(AttributeClass);
+		expect(descriptors.name).toBeInstanceOf(AttributeClass);
+	})
+
+	it("gets descriptors from the default static fields object", () => {
+		const { Test } = createTestModelWithoutDescriptors()
+		const descriptors = getDescriptors(registry, Test);
+
+		expect(descriptors.id).toBeInstanceOf(AttributeClass);
+	})
+})

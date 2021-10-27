@@ -17,9 +17,7 @@ export function getDescriptors(registry: ModelDescriptorsRegistry, model: typeof
 
 	if (noDescriptorsFromRegistry) {
 		const fields = model.fields;
-		if (!fields) {
-			throw new Error(`Both fields object and descriptors in registry are not available for ${modelName} model.`)
-		}
+
 		return fields;
 	}
 
