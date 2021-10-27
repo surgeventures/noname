@@ -19,7 +19,7 @@ import {
   Values,
 } from "./utils";
 import { castTo } from "./hacks";
-import { getDescriptors } from "./ModelDescriptorsRegistry";
+import { getDescriptors, ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
 import { ModelId } from "./types";
 
 /**
@@ -512,7 +512,8 @@ export class ManyToMany extends RelationalField {
     toModel: typeof AnyModel,
     throughModel: typeof AnyModel
   ): { from: string; to: string } {
-    const descriptors = getDescriptors(throughModel); 
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const descriptors = getDescriptors(registry, throughModel); 
     if (this.throughFields) {
       const [fieldAName, fieldBName] = this.throughFields as [string, string];
       const fieldA = descriptors[fieldAName];

@@ -1,7 +1,6 @@
 import { ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 import { AnyModel } from "../Model";
-import { DescriptorsMap } from "./types";
-import { Descriptors } from "../types";
+import { Descriptors, DescriptorsMap } from "../types";
 
 /**
  * A function providing the backwards compatibility for static fields object.

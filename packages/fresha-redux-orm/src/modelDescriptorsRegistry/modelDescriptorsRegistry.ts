@@ -1,6 +1,5 @@
 import { attr } from "../fields";
-import { Descriptors } from '../types';
-import { DescriptorsMap } from './types';
+import { Descriptors, DescriptorsMap } from '../types';
 
 
 /**

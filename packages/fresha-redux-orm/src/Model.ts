@@ -9,10 +9,10 @@ import {
   m2mName,
   Values,
 } from "./utils";
-import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
+import { DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
 import { getDescriptors, ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
-import { attr } from ".";
+import { attr, Descriptors } from ".";
 
 /**
  * Generates a query specification to get the instance's
@@ -57,7 +57,7 @@ function getByIdQuery(modelInstance: AnyModel): Query<AnySchema, Record<string, 
  * logic by defining prototype methods (without `static` keyword).
  */
 export default class Model<MClassType extends typeof AnyModel = typeof AnyModel, MFieldMap extends ModelFieldMap = ModelFieldMap> {
-  static fields = {
+  static fields: DescriptorsMap<Descriptors> = {
     id: attr()
   };
   static modelName: string;
