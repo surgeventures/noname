@@ -24,6 +24,8 @@ import { ValidateSchema, Relations, ModelId, SessionBoundModel, TargetRelationsh
   Descriptors,
   ModelClassType,
   OrmSelector,
+  Selector,
+  AnyObject
 } from "./types";
 
 export {
@@ -65,6 +67,8 @@ export type {
   Descriptors,
   ModelClassType,
   OrmSelector,
+  Selector,
+  AnyObject
 }
 
 export default Model;
