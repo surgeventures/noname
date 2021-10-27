@@ -1,123 +1,147 @@
 import Model, { attr, Attribute, ModelId } from "../..";
 import { Attribute as AttributeClass } from "../../fields";
-import { getDescriptors, ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
+import {
+  getDescriptors,
+  ModelDescriptorsRegistry,
+} from "../../ModelDescriptorsRegistry";
 
-const modelName = 'Test';
+const modelName = "Test";
 
 function addDescriptorsForTest(registry: ModelDescriptorsRegistry) {
-	registry.add(modelName, { id: attr(), testProp: attr() });
+  registry.add(modelName, { id: attr(), testProp: attr() });
 }
 
 describe("ModelDescriptorsRegistry", () => {
-	const registry = ModelDescriptorsRegistry.getInstance();
-	registry.clear();
+  const registry = ModelDescriptorsRegistry.getInstance();
+  registry.clear();
 
-	afterEach(() =>{
-		registry.clear();
-	})
+  afterEach(() => {
+    registry.clear();
+  });
 
-	it("returns the same instance", () => {
-		expect(registry).toBe(ModelDescriptorsRegistry.getInstance())
-	});
+  it("returns the same instance", () => {
+    expect(registry).toBe(ModelDescriptorsRegistry.getInstance());
+  });
 
-	it("clears the registry", () => {
-		addDescriptorsForTest(registry);	
-		expect(Object.keys(registry.getRegistry())).toHaveLength(1);
+  it("clears the registry", () => {
+    addDescriptorsForTest(registry);
+    expect(Object.keys(registry.getRegistry())).toHaveLength(1);
 
-		registry.clear();
-		expect(Object.keys(registry.getRegistry())).toHaveLength(0);
-	});
+    registry.clear();
+    expect(Object.keys(registry.getRegistry())).toHaveLength(0);
+  });
 
-	// requires adding prettier
-	it.skip("adds descriptors to a given model name", () => {
-		addDescriptorsForTest(registry);	
-		expect(registry.getRegistry()).toMatchInlineSnapshot();
-	});
+  it("adds descriptors to a given model name", () => {
+    addDescriptorsForTest(registry);
+    expect(registry.getRegistry()).toMatchInlineSnapshot(`
+      Object {
+        "Test": Object {
+          "id": Attribute {
+            "opts": Object {},
+          },
+          "testProp": Attribute {
+            "opts": Object {},
+          },
+        },
+      }
+    `);
+  });
 
-	it.skip("gets descriptors by a given model name", () => {
-		addDescriptorsForTest(registry);
-		expect(registry.getDescriptors(modelName)).toMatchInlineSnapshot();
-	});
+  it("gets descriptors by a given model name", () => {
+    addDescriptorsForTest(registry);
+    expect(registry.getDescriptors(modelName)).toMatchInlineSnapshot(`
+      Object {
+        "id": Attribute {
+          "opts": Object {},
+        },
+        "testProp": Attribute {
+          "opts": Object {},
+        },
+      }
+    `);
+  });
 
-	it.skip("gets descriptors with defaults for a given model name", () => {
-		expect(registry.getDescriptors(modelName)).toMatchInlineSnapshot();
-	});
+  it("gets descriptors with defaults for a given model name", () => {
+    expect(registry.getDescriptors(modelName)).toMatchInlineSnapshot(
+      `Object {}`
+    );
+  });
 
-	it('enables to add descriptors with overwritten defaults', () => {
-		const descriptors = registry.getDescriptors(modelName);
-		expect(descriptors).toEqual({});
+  it("enables to add descriptors with overwritten defaults", () => {
+    const descriptors = registry.getDescriptors(modelName);
+    expect(descriptors).toEqual({});
 
-		const getDefault = () => 'uuid';
-		registry.add(modelName, { id: attr({ getDefault }) });
+    const getDefault = () => "uuid";
+    registry.add(modelName, { id: attr({ getDefault }) });
 
-		const AttrClass = registry.getDescriptors(modelName).id;
-		expect(AttrClass.getDefault!()).toEqual(getDefault());
-	})
+    const AttrClass = registry.getDescriptors(modelName).id;
+    expect(AttrClass.getDefault!()).toEqual(getDefault());
+  });
 });
 
 describe("utils", () => {
-	const registry = ModelDescriptorsRegistry.getInstance();
-	registry.clear();
+  const registry = ModelDescriptorsRegistry.getInstance();
+  registry.clear();
 
-	const createTestModelWithStaticFields = () => {
-		class Test extends Model<typeof Test, {}> {
-			static readonly = "Test";
-			
-			static fields = {
-				id: attr(),
-				name: attr(),
-			}
-		}
+  const createTestModelWithStaticFields = () => {
+    class Test extends Model<typeof Test, {}> {
+      static readonly = "Test";
 
-		return { Test };
-	}
+      static fields = {
+        id: attr(),
+        name: attr(),
+      };
+    }
 
-	const createTestModelWithDecorators = () => {
-		class Test extends Model<typeof Test, {}> {
-			static readonly = "Test";
+    return { Test };
+  };
 
-			@Attribute()
-			public id: ModelId;
+  const createTestModelWithDecorators = () => {
+    class Test extends Model<typeof Test, {}> {
+      static readonly = "Test";
 
-			@Attribute()
-			public name: string;
-		}
+      @Attribute()
+      public id: ModelId;
 
-		return { Test };
-	}
+      @Attribute()
+      public name: string;
+    }
 
-	const createTestModelWithoutDescriptors = () => {
-		class Test extends Model<typeof Test, {}> {
-			static readonly = "Test";
-		}
+    return { Test };
+  };
 
-		return { Test };	
-	}
+  const createTestModelWithoutDescriptors = () => {
+    class Test extends Model<typeof Test, {}> {
+      static readonly = "Test";
+    }
 
-	afterEach(() =>{
-		registry.clear();
-	})
+    return { Test };
+  };
 
-	it("gets descriptors from the static fields object", () => {
-		const { Test } = createTestModelWithStaticFields()
-		const descriptors = getDescriptors(registry, Test);
+  afterEach(() => {
+    registry.clear();
+  });
 
-		expect(descriptors.id).toBeInstanceOf(AttributeClass);
-		expect(descriptors.name).toBeInstanceOf(AttributeClass);
-	})
+  it("gets descriptors from the static fields object", () => {
+    const { Test } = createTestModelWithStaticFields();
+    const descriptors = getDescriptors(registry, Test);
 
-	it("gets descriptors from the registry", () => {
-		const { Test } = createTestModelWithDecorators()
-		const descriptors = getDescriptors(registry, Test);
+    expect(descriptors.id).toBeInstanceOf(AttributeClass);
+    expect(descriptors.name).toBeInstanceOf(AttributeClass);
+  });
 
-		expect(descriptors.id).toBeInstanceOf(AttributeClass);
-		expect(descriptors.name).toBeInstanceOf(AttributeClass);
-	})
+  it("gets descriptors from the registry", () => {
+    const { Test } = createTestModelWithDecorators();
+    const descriptors = getDescriptors(registry, Test);
 
-	it("gets descriptors from the default static fields object", () => {
-		const { Test } = createTestModelWithoutDescriptors()
-		const descriptors = getDescriptors(registry, Test);
+    expect(descriptors.id).toBeInstanceOf(AttributeClass);
+    expect(descriptors.name).toBeInstanceOf(AttributeClass);
+  });
 
-		expect(descriptors.id).toBeInstanceOf(AttributeClass);
-	})
-})
+  it("gets descriptors from the default static fields object", () => {
+    const { Test } = createTestModelWithoutDescriptors();
+    const descriptors = getDescriptors(registry, Test);
+
+    expect(descriptors.id).toBeInstanceOf(AttributeClass);
+  });
+});
