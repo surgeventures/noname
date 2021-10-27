@@ -1,6 +1,6 @@
 import Session from "./Session";
 import QuerySet from "./QuerySet";
-import { Attribute, ManyToMany, ForeignKey, OneToOne, RelationalField } from "./fields";
+import { attr, Attribute, ManyToMany, ForeignKey, OneToOne, RelationalField } from "./fields";
 import { CREATE, UPDATE, DELETE, FILTER } from "./constants";
 import {
   normalizeEntity,
@@ -9,10 +9,9 @@ import {
   m2mName,
   Values,
 } from "./utils";
-import { DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
+import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
 import { getDescriptors, ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
-import { attr, Descriptors } from ".";
 
 /**
  * Generates a query specification to get the instance's
@@ -441,7 +440,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     const ThisModel = this.getClass();
 
     return ThisModel._findDatabaseRows<InstanceType<MClassType>>({
-      id: this.getId(),
+      [ThisModel.idAttribute as 'id']: this.getId(),
     } as Ref<InstanceType<MClassType>>)[0];
   }
 
