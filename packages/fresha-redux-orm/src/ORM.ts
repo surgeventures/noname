@@ -7,7 +7,7 @@ import { Values, m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
 import { DatabaseCreator } from "./db/Database";
 import { Database, OrmState, SessionWithBoundModels } from "./types";
 import { castTo } from "./hacks";
-import { ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
+import { getDescriptors, ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
 
 /**
  * ORM instantiation opts.
@@ -81,7 +81,7 @@ export default class ORM<
   registerManyToManyModelsFor(model: Values<Schema>) {
     const thisModelName = model.modelName;
     const registry = ModelDescriptorsRegistry.getInstance();
-    const descriptors = registry.getDescriptors(thisModelName);
+    const descriptors = getDescriptors(registry, model);
     Object.entries(descriptors).forEach(([fieldName, fieldInstance]) => {
       if (!(fieldInstance instanceof ManyToMany)) {
         return;
@@ -162,11 +162,11 @@ export default class ORM<
 
   generateSchemaSpec() {
     const models = this.getModelClasses();
+    const registry = ModelDescriptorsRegistry.getInstance();
     const tables = models.reduce<Schema>((spec, modelClass) => {
       const tableName = modelClass.modelName;
       const tableSpec = modelClass._getTableOpts();
-      const registry = ModelDescriptorsRegistry.getInstance();
-      const descriptors = registry.getDescriptors(tableName);
+      const descriptors = getDescriptors(registry, modelClass);
       spec[tableName as keyof Schema] = Object.assign(
         {},
         { fields: descriptors },
@@ -221,7 +221,7 @@ export default class ORM<
     models.forEach((model) => {
       if (!model.isSetUp) {
         const { modelName } = model;
-        const descriptors = registry.getDescriptors(modelName);
+        const descriptors = getDescriptors(registry, model);
         Object.entries(descriptors).forEach(([fieldName, field]) => {
           if (!this._isFieldInstalled(modelName, fieldName)) {
             this._installField(field, fieldName, model);

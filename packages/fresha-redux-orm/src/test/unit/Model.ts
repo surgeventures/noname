@@ -1,11 +1,10 @@
-import { ORM, Model, QuerySet } from "../..";
+import { ORM, Model, QuerySet, attr, many, TargetRelationship, Relations, SourceRelationship } from "../..";
 import { castTo } from "../../hacks";
 import { ModelId, SessionWithBoundModels, ValidateSchema } from "../../types";
 import { Attribute } from "../../decorators";
 import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
-registry.clear();
 
 describe("Model", () => {
   const getTestModelClass = () => {
@@ -18,19 +17,20 @@ describe("Model", () => {
       @Attribute()
       public id?: ModelId;
     }
-
+    
     return { Test };
   };
-
+  
   describe("static method", () => {
     type Schema = ValidateSchema<{
       UnitTestModel: ReturnType<typeof getTestModelClass>['Test'];
     }>;
-
+    
     let Test: ReturnType<typeof getTestModelClass>['Test'];
     let sessionMock: SessionWithBoundModels<Schema>;
-
+    
     beforeEach(() => {
+      registry.clear();
       ({ Test } = getTestModelClass());
       const orm = new ORM<Schema>();
       orm.register(Test);
@@ -235,4 +235,68 @@ describe("Model", () => {
       );
     });
   });
+
+  describe("backwards compatibility for static fields object", () => {
+    const getModelClasses = () => {
+      type BookDescriptors = {
+        id: ModelId;
+        name: string;
+        authors: TargetRelationship<Author, Relations.ManyToMany>
+      }
+      class Book extends Model<typeof Book, BookDescriptors> {
+        static modelName = "Book" as const;
+        static fields = {
+          id: attr(),
+          name: attr(),
+          authors: many('Author', 'books')
+        }
+        // declared authors field to have correct typing
+        public authors: TargetRelationship<Author, Relations.ManyToMany>
+      }
+
+      type AuthorDescriptors = {
+        id: ModelId;
+        name: string;
+        books?: SourceRelationship<typeof Book, Relations.ManyToMany>
+      }
+      class Author extends Model<typeof Author, AuthorDescriptors> {
+        static modelName = "Author" as const;
+        static fields = {
+          id: attr(),
+          name: attr()
+        }
+      }
+      
+      return { Book, Author };
+    };
+    type Schema = ValidateSchema<{
+      Book: ReturnType<typeof getModelClasses>['Book'];
+      Author: ReturnType<typeof getModelClasses>['Author'];
+    }>;
+    
+    let Book: Schema['Book'];
+    let Author: Schema['Author'];
+    let session: SessionWithBoundModels<Schema>;
+
+    beforeEach(() => {
+      registry.clear();
+      ({ Book, Author } = getModelClasses());
+      const orm = new ORM<Schema>();
+      orm.register(Book, Author);
+      session = orm.session();
+    });
+
+    it("able to create a model with static fields object", () => {
+      const bookName = 'book';
+      const authorName = "author";
+
+      session.Author.create({ id: 1, name: authorName });
+      session.Book.create({ id: 2, name: bookName, authors: [session.Author.first()!]});
+
+      const book = session.Book.first()!;
+
+      expect(book.ref.name).toBe(bookName);
+      expect(book.authors.first()!.ref.name).toBe(authorName);
+    })
+  })
 });

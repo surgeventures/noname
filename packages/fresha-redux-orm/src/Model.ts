@@ -1,6 +1,6 @@
 import Session from "./Session";
 import QuerySet from "./QuerySet";
-import { Attribute, ManyToMany, ForeignKey, OneToOne, RelationalField } from "./fields";
+import { attr, Attribute, ManyToMany, ForeignKey, OneToOne, RelationalField } from "./fields";
 import { CREATE, UPDATE, DELETE, FILTER } from "./constants";
 import {
   normalizeEntity,
@@ -9,9 +9,9 @@ import {
   m2mName,
   Values,
 } from "./utils";
-import { AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
+import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
-import { ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
+import { getDescriptors, ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
 
 /**
  * Generates a query specification to get the instance's
@@ -56,6 +56,9 @@ function getByIdQuery(modelInstance: AnyModel): Query<AnySchema, Record<string, 
  * logic by defining prototype methods (without `static` keyword).
  */
 export default class Model<MClassType extends typeof AnyModel = typeof AnyModel, MFieldMap extends ModelFieldMap = ModelFieldMap> {
+  static fields: DescriptorsMap<Descriptors> = {
+    id: attr()
+  };
   static modelName: string;
   static virtualFields: Record<string, RelationalField> = {};
   static readonly querySetClass = QuerySet;
@@ -250,7 +253,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
 
     const m2mRelations: Record<string, (AnyModel | ModelId)[]> = {} as Record<string, (AnyModel | ModelId)[]>;
     const registry = ModelDescriptorsRegistry.getInstance();
-    const descriptors = registry.getDescriptors(this.modelName);
+    const descriptors = getDescriptors(registry, this);
     const declaredFieldNames = Object.keys(descriptors);
     const declaredVirtualFieldNames = Object.keys(this.virtualFields);
 
@@ -437,7 +440,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     const ThisModel = this.getClass();
 
     return ThisModel._findDatabaseRows<InstanceType<MClassType>>({
-      id: this.getId(),
+      [ThisModel.idAttribute as 'id']: this.getId(),
     } as Ref<InstanceType<MClassType>>)[0];
   }
 
@@ -474,7 +477,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     const ThisModel = this.getClass();
     const className = ThisModel.modelName;
     const registry = ModelDescriptorsRegistry.getInstance();
-    const descriptors = registry.getDescriptors(className);
+    const descriptors = getDescriptors(registry, ThisModel);
     const fieldNames = Object.keys(descriptors);
     const fields = fieldNames
       .map((fieldName) => {
@@ -543,7 +546,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     const mergeObj = { ...userMergeObj };
 
     const registry = ModelDescriptorsRegistry.getInstance();
-    const descriptors = registry.getDescriptors(ThisModel.modelName);
+    const descriptors = getDescriptors(registry, ThisModel);
     const { virtualFields } = ThisModel;
 
     const m2mRelations: Record<string, ModelId[]> = {} as Record<string, ModelId[]>;
@@ -658,7 +661,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     const ThisModel = this.getClass();
     const { virtualFields, modelName } = ThisModel;
     const registry = ModelDescriptorsRegistry.getInstance();
-    const descriptors = registry.getDescriptors(ThisModel.modelName);
+    const descriptors = getDescriptors(registry, ThisModel);
     Object.keys(relations).forEach((name) => {
       const reverse = !descriptors.hasOwnProperty(name);
       const field = virtualFields[name];

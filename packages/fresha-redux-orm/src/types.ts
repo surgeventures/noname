@@ -28,6 +28,11 @@ export type ModelId = number | string;
 export type Descriptors = Attribute | OneToOne | ManyToMany | ForeignKey;
 
 /**
+ * Represents a map with descriptors for a specific model
+ */
+ export type DescriptorsMap<DescriptorTypes extends Descriptors> = { id: Attribute } & { [DescriptorName: string]: DescriptorTypes }
+
+/**
  * Enumeration of possible relations used for defining interfaces with descriptors.
  */
 export enum Relations {

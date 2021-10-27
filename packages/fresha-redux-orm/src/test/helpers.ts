@@ -2,10 +2,6 @@ import ORM from "../ORM";
 import Model, { AnyModel } from "../Model";
 import { ModelId, Relations, SessionWithBoundModels, SourceRelationship, TargetRelationship } from "../types";
 import { Attribute, ManyToMany, ForeignKey, OneToOne } from "../decorators";
-import { ModelDescriptorsRegistry } from "../ModelDescriptorsRegistry";
-
-const registry = ModelDescriptorsRegistry.getInstance();
-registry.clear();
 
 /**
  * These utils create a database schema for testing.
