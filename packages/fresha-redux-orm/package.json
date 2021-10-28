@@ -3,9 +3,6 @@
   "version": "0.1.8",
   "description": "Simple ORM to manage and query your state trees",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "module": "es/index.js",
-  "jsnext:main": "src/index.js",
   "sideEffects": false,
   "publishConfig": {
     "access": "public"
