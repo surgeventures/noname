@@ -4,7 +4,7 @@
     "allowJs": false,
     "declaration": true,
     "target": "es6",
-    "module": "esnext",
+    "module": "commonjs",
     "esModuleInterop": true,
     "noImplicitAny": true,
     "lib": [
