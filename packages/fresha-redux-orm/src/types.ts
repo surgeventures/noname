@@ -14,7 +14,7 @@ import Table from "./db/Table";
 import { AnyModel, ModelClassMap } from "./Model";
 import Session from "./Session";
 import QuerySet from "./QuerySet";
-import { Attribute, OneToOne, ManyToMany, ForeignKey } from "./fields";
+import { Attribute, OneToOne, ManyToMany, ForeignKey, Field } from "./fields";
 import { Values } from "./utils";
 
 export type AnyObject = Record<string, any>;
@@ -25,7 +25,7 @@ export type ModelId = number | string;
 /**
  * Defines possible descriptors defined on the ORM side
  */
-export type Descriptors = Attribute | OneToOne | ManyToMany | ForeignKey;
+export type Descriptors = Attribute | OneToOne | ManyToMany | ForeignKey | Field;
 
 /**
  * Represents a map with descriptors for a specific model
@@ -169,14 +169,14 @@ export type SourceRelationship<
 /**
  * Possible types of relations and attributes that describe a single model.
  */
-type ModelField = QuerySet<any> | AnyModel | Serializable | null;
+export type ModelField = QuerySet<any> | AnyModel | Serializable;
   
 /**
  * A map of possible types of relations and attributes that describe a single model.
  */
-export type ModelFieldMap = {
+export type ModelFieldMap<CustomModelField extends {} = {}> = {
   id?: ModelId;
-  [K: string]: ModelField;
+  [K: string]: ModelField | CustomModelField;
 };
   
 /**
