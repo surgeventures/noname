@@ -1,25 +1,28 @@
-import { Attribute, AttributeOptions, RelationalFieldOpts } from '../fields';
+import { Attribute, AttributeOptions, Field, RelationalFieldOpts } from '../fields';
 import { AnyModel } from '../Model';
 import { ModelDescriptorsRegistry } from '../ModelDescriptorsRegistry';
 import { Descriptors } from '../types';
 
 // Types of accepted descriptors
+type CustomAttrWithOptsDescriptorFn = <Opts extends {}>(opts: Opts) => Field;
 type AttrsDescriptorFn = (opts: AttributeOptions) => Attribute;
-type BasicRelationalFieldDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (toModelName: string, relatedName?: string) => DescriptorTypes;
-type ComplexRelationalFieldDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (opts: RelationalFieldOpts) => DescriptorTypes;
+type RelationalFieldDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (toModelName: string, relatedName?: string) => DescriptorTypes;
+type RelationalFieldWithOptsDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (opts: RelationalFieldOpts) => DescriptorTypes;
 
 type TargetHandler = (target: AnyModel, propertyName: string) => void;
 
 // Types of possible decorator factories
+type CustomAttrWithOptsDecoratorFactory = <Opts extends {}>(opts: Opts) => TargetHandler;
 type AttrDecoratorFactory = (opts: AttributeOptions) => TargetHandler;
-type BasicRelationalFieldDecoratorFactory = (toModelName: string, relatedName?: string) => TargetHandler;
-type ComplexRelationalFieldDecoratorFactory = (opts: RelationalFieldOpts) => TargetHandler;
+type RelationalFieldDecoratorFactory = (toModelName: string, relatedName?: string) => TargetHandler;
+type RelationalFieldWithOptsDecoratorFactory = (opts: RelationalFieldOpts) => TargetHandler;
 
 export function registerDescriptor(descriptorFn: AttrsDescriptorFn): AttrDecoratorFactory;
-export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: BasicRelationalFieldDescriptorFn<DescriptorTypes>): BasicRelationalFieldDecoratorFactory;
-export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: ComplexRelationalFieldDescriptorFn<DescriptorTypes>): ComplexRelationalFieldDecoratorFactory;
+export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: RelationalFieldDescriptorFn<DescriptorTypes>): RelationalFieldDecoratorFactory;
+export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: RelationalFieldWithOptsDescriptorFn<DescriptorTypes>): RelationalFieldWithOptsDecoratorFactory;
+export function registerDescriptor(descriptorFn: CustomAttrWithOptsDescriptorFn): CustomAttrWithOptsDecoratorFactory;
 export function registerDescriptor(descriptorFn: any) {
-	function decoratorFactory(arg1: AttributeOptions | RelationalFieldOpts | string, arg2?: string) {
+	function decoratorFactory(arg1: AttributeOptions | RelationalFieldOpts | string | {}, arg2?: string) {
 		return function target(target: AnyModel, propertyName: string): void {
 			const model = target.getClass();
 			const modelName = model.modelName;
