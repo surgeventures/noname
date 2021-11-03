@@ -12,6 +12,7 @@ import {
   oneToOne,
   attr,
   Attribute as AttributeClass,
+  Field,
 } from "./fields";
 import { Attribute, ForeignKey, ManyToMany, OneToOne, registerDescriptor } from "./decorators";
 import { ValidateSchema, Relations, ModelId, SessionBoundModel, TargetRelationship,
@@ -26,9 +27,13 @@ import { ValidateSchema, Relations, ModelId, SessionBoundModel, TargetRelationsh
   OrmSelector,
   Selector,
   AnyObject,
-  ModelField
+  ModelField,
+  RefWithFields,
+  DescriptorsMap
 } from "./types";
 
+export { getDescriptors, ModelDescriptorsRegistry } from './modelDescriptorsRegistry';
+export { attrDescriptor } from './descriptors';
 export {
   QuerySet,
   Model,
@@ -50,6 +55,7 @@ export {
   createReducer,
   createSelector,
   registerDescriptor,
+  Field,
 };
 
 export type {
@@ -70,7 +76,9 @@ export type {
   OrmSelector,
   Selector,
   AnyObject,
-  ModelField
+  ModelField,
+  RefWithFields,
+  DescriptorsMap
 }
 
 export default Model;
