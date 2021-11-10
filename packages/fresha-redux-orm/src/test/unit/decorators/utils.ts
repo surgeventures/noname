@@ -1,7 +1,7 @@
 import { registerDescriptor } from "../../../decorators/utils";
 import { Attribute, ManyToMany, AttributeOptions, RelationalFieldOpts } from "../../../fields";
 import Model from "../../../Model";
-import { ModelDescriptorsRegistry } from "../../../ModelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../../modelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 

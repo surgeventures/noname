@@ -5,7 +5,7 @@ import { createSelector } from "../..";
 import { createSelector as createReselectSelector } from "reselect";
 import { measureMs, nTimes, avg, round } from "../helpers";
 import { Attribute, ManyToMany, ForeignKey, OneToOne } from "../../decorators";
-import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 

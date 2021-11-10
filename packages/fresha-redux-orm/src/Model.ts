@@ -11,7 +11,7 @@ import {
 } from "./utils";
 import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
-import { getDescriptors, ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
+import { getDescriptors, ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 
 /**
  * Generates a query specification to get the instance's

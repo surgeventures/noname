@@ -7,7 +7,7 @@ import { Values, m2mName, m2mToFieldName, m2mFromFieldName } from "./utils";
 import { DatabaseCreator } from "./db/Database";
 import { Database, OrmState, SessionWithBoundModels } from "./types";
 import { castTo } from "./hacks";
-import { getDescriptors, ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
+import { getDescriptors, ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 
 /**
  * ORM instantiation opts.

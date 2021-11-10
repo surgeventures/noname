@@ -19,7 +19,7 @@ import {
   Values,
 } from "./utils";
 import { castTo } from "./hacks";
-import { getDescriptors, ModelDescriptorsRegistry } from "./ModelDescriptorsRegistry";
+import { getDescriptors, ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 import { ModelId } from "./types";
 
 /**

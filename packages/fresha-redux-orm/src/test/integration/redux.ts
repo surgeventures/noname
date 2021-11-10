@@ -10,7 +10,7 @@ import {
   createTestModels,
 } from "../helpers";
 import { Values } from '../../utils';
-import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 

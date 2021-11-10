@@ -3,7 +3,7 @@ import { Attribute as AttributeClass } from "../../fields";
 import {
   getDescriptors,
   ModelDescriptorsRegistry,
-} from "../../ModelDescriptorsRegistry";
+} from "../../modelDescriptorsRegistry";
 
 const modelName = "Test";
 

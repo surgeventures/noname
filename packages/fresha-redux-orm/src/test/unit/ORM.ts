@@ -2,7 +2,7 @@ import { ORM, Session, Model} from "../..";
 import { createTestModels, Schema } from "../helpers";
 import { ModelId, OrmState, Relations, TargetRelationship, ValidateSchema } from '../../types';
 import { Attribute, OneToOne } from "../../decorators";
-import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 
