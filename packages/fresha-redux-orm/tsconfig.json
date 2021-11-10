@@ -17,7 +17,8 @@
     "sourceMap": true,
     "noUnusedParameters": true,
     "noUnusedLocals": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true
   },
   "exclude": [
     "node_modules/",

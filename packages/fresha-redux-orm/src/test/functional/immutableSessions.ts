@@ -8,7 +8,7 @@ import {
   ExtendedSession,
   Schema,
 } from "../helpers";
-import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 import { Attribute } from "../../decorators";
 
 const registry = ModelDescriptorsRegistry.getInstance();

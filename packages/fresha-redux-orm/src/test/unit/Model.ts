@@ -2,7 +2,7 @@ import { ORM, Model, QuerySet, attr, many, TargetRelationship, Relations, Source
 import { castTo } from "../../hacks";
 import { ModelId, SessionWithBoundModels, ValidateSchema } from "../../types";
 import { Attribute } from "../../decorators";
-import { ModelDescriptorsRegistry } from "../../ModelDescriptorsRegistry";
+import { ModelDescriptorsRegistry } from "../../modelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
 

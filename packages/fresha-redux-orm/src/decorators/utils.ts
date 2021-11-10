@@ -1,6 +1,6 @@
 import { Attribute, AttributeOptions, Field, RelationalFieldOpts } from '../fields';
 import { AnyModel } from '../Model';
-import { ModelDescriptorsRegistry } from '../ModelDescriptorsRegistry';
+import { ModelDescriptorsRegistry } from '../modelDescriptorsRegistry';
 import { Descriptors } from '../types';
 
 // Types of accepted descriptors
