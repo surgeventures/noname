@@ -217,6 +217,21 @@ export type ModelRefLike<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
 };
 
 /**
+ * POC to get rid of ManyToMany relationship
+ */
+
+// export type ModelRefLikePOC<MFieldMap extends ModelFieldMap = ModelFieldMap> = MapModelRefLikePOCValues<Pick<MFieldMap, {
+//     [K in keyof MFieldMap]: ExcludeUndefined<MFieldMap[K]> extends QuerySet ? never : K
+// }[keyof MFieldMap]>>;
+//
+// type MapModelRefLikePOCValues<Object> = {
+//     [K in keyof Object]: ExcludeUndefined<Object[K]> extends AnyModel
+//         ? ModelId | undefined
+//         : Object[K];
+// }
+
+
+/**
  * Excludes undefined type from an union of types.
  */
 type ExcludeUndefined<T> = Exclude<T, undefined>;
