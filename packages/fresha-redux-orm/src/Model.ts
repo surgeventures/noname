@@ -92,7 +92,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
       // on the prototype chain.
       if (!(fieldName in this)) {
         Object.defineProperty(this, fieldName, {
-          get: () => this._fields[fieldName],
+          get: () => this._fields[fieldName as keyof RefFromFields<MFieldMap>],
           set: (value) => this.set(fieldName, value),
           configurable: true,
           enumerable: true,
@@ -426,7 +426,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * @return {*} The id value of the current instance.
    */
   getId(): ModelId {
-    return this._fields[this.getClass().idAttribute] as ModelId;
+    return this._fields[this.getClass().idAttribute as keyof RefFromFields<MFieldMap>] as ModelId;
   }
 
   /**
@@ -488,7 +488,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
             .map(model => model.getId());
           return `${fieldName}: [${ids.join(", ")}]`;
         }
-        const val = this._fields[fieldName as keyof MFieldMap];
+        const val = this._fields[fieldName as keyof RefFromFields<MFieldMap>];
         return `${fieldName}: ${val}`;
       })
       .join(", ");
@@ -702,7 +702,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
           through[fromField] === (this as AnyObject)[ThisModel.idAttribute]
       )
         .toRefArray()
-        .map((ref) => castTo<ModelId>(ref[toField]));
+        .map((ref) => castTo<ModelId>(ref[toField as keyof RefFromFields]));
 
       const diffActions = arrayDiffActions(currentIds, normalizedNewIds);
 

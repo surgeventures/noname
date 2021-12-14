@@ -147,9 +147,21 @@ export type TargetRelationship<
   : Relation extends Relations.ForeignKey
     ? SessionBoundModel<MClass>
     : Relation extends Relations.ManyToMany
-      ? QuerySet<ModelClassType<MClass>>
+      ? TargetQuerySetHelper<MClass>
       : never;
       
+
+export type IsTargetField<Field extends ModelField> = Field extends SourceModelHelper<infer MClassType>
+  ? MClassType extends ModelClassType<Field>
+    ? false
+    : true
+  : Field extends TargetQuerySetHelper<infer MClass>
+    ? AnyModel extends MClass
+      ? false
+      : true
+    : never;
+
+type TargetQuerySetHelper<MClass extends AnyModel> = QuerySet<ModelClassType<MClass>>;
 type SourceModelHelper<MClassType extends typeof AnyModel> = SessionBoundModel<InstanceType<MClassType>>; 
 
 /**
@@ -167,18 +179,20 @@ export type SourceRelationship<
     : Relation extends Relations.ManyToMany
       ? QuerySet<MClassType>
       : never;
-      
+
+type RegularModelField = QuerySet<any> | AnyModel | Serializable;
+
 /**
  * Possible types of relations and attributes that describe a single model.
  */
-export type ModelField = QuerySet<any> | AnyModel | Serializable;
+export type ModelField<CustomModelField extends {} = {}> = RegularModelField | CustomModelField;
   
 /**
  * A map of possible types of relations and attributes that describe a single model.
  */
 export type ModelFieldMap<CustomModelField extends {} = {}> = {
   id?: ModelId;
-  [K: string]: ModelField | CustomModelField;
+  [K: string]: ModelField<CustomModelField>;
 };
 
 /**
@@ -206,21 +220,19 @@ export type RefWithFields<MClass extends AnyModel> = {
 }; 
   
 // eslint-disable-next-line no-unused-vars
-type IsFieldRefLike<Field extends ModelField> = Field extends Serializable
-  ? true
-  : Field extends QuerySet
-    ? false
-    : Field extends SourceModelHelper<infer MClassType>
-      ? MClassType extends ModelClassType<Field>
-        ? false
-        : true 
-      : false;
+type IsFieldRefLike<Field extends ModelField> = Field extends QuerySet
+  ? false
+  : Field extends SourceModelHelper<infer MClassType>
+    ? MClassType extends ModelClassType<Field>
+      ? false
+      : true
+    : true;
 
 /**
  * Transforms the fields object to match the interface of the plain JS object in the database.
  */
 export type RefFromFields<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
-	[K in keyof MFieldMap as IsFieldRefLike<Required<MFieldMap>[K]> extends true ? K : never]: Required<MFieldMap>[K] extends AnyModel
+	[K in keyof MFieldMap as IsFieldRefLike<Exclude<MFieldMap[K], undefined>> extends true ? K : ModelField extends Required<MFieldMap>[K] ? K : never]: Required<MFieldMap>[K] extends AnyModel
 			? ModelId | undefined
 			: MFieldMap[K];
 };
