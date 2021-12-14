@@ -9,7 +9,7 @@ import {
   m2mName,
   Values,
 } from "./utils";
-import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
+import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, RefFromFields, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
 import { getDescriptors, ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 
@@ -64,7 +64,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
   static readonly querySetClass = QuerySet;
   static isSetUp: boolean;
   static _session: SessionWithBoundModels<any>;
-  _fields: ModelRefLike<MFieldMap>;
+  _fields: RefFromFields<MFieldMap>;
   static reducer: <Schema extends AnySchema, ModelClassType extends Values<Schema>>(
     action: ReduxAction<Ref<InstanceType<ModelClassType>>>,
     modelClass: ModelClassType,
@@ -76,12 +76,12 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * Don't use this to create a new record; Use the static method {@link Model#create}.
    * @param  {Object} props - the properties to instantiate with
    */
-  constructor(props: ModelRefLike<MFieldMap>) {
+  constructor(props: RefFromFields<MFieldMap>) {
     this._initFields(props);
   }
 
-  _initFields(props?: ModelRefLike<MFieldMap>): void {
-    const propsObj = Object(props) as ModelRefLike<MFieldMap>;
+  _initFields(props?: RefFromFields<MFieldMap>): void {
+    const propsObj = Object(props) as RefFromFields<MFieldMap>;
     this._fields = { ...propsObj };
 
     Object.keys(propsObj).forEach((fieldName) => {

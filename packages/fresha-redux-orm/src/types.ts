@@ -121,7 +121,7 @@ export type SessionBoundModel<
 export type ModelFields<MClass extends AnyModel> = ConstructorParameters<
   ModelClassType<MClass>
 > extends [infer FirstConstructorParam]
- ? FirstConstructorParam extends ModelRefLike<infer ModelFields>
+ ? FirstConstructorParam extends RefFromFields<infer ModelFields>
    ? ModelFields
    : never 
  : never;
@@ -150,6 +150,8 @@ export type TargetRelationship<
       ? QuerySet<ModelClassType<MClass>>
       : never;
       
+type SourceModelHelper<MClassType extends typeof AnyModel> = SessionBoundModel<InstanceType<MClassType>>; 
+
 /**
  * Handles relationships on the target model side.
  *
@@ -159,7 +161,7 @@ export type SourceRelationship<
   MClassType extends typeof AnyModel,
   Relation extends Relations
 > = Relation extends Relations.OneToOne
-  ? InstanceType<MClassType>
+  ? SourceModelHelper<MClassType>
   : Relation extends Relations.ForeignKey
     ? QuerySet<MClassType>
     : Relation extends Relations.ManyToMany
@@ -178,14 +180,14 @@ export type ModelFieldMap<CustomModelField extends {} = {}> = {
   id?: ModelId;
   [K: string]: ModelField | CustomModelField;
 };
-  
+
 /**
  * A plain JS object representing the database entry.
  */
 export type Ref<MClass extends AnyModel> = ConstructorParameters<
   ModelClassType<MClass>
 > extends [infer FirstConstructorParam]
-  ? FirstConstructorParam extends ModelRefLike
+  ? FirstConstructorParam extends RefFromFields
   ? FirstConstructorParam
   : never
   : never;
@@ -195,31 +197,33 @@ export type Ref<MClass extends AnyModel> = ConstructorParameters<
  * 
  * Mainly used in functions that manipulate db entries.
  */
-export type RefWithFields<M extends AnyModel> = {
-  [K in keyof ModelFields<M>]: ExcludeUndefined<ModelFields<M>[K]> extends QuerySet
-    ? (SessionBoundModel<ExcludeUndefined<ModelFields<M>[K]> extends QuerySet<infer MClass> ? InstanceType<MClass> : never> | ModelId | null)[]
-    : ExcludeUndefined<ModelFields<M>[K]> extends AnyModel
-      ? ModelFields<M>[K] | ModelId | null
-      : ModelFields<M>[K];
+export type RefWithFields<MClass extends AnyModel> = {
+  [K in keyof ModelFields<MClass>]: Required<ModelFields<MClass>>[K] extends QuerySet
+    ? (SessionBoundModel<Required<ModelFields<MClass>>[K] extends QuerySet<infer MClass> ? InstanceType<MClass> : never> | ModelId | null)[]
+    : Required<ModelFields<MClass>>[K] extends AnyModel
+      ? ModelFields<MClass>[K] | ModelId | null
+      : ModelFields<MClass>[K];
 }; 
   
-/**
- * Transforms the fields object to match the interface of the plain JS object in the database.
- * 
- * TODO: should firstly check if is undefined
- */
-export type ModelRefLike<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
-  [K in keyof MFieldMap]: ExcludeUndefined<MFieldMap[K]> extends QuerySet
-    ? never
-    : ExcludeUndefined<MFieldMap[K]> extends AnyModel
-      ? ModelId | undefined
-      : MFieldMap[K];
-};
+// eslint-disable-next-line no-unused-vars
+type IsFieldRefLike<Field extends ModelField> = Field extends Serializable
+  ? true
+  : Field extends QuerySet
+    ? false
+    : Field extends SourceModelHelper<infer MClassType>
+      ? MClassType extends ModelClassType<Field>
+        ? false
+        : true 
+      : false;
 
 /**
- * Excludes undefined type from an union of types.
+ * Transforms the fields object to match the interface of the plain JS object in the database.
  */
-type ExcludeUndefined<T> = Exclude<T, undefined>;
+export type RefFromFields<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
+	[K in keyof MFieldMap as IsFieldRefLike<Required<MFieldMap>[K]> extends true ? K : never]: Required<MFieldMap>[K] extends AnyModel
+			? ModelId | undefined
+			: MFieldMap[K];
+};
 
 /**
  * Optional ordering direction.
