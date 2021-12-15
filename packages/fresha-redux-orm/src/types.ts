@@ -68,13 +68,13 @@ export type ModelName<MClassType extends typeof AnyModel> = MClassType['modelNam
  */
 export type ModelClassTypeFromModelFields<MClass extends AnyModel, MFields extends Required<ModelFields<MClass>> = Required<ModelFields<MClass>>> =
 	{ [K in keyof MFields]:
-    MFields[K] extends SessionBoundModel<infer Z>
-      ? Z extends AnyModel
-        ? ModelClassType<Z>
-        : never
-      : MFields[K] extends QuerySet<infer Z>
-        ? Z
-        : never
+    IsTargetField<MFields[K]> extends true 
+      ? MFields[K] extends SessionBoundModel<infer MClass>
+        ? ModelClassType<MClass>
+        : MFields[K] extends QuerySet<infer MClassType>
+          ? MClassType
+          : never
+      : never;
   }[keyof MFields];
 
 /**
@@ -88,23 +88,26 @@ type SourceRelationshipKeysOfModel<
   TargetMClass extends AnyModel,
   MFields extends Required<ModelFields<TargetMClass>> = Required<ModelFields<TargetMClass>>
 > = { [K in keyof MFields]:
-    MFields[K] extends SessionBoundModel<infer Z>
-      ? Z extends AnyModel
-        ? Z extends SourceMClass
+  IsTargetField<MFields[K]> extends false
+    ? MFields[K] extends SessionBoundModel<infer MClass>
+      ? MClass extends SourceMClass
+        ? K
+        : never
+      : MFields[K] extends QuerySet<infer MClassType>
+        ? MClassType extends ModelClassType<SourceMClass>
           ? K
           : never
         : never
-      : MFields[K] extends QuerySet<infer Z>
-        ? Z extends ModelClassType<SourceMClass>
-          ? K
-          : never
-        : never
+      : never
   }[keyof MFields];
 
 /**
  * Iterates over the union of target model types and gives all field keys that are possible to set in the relations decorator.
  */
-export type PossibleFieldKeys<SourceMClass extends AnyModel, TargetMClassType extends typeof AnyModel> = TargetMClassType extends typeof AnyModel ? SourceRelationshipKeysOfModel<SourceMClass, InstanceType<TargetMClassType>> : never;
+export type PossibleFieldKeys<SourceMClass extends AnyModel, TargetMClassType extends typeof AnyModel> = 
+  TargetMClassType extends typeof AnyModel 
+    ? SourceRelationshipKeysOfModel<SourceMClass, InstanceType<TargetMClassType>> 
+    : never;
 
 /**
  * Imitates the model bound to the session.
