@@ -9,7 +9,7 @@ import {
   m2mName,
   Values,
 } from "./utils";
-import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, ModelRefLike, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
+import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, RefFromFields, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
 import { castTo } from "./hacks";
 import { getDescriptors, ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 
@@ -64,7 +64,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
   static readonly querySetClass = QuerySet;
   static isSetUp: boolean;
   static _session: SessionWithBoundModels<any>;
-  _fields: ModelRefLike<MFieldMap>;
+  _fields: RefFromFields<MFieldMap>;
   static reducer: <Schema extends AnySchema, ModelClassType extends Values<Schema>>(
     action: ReduxAction<Ref<InstanceType<ModelClassType>>>,
     modelClass: ModelClassType,
@@ -76,12 +76,14 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * Don't use this to create a new record; Use the static method {@link Model#create}.
    * @param  {Object} props - the properties to instantiate with
    */
-  constructor(props: ModelRefLike<MFieldMap>) {
-    this._initFields(props);
+  constructor(props: MFieldMap) {
+    // Using MFieldMap for types deduction to break the circular type references
+    // Constructor wasn't designed for creating orm records, it can accept any values
+    this._initFields(props as unknown as RefFromFields<MFieldMap>);
   }
 
-  _initFields(props?: ModelRefLike<MFieldMap>): void {
-    const propsObj = Object(props) as ModelRefLike<MFieldMap>;
+  _initFields(props?: RefFromFields<MFieldMap>): void {
+    const propsObj = Object(props) as RefFromFields<MFieldMap>;
     this._fields = { ...propsObj };
 
     Object.keys(propsObj).forEach((fieldName) => {
@@ -92,7 +94,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
       // on the prototype chain.
       if (!(fieldName in this)) {
         Object.defineProperty(this, fieldName, {
-          get: () => this._fields[fieldName],
+          get: () => this._fields[fieldName as keyof RefFromFields<MFieldMap>],
           set: (value) => this.set(fieldName, value),
           configurable: true,
           enumerable: true,
@@ -426,7 +428,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * @return {*} The id value of the current instance.
    */
   getId(): ModelId {
-    return this._fields[this.getClass().idAttribute] as ModelId;
+    return this._fields[this.getClass().idAttribute as keyof RefFromFields<MFieldMap>] as ModelId;
   }
 
   /**
@@ -488,7 +490,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
             .map(model => model.getId());
           return `${fieldName}: [${ids.join(", ")}]`;
         }
-        const val = this._fields[fieldName as keyof MFieldMap];
+        const val = this._fields[fieldName as keyof RefFromFields<MFieldMap>];
         return `${fieldName}: ${val}`;
       })
       .join(", ");
@@ -702,7 +704,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
           through[fromField] === (this as AnyObject)[ThisModel.idAttribute]
       )
         .toRefArray()
-        .map((ref) => castTo<ModelId>(ref[toField]));
+        .map((ref) => castTo<ModelId>(ref[toField as keyof RefFromFields]));
 
       const diffActions = arrayDiffActions(currentIds, normalizedNewIds);
 

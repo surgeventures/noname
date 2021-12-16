@@ -68,13 +68,13 @@ export type ModelName<MClassType extends typeof AnyModel> = MClassType['modelNam
  */
 export type ModelClassTypeFromModelFields<MClass extends AnyModel, MFields extends Required<ModelFields<MClass>> = Required<ModelFields<MClass>>> =
 	{ [K in keyof MFields]:
-    MFields[K] extends SessionBoundModel<infer Z>
-      ? Z extends AnyModel
-        ? ModelClassType<Z>
-        : never
-      : MFields[K] extends QuerySet<infer Z>
-        ? Z
-        : never
+    IsTargetField<MFields[K]> extends true 
+      ? MFields[K] extends SessionBoundModel<infer MClass>
+        ? ModelClassType<MClass>
+        : MFields[K] extends QuerySet<infer MClassType>
+          ? MClassType
+          : never
+      : never;
   }[keyof MFields];
 
 /**
@@ -88,23 +88,26 @@ type SourceRelationshipKeysOfModel<
   TargetMClass extends AnyModel,
   MFields extends Required<ModelFields<TargetMClass>> = Required<ModelFields<TargetMClass>>
 > = { [K in keyof MFields]:
-    MFields[K] extends SessionBoundModel<infer Z>
-      ? Z extends AnyModel
-        ? Z extends SourceMClass
+  IsTargetField<MFields[K]> extends false
+    ? MFields[K] extends SessionBoundModel<infer MClass>
+      ? MClass extends SourceMClass
+        ? K
+        : never
+      : MFields[K] extends QuerySet<infer MClassType>
+        ? MClassType extends ModelClassType<SourceMClass>
           ? K
           : never
         : never
-      : MFields[K] extends QuerySet<infer Z>
-        ? Z extends ModelClassType<SourceMClass>
-          ? K
-          : never
-        : never
+      : never
   }[keyof MFields];
 
 /**
  * Iterates over the union of target model types and gives all field keys that are possible to set in the relations decorator.
  */
-export type PossibleFieldKeys<SourceMClass extends AnyModel, TargetMClassType extends typeof AnyModel> = TargetMClassType extends typeof AnyModel ? SourceRelationshipKeysOfModel<SourceMClass, InstanceType<TargetMClassType>> : never;
+export type PossibleFieldKeys<SourceMClass extends AnyModel, TargetMClassType extends typeof AnyModel> = 
+  TargetMClassType extends typeof AnyModel 
+    ? SourceRelationshipKeysOfModel<SourceMClass, InstanceType<TargetMClassType>> 
+    : never;
 
 /**
  * Imitates the model bound to the session.
@@ -121,8 +124,8 @@ export type SessionBoundModel<
 export type ModelFields<MClass extends AnyModel> = ConstructorParameters<
   ModelClassType<MClass>
 > extends [infer FirstConstructorParam]
- ? FirstConstructorParam extends ModelRefLike<infer ModelFields>
-   ? ModelFields
+ ? FirstConstructorParam extends ModelFieldMap
+   ? FirstConstructorParam
    : never 
  : never;
 
@@ -147,9 +150,34 @@ export type TargetRelationship<
   : Relation extends Relations.ForeignKey
     ? SessionBoundModel<MClass>
     : Relation extends Relations.ManyToMany
-      ? QuerySet<ModelClassType<MClass>>
+      ? TargetQuerySetHelper<MClass>
       : never;
       
+
+/**
+ * Checks if the field is of 'target' type. Returns true/false.
+ * 
+ * Fields of target type, are defined with {@link TargetRelationship}
+ */
+export type IsTargetField<Field extends ModelField> = Field extends SourceModelHelper<infer MClassType>
+  ? MClassType extends ModelClassType<Field>
+    ? false
+    : true
+  : Field extends TargetQuerySetHelper<infer MClass>
+    ? AnyModel extends MClass
+      ? false
+      : true
+    : never;
+
+/**
+ * A wrapper helping to catch the passed type for inferring purposes.
+ */
+type TargetQuerySetHelper<MClass extends AnyModel> = QuerySet<ModelClassType<MClass>>;
+/**
+ * A wrapper helping to catch the passed type for inferring purposes.
+ */
+type SourceModelHelper<MClassType extends typeof AnyModel> = SessionBoundModel<InstanceType<MClassType>>; 
+
 /**
  * Handles relationships on the target model side.
  *
@@ -159,34 +187,36 @@ export type SourceRelationship<
   MClassType extends typeof AnyModel,
   Relation extends Relations
 > = Relation extends Relations.OneToOne
-  ? InstanceType<MClassType>
+  ? SourceModelHelper<MClassType>
   : Relation extends Relations.ForeignKey
     ? QuerySet<MClassType>
     : Relation extends Relations.ManyToMany
       ? QuerySet<MClassType>
       : never;
-      
+
+type RegularModelField = QuerySet<any> | AnyModel | Serializable;
+
 /**
  * Possible types of relations and attributes that describe a single model.
  */
-export type ModelField = QuerySet<any> | AnyModel | Serializable;
+export type ModelField<CustomModelField extends {} = {}> = RegularModelField | CustomModelField;
   
 /**
  * A map of possible types of relations and attributes that describe a single model.
  */
 export type ModelFieldMap<CustomModelField extends {} = {}> = {
   id?: ModelId;
-  [K: string]: ModelField | CustomModelField;
+  [K: string]: ModelField<CustomModelField>;
 };
-  
+
 /**
  * A plain JS object representing the database entry.
  */
 export type Ref<MClass extends AnyModel> = ConstructorParameters<
   ModelClassType<MClass>
 > extends [infer FirstConstructorParam]
-  ? FirstConstructorParam extends ModelRefLike
-  ? FirstConstructorParam
+  ? FirstConstructorParam extends ModelFieldMap
+  ? RefFromFields<ModelFields<MClass>>
   : never
   : never;
 
@@ -195,25 +225,34 @@ export type Ref<MClass extends AnyModel> = ConstructorParameters<
  * 
  * Mainly used in functions that manipulate db entries.
  */
-export type RefWithFields<M extends AnyModel> = {
-  [K in keyof ModelFields<M>]: ExcludeUndefined<ModelFields<M>[K]> extends QuerySet
-    ? (SessionBoundModel<ExcludeUndefined<ModelFields<M>[K]> extends QuerySet<infer MClass> ? InstanceType<MClass> : never> | ModelId | null)[]
-    : ExcludeUndefined<ModelFields<M>[K]> extends AnyModel
-      ? ModelFields<M>[K] | ModelId | null
-      : ModelFields<M>[K];
+export type RefWithFields<MClass extends AnyModel> = {
+  [K in keyof ModelFields<MClass>]: Required<ModelFields<MClass>>[K] extends QuerySet
+    ? (SessionBoundModel<Required<ModelFields<MClass>>[K] extends QuerySet<infer MClass> ? InstanceType<MClass> : never> | ModelId | null)[]
+    : Required<ModelFields<MClass>>[K] extends AnyModel
+      ? ModelFields<MClass>[K] | ModelId | null
+      : ModelFields<MClass>[K];
 }; 
   
 /**
- * Transforms the fields object to match the interface of the plain JS object in the database.
+ * Checks if the field can be part of the reference object (the plain JS object). Returns true/false.
  * 
- * TODO: should firstly check if is undefined
+ * No query sets or reverse relation fields, can be included in the reference type.
  */
-export type ModelRefLike<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
-  [K in keyof MFieldMap]: ExcludeUndefined<MFieldMap[K]> extends QuerySet
-    ? never
-    : ExcludeUndefined<MFieldMap[K]> extends AnyModel
-      ? ModelId | undefined
-      : MFieldMap[K];
+type IsFieldRefLike<Field extends ModelField> = Field extends QuerySet
+  ? false
+  : Field extends SourceModelHelper<infer MClassType>
+    ? MClassType extends ModelClassType<Field>
+      ? false
+      : true
+    : true;
+
+/**
+ * Transforms the fields object to match the interface of the plain JS object in the database.
+ */
+export type RefFromFields<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
+	[K in keyof MFieldMap as IsFieldRefLike<ExcludeUndefined<MFieldMap[K]>> extends true ? K : ModelField extends Required<MFieldMap>[K] ? K : never]: Required<MFieldMap>[K] extends AnyModel
+			? ModelId | undefined
+			: MFieldMap[K];
 };
 
 /**

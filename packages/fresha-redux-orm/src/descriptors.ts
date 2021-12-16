@@ -1,6 +1,6 @@
 import { castTo } from "./hacks";
 import Model, { AnyModel } from "./Model";
-import { ModelId } from "./types";
+import { ModelId, RefFromFields } from "./types";
 import { normalizeEntity } from "./utils";
 
 /**
@@ -20,7 +20,7 @@ import { normalizeEntity } from "./utils";
 export function attrDescriptor(fieldName: string) {
   return {
     get(): any {
-      return (this as unknown as AnyModel)._fields[fieldName];
+      return (this as unknown as AnyModel)._fields[fieldName as keyof RefFromFields];
     },
 
     set(value: any): void {
@@ -177,7 +177,7 @@ export function manyToManyDescriptor<MClass extends AnyModel>(
       const referencedOtherIds = new Set(
         throughQs
           .toRefArray()
-          .map(obj => obj[otherReferencingField])
+          .map(obj => obj[otherReferencingField as keyof RefFromFields])
       );
 
       /**
@@ -186,7 +186,7 @@ export function manyToManyDescriptor<MClass extends AnyModel>(
        */
       const qs = OtherModel.filter((otherModelInstance) =>
         referencedOtherIds.has(
-          otherModelInstance[OtherModel.idAttribute]
+          otherModelInstance[OtherModel.idAttribute as keyof RefFromFields]
         )
       );
 
@@ -208,7 +208,7 @@ export function manyToManyDescriptor<MClass extends AnyModel>(
         if (existingQs.exists()) {
           const existingIds = existingQs
             .toRefArray()
-            .map(through => through[otherReferencingField]);
+            .map(through => through[otherReferencingField as keyof RefFromFields]);
 
           throw new Error(
             `Tried to add already existing ${OtherModel.modelName} id(s) ${existingIds} to the ${ThisModel.modelName} instance with id ${thisId}`
@@ -254,7 +254,7 @@ export function manyToManyDescriptor<MClass extends AnyModel>(
           // Tried deleting non-existing entities.
           const entitiesToDeleteIds = entitiesToDelete
             .toRefArray()
-            .map(through => through[otherReferencingField]);
+            .map(through => through[otherReferencingField as keyof RefFromFields]);
 
           const unexistingIds = [...idsToRemove].filter(
             (id) => !entitiesToDeleteIds.includes(id)
