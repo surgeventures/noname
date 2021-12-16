@@ -568,7 +568,7 @@ describe("Many to many relationships", () => {
       type UserModelDescriptors = {
         id: ModelId;
         name: string;
-        users: SourceRelationship<typeof UserModel, Relations.ManyToMany>;
+        users: TargetRelationship<UserModel, Relations.ManyToMany>;
       }
       class UserModel extends Model<typeof UserModel, UserModelDescriptors> implements UserModelDescriptors {
         static modelName = "User" as const;
@@ -584,7 +584,7 @@ describe("Many to many relationships", () => {
           through: "User2User",
           relatedName: "otherUsers",
         } as any) 
-        public users: SourceRelationship<typeof UserModel, Relations.ManyToMany>;
+        public users: TargetRelationship<UserModel, Relations.ManyToMany>;
       }
 
       type User2UserModelDescriptors = {
@@ -741,6 +741,7 @@ describe("Many to many relationships", () => {
         @Attribute()
         public id: ModelId;
   
+        //@ts-ignore
         @ManyToMany<User>("User", "subscribers")
         public subscribed?: SourceRelationship<typeof User, Relations.ManyToMany>;
   

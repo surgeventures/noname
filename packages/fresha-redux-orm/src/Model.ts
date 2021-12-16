@@ -76,8 +76,8 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * Don't use this to create a new record; Use the static method {@link Model#create}.
    * @param  {Object} props - the properties to instantiate with
    */
-  constructor(props: RefFromFields<MFieldMap>) {
-    this._initFields(props);
+  constructor(props: MFieldMap) {
+    this._initFields(props as unknown as RefFromFields<MFieldMap>);
   }
 
   _initFields(props?: RefFromFields<MFieldMap>): void {

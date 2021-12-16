@@ -124,8 +124,8 @@ export type SessionBoundModel<
 export type ModelFields<MClass extends AnyModel> = ConstructorParameters<
   ModelClassType<MClass>
 > extends [infer FirstConstructorParam]
- ? FirstConstructorParam extends RefFromFields<infer ModelFields>
-   ? ModelFields
+ ? FirstConstructorParam extends ModelFieldMap
+   ? FirstConstructorParam
    : never 
  : never;
 
@@ -204,8 +204,8 @@ export type ModelFieldMap<CustomModelField extends {} = {}> = {
 export type Ref<MClass extends AnyModel> = ConstructorParameters<
   ModelClassType<MClass>
 > extends [infer FirstConstructorParam]
-  ? FirstConstructorParam extends RefFromFields
-  ? FirstConstructorParam
+  ? FirstConstructorParam extends ModelFieldMap
+  ? RefFromFields<ModelFields<MClass>>
   : never
   : never;
 
@@ -235,10 +235,15 @@ type IsFieldRefLike<Field extends ModelField> = Field extends QuerySet
  * Transforms the fields object to match the interface of the plain JS object in the database.
  */
 export type RefFromFields<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
-	[K in keyof MFieldMap as IsFieldRefLike<Exclude<MFieldMap[K], undefined>> extends true ? K : ModelField extends Required<MFieldMap>[K] ? K : never]: Required<MFieldMap>[K] extends AnyModel
+	[K in keyof MFieldMap as IsFieldRefLike<ExcludeUndefined<MFieldMap[K]>> extends true ? K : ModelField extends Required<MFieldMap>[K] ? K : never]: Required<MFieldMap>[K] extends AnyModel
 			? ModelId | undefined
 			: MFieldMap[K];
 };
+
+/**
+ * Excludes undefined type from an union of types.
+ */
+type ExcludeUndefined<T> = Exclude<T, undefined>;
 
 /**
  * Optional ordering direction.
