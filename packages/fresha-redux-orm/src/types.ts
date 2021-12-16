@@ -154,6 +154,11 @@ export type TargetRelationship<
       : never;
       
 
+/**
+ * Checks if the field is of 'target' type. Returns true/false.
+ * 
+ * Fields of target type, are defined with {@link TargetRelationship}
+ */
 export type IsTargetField<Field extends ModelField> = Field extends SourceModelHelper<infer MClassType>
   ? MClassType extends ModelClassType<Field>
     ? false
@@ -164,7 +169,13 @@ export type IsTargetField<Field extends ModelField> = Field extends SourceModelH
       : true
     : never;
 
+/**
+ * A wrapper helping to catch the passed type for inferring purposes.
+ */
 type TargetQuerySetHelper<MClass extends AnyModel> = QuerySet<ModelClassType<MClass>>;
+/**
+ * A wrapper helping to catch the passed type for inferring purposes.
+ */
 type SourceModelHelper<MClassType extends typeof AnyModel> = SessionBoundModel<InstanceType<MClassType>>; 
 
 /**
@@ -222,7 +233,11 @@ export type RefWithFields<MClass extends AnyModel> = {
       : ModelFields<MClass>[K];
 }; 
   
-// eslint-disable-next-line no-unused-vars
+/**
+ * Checks if the field can be part of the reference object (the plain JS object). Returns true/false.
+ * 
+ * No query sets or reverse relation fields, can be included in the reference type.
+ */
 type IsFieldRefLike<Field extends ModelField> = Field extends QuerySet
   ? false
   : Field extends SourceModelHelper<infer MClassType>
