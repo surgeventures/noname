@@ -77,6 +77,8 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * @param  {Object} props - the properties to instantiate with
    */
   constructor(props: MFieldMap) {
+    // Using MFieldMap for types deduction to break the circular type references
+    // Constructor wasn't designed for creating orm records, it can accept any values
     this._initFields(props as unknown as RefFromFields<MFieldMap>);
   }
 
