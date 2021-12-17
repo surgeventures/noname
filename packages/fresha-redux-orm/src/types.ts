@@ -236,7 +236,7 @@ export type RefWithFields<MClass extends AnyModel> = {
 /**
  * Maps passed fields map to become a plain JS object representing the database entry.
  */
-export type RefLike<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
+type RefLike<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
   [K in keyof MFieldMap]: ExcludeUndefined<MFieldMap[K]> extends QuerySet
     ? never
     : ExcludeUndefined<MFieldMap[K]> extends AnyModel
@@ -247,7 +247,7 @@ export type RefLike<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
 /**
  * Filters out attributes of never type in passed fields map.
  */
-export type FilterOutNeverTypes<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
+type FilterOutNeverTypes<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
   [K in keyof MFieldMap as ExcludeUndefined<MFieldMap[K]> extends never ? never : K]: MFieldMap[K]
 } 
 
