@@ -232,28 +232,29 @@ export type RefWithFields<MClass extends AnyModel> = {
       ? ModelFields<MClass>[K] | ModelId | null
       : ModelFields<MClass>[K];
 }; 
-  
+
 /**
- * Checks if the field can be part of the reference object (the plain JS object). Returns true/false.
- * 
- * No query sets or reverse relation fields, can be included in the reference type.
+ * Maps passed fields map to become a plain JS object representing the database entry.
  */
-type IsFieldRefLike<Field extends ModelField> = Field extends QuerySet
-  ? false
-  : Field extends SourceModelHelper<infer MClassType>
-    ? MClassType extends ModelClassType<Field>
-      ? false
-      : true
-    : true;
+export type RefLike<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
+  [K in keyof MFieldMap]: ExcludeUndefined<MFieldMap[K]> extends QuerySet
+    ? never
+    : ExcludeUndefined<MFieldMap[K]> extends AnyModel
+      ? ModelId | undefined
+      : MFieldMap[K];
+};
+
+/**
+ * Filters out attributes of never type in passed fields map.
+ */
+export type FilterOutNeverTypes<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
+  [K in keyof MFieldMap as ExcludeUndefined<MFieldMap[K]> extends never ? never : K]: MFieldMap[K]
+} 
 
 /**
  * Transforms the fields object to match the interface of the plain JS object in the database.
  */
-export type RefFromFields<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
-	[K in keyof MFieldMap as IsFieldRefLike<ExcludeUndefined<MFieldMap[K]>> extends true ? K : ModelField extends Required<MFieldMap>[K] ? K : never]: Required<MFieldMap>[K] extends AnyModel
-			? ModelId | undefined
-			: MFieldMap[K];
-};
+export type RefFromFields<MFieldMap extends ModelFieldMap = ModelFieldMap> = FilterOutNeverTypes<RefLike<MFieldMap>>;
 
 /**
  * Excludes undefined type from an union of types.
