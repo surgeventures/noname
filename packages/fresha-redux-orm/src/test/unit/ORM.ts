@@ -1,4 +1,4 @@
-import { ORM, Session, Model} from "../..";
+import { ORM, Session, Model, ManyToMany} from "../..";
 import { createTestModels, Schema } from "../helpers";
 import { ModelId, OrmState, Relations, TargetRelationship, ValidateSchema } from '../../types';
 import { Attribute, OneToOne } from "../../decorators";
@@ -102,10 +102,10 @@ describe("ORM", () => {
         @Attribute()
         public id: ModelId;
 
-        @OneToOne<B>("A")
+        @ManyToMany<B>("A")
         public field1: TargetRelationship<A, Relations.ManyToMany>;
 
-        @OneToOne<B>("A")
+        @ManyToMany<B>("A")
         public field2: TargetRelationship<A, Relations.ManyToMany>;
       }
 

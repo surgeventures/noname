@@ -1,4 +1,5 @@
-import { attr, AttributeOptions } from "../fields";
+import { attr, Attribute as AttributeClass, AttributeOptions } from "../fields";
+import { AnyModel } from "../Model";
 import { registerDescriptor } from "./utils";
 
 /**
@@ -16,7 +17,8 @@ import { registerDescriptor } from "./utils";
  * 
  * @param opts An object with a default value get function
  */
-export function Attribute(opts?: AttributeOptions) {
-	const attrDescriptor = registerDescriptor(attr);
-	return attrDescriptor(opts || {});
+export function Attribute<MClass extends AnyModel = AnyModel, ValidateAgainst extends any = any>(opts?: AttributeOptions) {
+	const descriptor = attr(opts || {});
+	
+	return registerDescriptor<MClass, ValidateAgainst, AttributeClass>(descriptor);
 }

@@ -1,4 +1,5 @@
 import { fk } from "..";
+import type { ForeignKey as ForeignKeyClass } from "../fields";
 import { AnyModel } from "../Model";
 import { ModelClassTypeFromModelFields, ModelName, PossibleFieldKeys } from "../types";
 import { registerDescriptor } from "./utils";
@@ -23,6 +24,7 @@ export function ForeignKey<MClass extends AnyModel>(
 	toModelName: ModelName<ModelClassTypeFromModelFields<MClass>>, 
 	relatedName?: PossibleFieldKeys<MClass, ModelClassTypeFromModelFields<MClass>>
 ) {
-	const fkDescriptor = registerDescriptor(fk);
-	return fkDescriptor(toModelName, relatedName as string);
+	const descriptor = fk(toModelName, relatedName as string);
+	
+	return registerDescriptor<MClass, AnyModel, ForeignKeyClass>(descriptor);
 }

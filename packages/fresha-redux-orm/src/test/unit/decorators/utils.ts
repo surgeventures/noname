@@ -1,6 +1,6 @@
 import { registerDescriptor } from "../../../decorators/utils";
 import { Attribute, ManyToMany, AttributeOptions, RelationalFieldOpts } from "../../../fields";
-import Model from "../../../Model";
+import Model, { AnyModel } from "../../../Model";
 import { ModelDescriptorsRegistry } from "../../../modelDescriptorsRegistry";
 
 const registry = ModelDescriptorsRegistry.getInstance();
@@ -17,16 +17,12 @@ describe("utils", () => {
 	
 		class TestAttributeDescriptor extends Attribute {}
 		const attrDescriptorFnStub = jest.fn((opts?: AttributeOptions) => new TestAttributeDescriptor(opts));
-		const attrDecoratorFactory = registerDescriptor(attrDescriptorFnStub);
 
 		class TestRelationalFieldDescriptor extends ManyToMany {}
 		
 		const relationalFieldDescriptorFnMock = jest.fn((modelName: string, relatedName?: string) => new TestRelationalFieldDescriptor(modelName, relatedName));
 		const relationalFieldDescriptorFnWithOptsMock = jest.fn((opts: RelationalFieldOpts) => new TestRelationalFieldDescriptor(opts));
 		
-		const relationalFieldDecoratorFactory = registerDescriptor(relationalFieldDescriptorFnMock);
-		const relationalFieldDecoratorWithOptsFactory = registerDescriptor(relationalFieldDescriptorFnWithOptsMock);
-
 		afterEach(() =>{
 			registry.clear();
 			jest.clearAllMocks();
@@ -34,7 +30,7 @@ describe("utils", () => {
 	
 		it("decorator registers the attr descriptor using no options", () => {
 			const opts: AttributeOptions = {};
-			const decorator = attrDecoratorFactory(opts);
+			const decorator = registerDescriptor<AnyModel, any, TestAttributeDescriptor>(attrDescriptorFnStub(opts));
 	
 			decorator(new Test({}), fieldName);
 			
@@ -48,7 +44,7 @@ describe("utils", () => {
 			const opts: AttributeOptions = {
 				getDefault,
 			};
-			const decorator = attrDecoratorFactory(opts);
+			const decorator = registerDescriptor<AnyModel, any, TestAttributeDescriptor>(attrDescriptorFnStub(opts));
 			
 			decorator(new Test({}), fieldName);
 
@@ -58,7 +54,7 @@ describe("utils", () => {
 		});
 
 		it("decorator registers the relational field descriptor using passed strings", () => {
-			const decorator = relationalFieldDecoratorFactory(modelName, fieldName);
+			const decorator = registerDescriptor<AnyModel, any, TestRelationalFieldDescriptor>(relationalFieldDescriptorFnMock(modelName, fieldName));
 	
 			decorator(new Test({}), fieldName);
 
@@ -72,7 +68,7 @@ describe("utils", () => {
 				to: 'modelName',
 				relatedName: 'foreignKey' 
 			};
-			const decorator = relationalFieldDecoratorWithOptsFactory(opts);
+			const decorator = registerDescriptor<AnyModel, any, TestRelationalFieldDescriptor>(relationalFieldDescriptorFnWithOptsMock(opts));
 	
 			decorator(new Test({}), fieldName);
 
