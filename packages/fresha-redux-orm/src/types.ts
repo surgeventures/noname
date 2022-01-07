@@ -52,6 +52,31 @@ export enum Relations {
 export type ValidateSchema<Schema extends ModelClassMap> = { [K in keyof Schema]: ModelName<Schema[K]> extends K ? Schema[K] : never };
 
 /**
+ * Verifies if the decorator can decorate this type of field.
+ *
+ * You can only decorate fields specified in `Fields` type of the model.
+ */
+export type ValidateDecoratedField<
+  Target extends AnyModel,
+  FieldName extends keyof ModelFields<Target>,
+  ValidateAgainst extends any = any
+> = ValidateAgainst extends AnyModel 
+  ? ExcludeUndefined<ModelFields<Target>[FieldName]> extends AnyModel
+    ? IsTargetField<ExcludeUndefined<ModelFields<Target>[FieldName]>> extends true
+      ? Target
+      : never
+    : never 
+  : ValidateAgainst extends QuerySet
+    ? IsTargetField<ExcludeUndefined<ModelFields<Target>[FieldName]>> extends true
+      ? ExcludeUndefined<ModelFields<Target>[FieldName]> extends QuerySet
+        ? Target
+        : never
+      : never 
+    : ValidateAgainst extends ExcludeUndefined<ModelFields<Target>>[FieldName] 
+      ? Target 
+      : never;
+
+/**
  * Returns the type of the passed model class.
  */
 export type ModelClassType<MClass extends AnyModel> = ReturnType<MClass["getClass"]>;

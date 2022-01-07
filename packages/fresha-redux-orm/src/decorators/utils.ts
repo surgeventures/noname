@@ -1,39 +1,24 @@
-import { Attribute, AttributeOptions, Field, RelationalFieldOpts } from '../fields';
+import { Field } from '../fields';
 import { AnyModel } from '../Model';
 import { ModelDescriptorsRegistry } from '../modelDescriptorsRegistry';
-import { Descriptors } from '../types';
+import { RefWithFields, ValidateDecoratedField } from '../types';
 
-// Types of accepted descriptors
-type CustomAttrWithOptsDescriptorFn = <Opts extends {}>(opts: Opts) => Field;
-type AttrsDescriptorFn = (opts: AttributeOptions) => Attribute;
-type RelationalFieldDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (toModelName: string, relatedName?: string) => DescriptorTypes;
-type RelationalFieldWithOptsDescriptorFn<DescriptorTypes extends Exclude<Descriptors, Attribute>> = (opts: RelationalFieldOpts) => DescriptorTypes;
-
-type TargetHandler = (target: AnyModel, propertyName: string) => void;
-
-// Types of possible decorator factories
-type CustomAttrWithOptsDecoratorFactory = <Opts extends {}>(opts: Opts) => TargetHandler;
-type AttrDecoratorFactory = (opts: AttributeOptions) => TargetHandler;
-type RelationalFieldDecoratorFactory = (toModelName: string, relatedName?: string) => TargetHandler;
-type RelationalFieldWithOptsDecoratorFactory = (opts: RelationalFieldOpts) => TargetHandler;
-
-export function registerDescriptor(descriptorFn: AttrsDescriptorFn): AttrDecoratorFactory;
-export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: RelationalFieldDescriptorFn<DescriptorTypes>): RelationalFieldDecoratorFactory;
-export function registerDescriptor<DescriptorTypes extends Exclude<Descriptors, Attribute>>(descriptorFn: RelationalFieldWithOptsDescriptorFn<DescriptorTypes>): RelationalFieldWithOptsDecoratorFactory;
-export function registerDescriptor(descriptorFn: CustomAttrWithOptsDescriptorFn): CustomAttrWithOptsDecoratorFactory;
-export function registerDescriptor(descriptorFn: any) {
-	function decoratorFactory(arg1: AttributeOptions | RelationalFieldOpts | string | {}, arg2?: string) {
-		return function target(target: AnyModel, propertyName: string): void {
-			const model = target.getClass();
-			const modelName = model.modelName;
-			const registry = ModelDescriptorsRegistry.getInstance();
-			const descriptors = registry.getDescriptors(modelName);
-			if (!descriptors[propertyName]) {
-				const fn = typeof arg1 === 'string' ? descriptorFn(arg1, arg2) as Attribute : descriptorFn(arg1) as Exclude<Descriptors, Attribute>;
-				registry.add(modelName, { ...descriptors, [propertyName]: fn });
-			}
+/**
+ * Encapsulates the logic responsible for registering fields descriptors to the registry.
+ * 
+ * @param descriptor Any descriptor class that extends {@link Field}
+ * @returns A function to decorate the field
+ */
+export function registerDescriptor<MClass extends AnyModel, ValidateAgainst extends any, Descriptor extends Field>(descriptor: Descriptor) {
+	return function decorate<
+		PropName extends keyof RefWithFields<MClass>
+	>(target: ValidateDecoratedField<MClass, PropName, ValidateAgainst>, propertyName: PropName): void {
+		const model = target.getClass();
+		const modelName = model.modelName;
+		const registry = ModelDescriptorsRegistry.getInstance();
+		const descriptors = registry.getDescriptors(modelName);
+		if (!descriptors[propertyName as string]) {
+			registry.add(modelName, { ...descriptors, [propertyName]: descriptor });
 		}
 	}
-
-	return decoratorFactory;
 }
