@@ -1,6 +1,6 @@
 {
   "name": "@fresha/fresha-redux-orm",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Simple ORM to manage and query your state trees",
   "main": "dist/index.js",
   "sideEffects": false,
