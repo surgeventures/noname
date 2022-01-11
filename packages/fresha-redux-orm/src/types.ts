@@ -278,6 +278,8 @@ type ExcludeUndefined<T> = Exclude<T, undefined>;
 
 type FilterTypeFromUnion<Union, Type> = Union extends { mapFrom: Type } ? Union : never;
 
+export type AnyMappingType = { mapFrom: string; mapTo: string };
+
 /**
  * Maps `TypeToMap` using types provided as `Mapping`.
  * 
@@ -292,7 +294,7 @@ type FilterTypeFromUnion<Union, Type> = Union extends { mapFrom: Type } ? Union 
  * type MappedType = MapTypes<{ someKey: string }, StringToNumber>;
  * ```
  */
-export type MapTypes<TypeToMap extends {}, Mapping extends { mapFrom: any; mapTo: any } = { mapFrom: string; mapTo: string; }> = { 
+export type MapTypes<TypeToMap extends {}, Mapping extends { mapFrom: any; mapTo: any } = AnyMappingType> = { 
   [K in keyof TypeToMap]: TypeToMap[K] extends Mapping['mapFrom'] 
     ? FilterTypeFromUnion<Mapping, TypeToMap[K]>['mapTo']
     : TypeToMap[K]; 

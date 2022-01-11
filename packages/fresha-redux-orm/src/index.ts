@@ -31,7 +31,8 @@ import { ValidateSchema, Relations, ModelId, SessionBoundModel, TargetRelationsh
   ModelField,
   RefWithFields,
   DescriptorsMap,
-  ValidateDecoratedField
+  ValidateDecoratedField,
+  AnyMappingType,
 } from "./types";
 
 export { getDescriptors, ModelDescriptorsRegistry } from './modelDescriptorsRegistry';
@@ -82,7 +83,8 @@ export type {
   ModelField,
   RefWithFields,
   DescriptorsMap,
-  ValidateDecoratedField
+  ValidateDecoratedField,
+  AnyMappingType
 }
 
 export default Model;
