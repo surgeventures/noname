@@ -276,6 +276,28 @@ export type RefWithFields<MClass extends AnyModel> = {
  */
 type ExcludeUndefined<T> = Exclude<T, undefined>;
 
+type FilterTypeFromUnion<Union, Type> = Union extends { mapFrom: Type } ? Union : never;
+
+/**
+ * Maps `TypeToMap` using types provided as `Mapping`.
+ * 
+ * The below example will map all string types to numbers.
+ * ```
+ * type StringToNumber = {
+ *   mapFrom: string;
+ *   mapTo: number;
+ * }
+ * 
+ * // { someKey: number }
+ * type MappedType = MapTypes<{ someKey: string }, StringToNumber>;
+ * ```
+ */
+export type MapTypes<TypeToMap extends {}, Mapping extends { mapFrom: any; mapTo: any } = { mapFrom: string; mapTo: string; }> = { 
+  [K in keyof TypeToMap]: TypeToMap[K] extends Mapping['mapFrom'] 
+    ? FilterTypeFromUnion<Mapping, TypeToMap[K]>['mapTo']
+    : TypeToMap[K]; 
+};
+
 /**
  * Optional ordering direction.
  */

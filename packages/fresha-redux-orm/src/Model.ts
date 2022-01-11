@@ -9,7 +9,7 @@ import {
   m2mName,
   Values,
 } from "./utils";
-import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, RefFromFields, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref } from "./types";
+import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, RefFromFields, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref, MapTypes } from "./types";
 import { castTo } from "./hacks";
 import { getDescriptors, ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 
@@ -241,7 +241,10 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * @param  {props} userProps - the new {@link Model}'s properties.
    * @return {Model} a new {@link Model} instance.
    */
-  static create<MClassType extends typeof AnyModel>(this: MClassType, userProps: RefWithFields<InstanceType<MClassType>>): SessionBoundModel<InstanceType<MClassType>> {
+  static create<
+    MClassType extends typeof AnyModel, 
+    TypeMapping extends { mapFrom: any; mapTo: any; }
+  >(this: MClassType, userProps: MapTypes<RefWithFields<InstanceType<MClassType>>, TypeMapping>) {
     if (typeof this._session === "undefined") {
       throw new Error(
         [
@@ -311,7 +314,10 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * @param  {props} userProps - the required {@link Model}'s properties.
    * @return {Model} a {@link Model} instance.
    */
-  static upsert<MClassType extends typeof AnyModel>(this: MClassType, userProps: RefWithFields<InstanceType<MClassType>>): SessionBoundModel<InstanceType<MClassType>> {
+  static upsert<
+    MClassType extends typeof AnyModel, 
+    TypeMapping extends { mapFrom: any; mapTo: any; }
+  >(this: MClassType, userProps: MapTypes<RefWithFields<InstanceType<MClassType>>, TypeMapping>) {
     if (typeof this.session === "undefined") {
       throw new Error(
         [
