@@ -9,7 +9,7 @@ import {
   m2mName,
   Values,
 } from "./utils";
-import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, RefFromFields, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref, MapTypes } from "./types";
+import { Descriptors, DescriptorsMap, AnySchema, AnyObject, ModelId, Query, ReduxAction, QuerySetConstructor, RefFromFields, ModelFieldMap, SortIteratee, SortOrder, SessionBoundModel, SessionWithBoundModels, ModelConstructor, RefWithFields, Ref, MapTypes, AnyMappingType } from "./types";
 import { castTo } from "./hacks";
 import { getDescriptors, ModelDescriptorsRegistry } from "./modelDescriptorsRegistry";
 
@@ -540,7 +540,7 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * @param  {Object} userMergeObj - an object that will be merged with this instance.
    * @return {undefined}
    */
-  update<M extends AnyModel = AnyModel>(this: M, userMergeObj: Partial<RefWithFields<M>>): void {
+  update<M extends AnyModel = AnyModel, TypeMapping extends { mapFrom: any; mapTo: any; } = AnyMappingType>(this: M, userMergeObj: Partial<MapTypes<RefWithFields<M>, TypeMapping>>): void {
     const ThisModel = this.getClass();
     if (typeof ThisModel.session === "undefined") {
       throw new Error(
@@ -773,11 +773,11 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     return this.getQuerySet().last();
   }
 
-  static filter<MClassType extends typeof AnyModel>(this: MClassType, lookupObj: Partial<RefWithFields<InstanceType<MClassType>>> | ((row: RefWithFields<InstanceType<MClassType>>) => boolean)): QuerySet<MClassType> {
+  static filter<MClassType extends typeof AnyModel, TypeMapping extends { mapFrom: any; mapTo: any; }>(this: MClassType, lookupObj: Partial<MapTypes<RefWithFields<InstanceType<MClassType>>, TypeMapping>> | ((row: MapTypes<RefWithFields<InstanceType<MClassType>>, TypeMapping>) => boolean)): QuerySet<MClassType> {
     return this.getQuerySet().filter(lookupObj);
   }
 
-  static exclude<MClassType extends typeof AnyModel>(this: MClassType, lookupObj: Partial<RefWithFields<InstanceType<MClassType>>> | ((row: RefWithFields<InstanceType<MClassType>>) => boolean)): QuerySet<MClassType> {
+  static exclude<MClassType extends typeof AnyModel, TypeMapping extends { mapFrom: any; mapTo: any; }>(this: MClassType, lookupObj: Partial<MapTypes<RefWithFields<InstanceType<MClassType>>, TypeMapping>> | ((row: MapTypes<RefWithFields<InstanceType<MClassType>>, TypeMapping>) => boolean)): QuerySet<MClassType> {
     return this.getQuerySet().exclude(lookupObj);
   }
 

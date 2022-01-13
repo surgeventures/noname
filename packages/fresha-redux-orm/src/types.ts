@@ -295,10 +295,13 @@ export type AnyMappingType = { mapFrom: string; mapTo: string };
  * ```
  */
 export type MapTypes<TypeToMap extends {}, Mapping extends { mapFrom: any; mapTo: any } = AnyMappingType> = { 
-  [K in keyof TypeToMap]: TypeToMap[K] extends Mapping['mapFrom'] 
-    ? FilterTypeFromUnion<Mapping, TypeToMap[K]>['mapTo']
+  [K in keyof TypeToMap]: FilterUndefinedFromUnion<TypeToMap[K]> extends Mapping['mapFrom'] 
+    ? FilterTypeFromUnion<Mapping, ExcludeUndefined<TypeToMap[K]>>['mapTo']
     : TypeToMap[K]; 
 };
+
+
+type FilterUndefinedFromUnion<T> = T extends undefined ? T : ExcludeUndefined<T>;
 
 /**
  * Optional ordering direction.
