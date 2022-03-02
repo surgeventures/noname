@@ -296,7 +296,7 @@ describe("Model", () => {
       const book = session.Book.first()!;
 
       expect(book.ref.name).toBe(bookName);
-      expect(book.authors.first()!.ref.name).toBe(authorName);
+      expect(book.authors?.first()!.ref.name).toBe(authorName);
     })
   })
 });
