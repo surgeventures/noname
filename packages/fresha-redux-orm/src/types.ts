@@ -61,14 +61,14 @@ export type ValidateDecoratedField<
   FieldName extends keyof ModelFields<Target>,
   ValidateAgainst extends any = any
 > = ValidateAgainst extends AnyModel 
-  ? NonNullableRelationship<ExcludeUndefined<ModelFields<Target>[FieldName]>> extends AnyModel
-    ? IsTargetField<NonNullableRelationship<ExcludeUndefined<ModelFields<Target>[FieldName]>>> extends true
-      ? Target
-      : never
+  ? IsTargetField<ExcludeUndefined<ModelFields<Target>[FieldName]>> extends true
+    ? ExcludeUndefined<ModelFields<Target>[FieldName]> extends AnyModel | null
+        ? Target
+        : never
     : never 
   : ValidateAgainst extends QuerySet
-    ? IsTargetField<NonNullableRelationship<ExcludeUndefined<ModelFields<Target>[FieldName]>>> extends true
-      ? NonNullableRelationship<ExcludeUndefined<ModelFields<Target>[FieldName]>> extends QuerySet
+    ? IsTargetField<ExcludeUndefined<ModelFields<Target>[FieldName]>> extends true
+      ? ExcludeUndefined<ModelFields<Target>[FieldName]> extends QuerySet
         ? Target
         : never
       : never 
@@ -96,7 +96,7 @@ export type ModelClassTypeFromModelFields<MClass extends AnyModel, MFields exten
     IsTargetField<NonNullableRelationship<MFields[K]>> extends true 
       ? NonNullableRelationship<MFields[K]> extends SessionBoundModel<infer MClass>
         ? ModelClassType<MClass>
-        : NonNullableRelationship<MFields[K]> extends QuerySet<infer MClassType>
+        : MFields[K] extends QuerySet<infer MClassType>
           ? MClassType
           : never
       : never;
@@ -118,7 +118,7 @@ type SourceRelationshipKeysOfModel<
       ? MClass extends SourceMClass
         ? K
         : never
-      : NonNullableRelationship<MFields[K]> extends QuerySet<infer MClassType>
+      : MFields[K] extends QuerySet<infer MClassType>
         ? MClassType extends ModelClassType<SourceMClass>
           ? K
           : never
@@ -175,7 +175,7 @@ export type TargetRelationship<
   : Relation extends Relations.ForeignKey
     ? SessionBoundModel<MClass> | null
     : Relation extends Relations.ManyToMany
-      ? TargetQuerySetHelper<MClass> | null
+      ? TargetQuerySetHelper<MClass>
       : never;
       
 
@@ -214,9 +214,9 @@ export type SourceRelationship<
 > = Relation extends Relations.OneToOne
   ? SourceModelHelper<MClassType> | null
   : Relation extends Relations.ForeignKey
-    ? QuerySet<MClassType> | null
+    ? QuerySet<MClassType>
     : Relation extends Relations.ManyToMany
-      ? QuerySet<MClassType> | null
+      ? QuerySet<MClassType>
       : never;
 
 type RegularModelField = QuerySet<any> | AnyModel | Serializable;
@@ -253,7 +253,7 @@ type NonNullable<T> = T extends null ? never : T;
  */
 type NonNullableRelationship<Field extends ModelField> = NonNullable<Field> extends never 
   ? Field 
-  : Field extends QuerySet | SessionBoundModel | null 
+  : Field extends SessionBoundModel | null 
     ? NonNullable<Field> 
     : Field;
 
@@ -263,8 +263,8 @@ type NonNullableRelationship<Field extends ModelField> = NonNullable<Field> exte
  * Mainly used in functions that manipulate db entries.
  */
 export type RefWithFields<MClass extends AnyModel> = {
-  [K in keyof ModelFields<MClass>]: NonNullableRelationship<Required<ModelFields<MClass>>[K]> extends QuerySet
-    ? (SessionBoundModel<NonNullableRelationship<Required<ModelFields<MClass>>[K]> extends QuerySet<infer MClass> ? InstanceType<MClass> : never> | ModelId | null)[]
+  [K in keyof ModelFields<MClass>]: Required<ModelFields<MClass>>[K] extends QuerySet
+    ? (SessionBoundModel<Required<ModelFields<MClass>>[K] extends QuerySet<infer MClass> ? InstanceType<MClass> : never> | ModelId | null)[]
     : NonNullableRelationship<Required<ModelFields<MClass>>[K]> extends AnyModel
       ? ModelFields<MClass>[K] | ModelId | null
       : ModelFields<MClass>[K];
@@ -276,11 +276,13 @@ export type RefWithFields<MClass extends AnyModel> = {
  export type RefFromFields<MFieldMap extends ModelFieldMap = ModelFieldMap> = {
   [K in keyof MFieldMap]: MFieldMap[K] extends undefined
     ? MFieldMap[K] 
-    : NonNullableRelationship<ExcludeUndefined<MFieldMap[K]>> extends QuerySet
-      ? never
-      : NonNullableRelationship<ExcludeUndefined<MFieldMap[K]>> extends AnyModel
-        ? ModelId | undefined
-        : MFieldMap[K];
+    : NonNullable<ExcludeUndefined<MFieldMap[K]>> extends never 
+      ? MFieldMap[K]
+      : ExcludeUndefined<MFieldMap[K]> extends QuerySet
+        ? never
+        : ExcludeUndefined<MFieldMap[K]> extends AnyModel | null
+          ? ModelId | undefined
+          : MFieldMap[K];
 };
 
 /**
