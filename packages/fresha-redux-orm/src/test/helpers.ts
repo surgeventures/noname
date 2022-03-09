@@ -67,30 +67,30 @@ const TAGS_INITIAL = [
 const BOOKS_INITIAL = [
   {
     name: "Tommi Kaikkonen - an Autobiography",
-    author: 0,
-    cover: 0,
-    genres: [0, 1],
+    author: "0",
+    cover: "0",
+    genres: ["0", "1"],
     tags: ["Technology", "Literary"],
     releaseYear: 2050,
-    publisher: 1,
+    publisher: "1",
   },
   {
     name: "Clean Code",
-    author: 1,
-    cover: 1,
-    genres: [2],
+    author: "1",
+    cover: "1",
+    genres: ["2"],
     tags: ["Technology"],
     releaseYear: 2008,
-    publisher: 0,
+    publisher: "0",
   },
   {
     name: "Getting Started with Redux",
-    author: 2,
-    cover: 2,
-    genres: [2, 3],
+    author: "2",
+    cover: "2",
+    genres: ["2", "3"],
     tags: ["Technology", "Redux"],
     releaseYear: 2015,
-    publisher: 0,
+    publisher: "0",
   },
 ];
 
@@ -113,7 +113,7 @@ const MOVIES_INITIAL = [
     hasPremiered: true,
     rating: 9.2,
     meta: {},
-    publisherId: 2,
+    publisherId: "2",
   },
 ];
 

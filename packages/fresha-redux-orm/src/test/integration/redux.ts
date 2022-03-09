@@ -101,13 +101,13 @@ describe("Redux integration", () => {
     nextState = ormReducer(emptyState, {
       type: CREATE_MOVIE,
       payload: {
-        id: 0,
+        id: "0",
         name: "Let there be a movie",
       },
     });
     expect(nextState.Movie.itemsById).toEqual<TableState<typeof Movie>['itemsById']>({
       0: {
-        id: 0,
+        id: "0",
         name: "Let there be a movie",
       },
     });
@@ -164,7 +164,7 @@ describe("Redux integration", () => {
 
     it("id lookups", () => {
       const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) => {
-        return selectorSession.Movie.withId(0)
+        return selectorSession.Movie.withId("0")
       });
       const selector = createSelector(orm, memoized);
       expect(typeof selector).toBe("function");
@@ -211,7 +211,7 @@ describe("Redux integration", () => {
     it("Model updates", () => {
       const session = orm.session();
       const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) =>
-        selectorSession.Movie.withId(0)
+        selectorSession.Movie.withId("0")
       );
       const selector = createSelector(orm, memoized);
 
@@ -233,7 +233,7 @@ describe("Redux integration", () => {
     it("Model deletions", () => {
       const session = orm.session();
       const memoized = jest.fn((selectorSession: SessionWithBoundModels<Schema>) =>
-        selectorSession.Movie.withId(0)
+        selectorSession.Movie.withId("0")
       );
       const selector = createSelector(orm, memoized);
 
@@ -273,9 +273,9 @@ describe("Redux integration", () => {
       nextState = ormReducer<Schema['Movie']>(emptyState, {
         type: CREATE_MOVIE,
         payload: {
-          id: 532,
+          id: "532",
           name: "Getting started with FK descriptors",
-          publisherId: 123,
+          publisherId: "123",
         },
       });
 
@@ -288,7 +288,7 @@ describe("Redux integration", () => {
       nextState = ormReducer<Schema['Publisher']>(nextState, {
         type: CREATE_PUBLISHER,
         payload: {
-          id: 999,
+          id: "999",
           name: "random uninteresting publisher",
         },
       });
@@ -301,14 +301,14 @@ describe("Redux integration", () => {
       nextState = ormReducer<Schema['Publisher']>(nextState, {
         type: CREATE_PUBLISHER,
         payload: {
-          id: 123,
+          id: "123",
           name: "publisher referenced by movie FK",
         },
       });
 
       expect(selector(nextState)).toEqual({
         532: {
-          id: 123,
+          id: "123",
           name: "publisher referenced by movie FK",
         },
       });
@@ -316,7 +316,7 @@ describe("Redux integration", () => {
 
       const session = orm.session(nextState);
       expect(
-        session.Publisher.withId(123)!.movies!.count()
+        session.Publisher.withId("123")!.movies!.count()
       ).toBe(1);
     });
 

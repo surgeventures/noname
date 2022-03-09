@@ -35,12 +35,12 @@ describe("ES5 library code", () => {
 
       expect(() => {
         book = session.Book.create({
-          id: 1,
+          id: "1",
           title: "title",
         });
       }).not.toThrow();
       expect(() => {
-        book.update({ id: 1, title: "new title" });
+        book.update({ id: "1", title: "new title" });
       }).not.toThrow();
     });
   });

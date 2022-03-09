@@ -23,9 +23,9 @@ describe("Multiple concurrent sessions", () => {
 
     firstSession.Book.create({
       name: "New Book",
-      author: 0,
+      author: "0",
       releaseYear: 2015,
-      genres: [0, 1],
+      genres: ["0", "1"],
     });
 
     expect(firstSession.Book.count()).toBe(4);

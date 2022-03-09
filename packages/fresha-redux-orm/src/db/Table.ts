@@ -21,7 +21,7 @@ import { castTo } from "../hacks";
 function idSequencer(
   _currMax: undefined | number,
   userPassedId: undefined | number
-): [number, number] {
+): [number, ModelId] {
   let currMax = _currMax;
   let newMax;
   let newId;
@@ -40,7 +40,7 @@ function idSequencer(
 
   return [
     newMax, // new max id
-    newId, // id to use for row creation
+    String(newId), // id to use for row creation
   ];
 }
 
@@ -204,7 +204,7 @@ export default class Table<MClassType extends typeof AnyModel> {
 
     if (withMutations) {
       ops.mutable.push(id, workingState.items);
-      ops.mutable.set(String(id), finalEntry, workingState.itemsById);
+      ops.mutable.set(id, finalEntry, workingState.itemsById);
       return {
         state: workingState,
         created: finalEntry,

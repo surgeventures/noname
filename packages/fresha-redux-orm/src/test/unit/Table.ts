@@ -22,18 +22,18 @@ describe("Table", () => {
 
     beforeEach(() => {
       const stateObj = {
-        items: [0, 1, 2],
+        items: ["0", "1", "2"],
         itemsById: {
           0: {
-            id: 0,
+            id: "0",
             data: "cooldata",
           },
           1: {
-            id: 1,
+            id: "1",
             data: "verycooldata!",
           },
           2: {
-            id: 2,
+            id: "2",
             data: "awesomedata",
           },
         },
@@ -46,7 +46,7 @@ describe("Table", () => {
     });
 
     it("correctly accesses an id", () => {
-      expect(table.accessId(state, 1)).toBe<TableState<typeof Test>['itemsById'][number]>(state.itemsById[1]);
+      expect(table.accessId(state, "1")).toBe<TableState<typeof Test>['itemsById'][number]>(state.itemsById[1]);
     });
 
     it("correctly accesses id's", () => {
@@ -62,28 +62,28 @@ describe("Table", () => {
     });
 
     it("correctly inserts an entry", () => {
-      const entry = { id: 3, data: "newdata!" };
+      const entry = { id: "3", data: "newdata!" };
       const { state: newState, created } = table.insert(txInfo, state, entry);
 
       expect(created).toBe<Ref<Test>>(entry);
 
       expect(newState).not.toBe<TableState<typeof Test>>(state);
-      expect(newState.items).toEqual<TableState<typeof Test>['items']>([0, 1, 2, 3]);
+      expect(newState.items).toEqual<TableState<typeof Test>['items']>(["0", "1", "2", "3"]);
       expect(newState.itemsById).toEqual<TableState<typeof Test>['itemsById']>({
         0: {
-          id: 0,
+          id: "0",
           data: "cooldata",
         },
         1: {
-          id: 1,
+          id: "1",
           data: "verycooldata!",
         },
         2: {
-          id: 2,
+          id: "2",
           data: "awesomedata",
         },
         3: {
-          id: 3,
+          id: "3",
           data: "newdata!",
         },
       });
@@ -98,15 +98,15 @@ describe("Table", () => {
       expect(newState.items).toBe<TableState<typeof Test>['items']>(state.items);
       expect(newState.itemsById).toEqual<TableState<typeof Test>['itemsById']>({
         0: {
-          id: 0,
+          id: "0",
           data: "cooldata",
         },
         1: {
-          id: 1,
+          id: "1",
           data: "modifiedData",
         },
         2: {
-          id: 2,
+          id: "2",
           data: "modifiedData",
         },
       });
@@ -117,13 +117,13 @@ describe("Table", () => {
       const newState = table.delete(txInfo, state, rowsToDelete);
       const expectedItemsById = {
         0: {
-          id: 0,
+          id: "0",
           data: "cooldata",
         },
       };
 
       expect(newState).not.toBe<TableState<typeof Test>>(state);
-      expect(newState.items).toEqual<TableState<typeof Test>['items']>([0]);
+      expect(newState.items).toEqual<TableState<typeof Test>['items']>(["0"]);
       expect(newState.itemsById).toEqual<TableState<typeof Test>['itemsById']>(expectedItemsById);
     });
 
@@ -196,12 +196,12 @@ describe("Table", () => {
       const clauses: QueryClause<{ data: string }>[] = [{ type: EXCLUDE, payload: { data: "verycooldata!" } }];
       const result = table.query(state, clauses);
       expect(result).toHaveLength(2);
-      expect(result.map((row) => row.id)).toEqual<Ref<Test>['id'][]>([0, 2]);
+      expect(result.map((row) => row.id)).toEqual<Ref<Test>['id'][]>(["0", "2"]);
     });
 
     it("query works with multiple clauses", () => {
       const clauses: (QueryClause<(row: Ref<Test>) => boolean> | QueryClause<[string[], string[]]>)[] = [
-        { type: FILTER, payload: row => row.id! > 0 },
+        { type: FILTER, payload: row => Number(row.id!) > 0 },
         { type: ORDER_BY, payload: [["data"], ["inc"]] },
       ];
       const result = table.query(state, clauses);
@@ -213,8 +213,8 @@ describe("Table", () => {
 
     it("query works with an id filter for a row which is not in the current result set", () => {
       const clauses: (QueryClause<(row: Ref<Test>) => boolean> | QueryClause<Ref<Test>>)[] = [
-        { type: FILTER, payload: row => row.id !== 1 },
-        { type: FILTER, payload: { id: 1 } },
+        { type: FILTER, payload: row => row.id !== "1" },
+        { type: FILTER, payload: { id: "1" } },
       ];
       const result = table.query(state, clauses);
       expect(result).toHaveLength(0);

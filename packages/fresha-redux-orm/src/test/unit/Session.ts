@@ -65,7 +65,7 @@ describe("Session", () => {
     const session = orm.session();
     expect(session.accessedModelInstances).toEqual<Partial<typeof session.accessedModelInstances>>({});
 
-    session.markAccessed(Book.modelName, [0]);
+    session.markAccessed(Book.modelName, ["0"]);
 
     expect(session.accessedModelInstances).toEqual<Partial<typeof session.accessedModelInstances>>({
       Book: {
@@ -73,7 +73,7 @@ describe("Session", () => {
       },
     });
 
-    session.markAccessed(Book.modelName, [1]);
+    session.markAccessed(Book.modelName, ["1"]);
     expect(session.accessedModelInstances).toEqual<Partial<typeof session.accessedModelInstances>>({
       Book: {
         0: true,
@@ -112,7 +112,7 @@ describe("Session", () => {
         table: Author.modelName,
         action: CREATE,
         payload: {
-          id: 0,
+          id: "0",
           name: "Caesar",
         },
       });

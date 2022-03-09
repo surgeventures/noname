@@ -36,7 +36,7 @@ describe("QuerySet tests", () => {
 
   it("at works correctly", () => {
     expect(bookQs.at(0)).toBeInstanceOf(Model);
-    expect(bookQs.toRefArray()[0]).toBe<Ref<InstanceType<ExtendedSession['Book']>>>(session.Book.withId(0)!.ref);
+    expect(bookQs.toRefArray()[0]).toBe<Ref<InstanceType<ExtendedSession['Book']>>>(session.Book.withId("0")!.ref);
   });
 
   it("at doesn't return a Model instance if index is out of bounds", () => {
@@ -72,27 +72,27 @@ describe("QuerySet tests", () => {
   it("filter works correctly with object argument", () => {
     const filtered = bookQs.filter({ name: "Clean Code" });
     expect(filtered.count()).toBe(1);
-    expect(filtered.first()!.ref).toBe<Ref<InstanceType<ExtendedSession['Book']>>>(session.Book.withId(1)!.ref);
+    expect(filtered.first()!.ref).toBe<Ref<InstanceType<ExtendedSession['Book']>>>(session.Book.withId("1")!.ref);
   });
 
   it("filter works correctly with object argument, with model instance value", () => {
     const filtered = bookQs.filter({
-      author: session.Author.withId(0),
+      author: session.Author.withId("0"),
     });
     expect(filtered.count()).toBe(1);
-    expect(filtered.first()!.ref).toBe(session.Book.withId(0)!.ref);
+    expect(filtered.first()!.ref).toBe(session.Book.withId("0")!.ref);
   });
 
   it("orderBy works correctly with prop argument", () => {
     const ordered = bookQs.orderBy(["releaseYear"]);
     const idArr = ordered.toRefArray().map(row => row.id);
-    expect(idArr).toEqual([1, 2, 0]);
+    expect(idArr).toEqual(["1", "2", "0"]);
   });
 
   it("orderBy works correctly with function argument", () => {
     const ordered = bookQs.orderBy([book => book.releaseYear]);
     const idArr = ordered.toRefArray().map(row => row.id);
-    expect(idArr).toEqual([1, 2, 0]);
+    expect(idArr).toEqual(["1", "2", "0"]);
   });
 
   it("exclude works correctly with object argument", () => {
@@ -100,27 +100,27 @@ describe("QuerySet tests", () => {
     expect(excluded.count()).toBe(2);
 
     const idArr = excluded.toRefArray().map(row => row.id);
-    expect(idArr).toEqual([0, 2]);
+    expect(idArr).toEqual(["0", "2"]);
   });
 
   it("exclude works correctly with object argument, with model instance value", () => {
     const excluded = bookQs.exclude({
-      author: session.Author.withId(1),
+      author: session.Author.withId("1"),
     });
     expect(excluded.count()).toBe(2);
 
     const idArr = excluded.toRefArray().map(row => row.id);
-    expect(idArr).toEqual([0, 2]);
+    expect(idArr).toEqual(["0", "2"]);
   });
 
   it("exclude works correctly with function argument", () => {
     const excluded = bookQs.exclude(
-      ({ author }) => author === 1
+      ({ author }) => author === "1"
     );
     expect(excluded.count()).toBe(2);
 
     const idArr = excluded.toRefArray().map(row => row.id);
-    expect(idArr).toEqual([0, 2]);
+    expect(idArr).toEqual(["0", "2"]);
   });
 
   it("update records a update", () => {
@@ -139,7 +139,7 @@ describe("QuerySet tests", () => {
 
   it("toString returns evaluated models", () => {
     const firstTwoBooks = bookQs.filter(({ id }) =>
-      [0, 1].includes(id as number)
+      ["0", "1"].includes(id!)
     );
     expect(firstTwoBooks.toString()).toBe(`QuerySet contents:
     - Book: {id: 0, name: Tommi Kaikkonen - an Autobiography, releaseYear: 2050, author: 0, cover: 0, genres: [0, 1], tags: [Technology, Literary], publisher: 1}

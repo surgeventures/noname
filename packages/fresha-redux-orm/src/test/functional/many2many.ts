@@ -630,7 +630,7 @@ describe("Many to many relationships", () => {
       Tag.withId("Technology")!.subTags!.add("Redux");
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
-          id: 0,
+          id: "0",
           fromTagId: "Technology",
           toTagId: "Redux",
         },
@@ -654,7 +654,7 @@ describe("Many to many relationships", () => {
       ).toEqual<Ref<InstanceType<Schema['Tag']>>[]>([Tag.withId("Redux")!.ref]);
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
-          id: 0,
+          id: "0",
           fromTagId: "Technology",
           toTagId: "Redux",
         },
@@ -712,7 +712,7 @@ describe("Many to many relationships", () => {
       ).toEqual<Ref<InstanceType<Schema['Tag']>>[]>([Tag.withId("Redux")!.ref]);
       expect(TagSubTags.all().toRefArray()).toEqual([
         {
-          id: 0,
+          id: "0",
           fromTagId: "Technology",
           toTagId: "Redux",
         },
