@@ -94,10 +94,10 @@ describe("createDatabase", () => {
       Book: {
         items: ["0"],
         itemsById: {
-          0: props,
+          "0": props,
         },
         meta: {
-          maxId: 0,
+          maxId: "0",
         },
       },
       Author: {
@@ -124,13 +124,13 @@ describe("createDatabase", () => {
       Book: {
         items: ["0"],
         itemsById: {
-          0: {
+          "0": {
             id: "0",
             name: "Example Book",
           },
         },
         meta: {
-          maxId: 0,
+          maxId: "0",
         },
       },
       Author: {
@@ -161,17 +161,17 @@ describe("createDatabase", () => {
       Book: {
         items: ["0", "1"],
         itemsById: {
-          0: {
+          "0": {
             id: "0",
             name: "Example Book",
           },
-          1: {
+          "1": {
             id: "1",
             name: "Example Book Two",
           },
         },
         meta: {
-          maxId: 1,
+          maxId: "1",
         },
       },
       Author: {
@@ -187,13 +187,13 @@ describe("createDatabase", () => {
       Book: {
         items: ["0"],
         itemsById: {
-          0: {
+          "0": {
             id: "0",
             name: "Example Book",
           },
         },
         meta: {
-          maxId: 0,
+          maxId: "0",
         },
       },
       Author: {
@@ -227,13 +227,13 @@ describe("createDatabase", () => {
       Book: {
         items: ["0"],
         itemsById: {
-          0: {
+          "0": {
             id: "0",
             name: "Example Book",
           },
         },
         meta: {
-          maxId: 0,
+          maxId: "0",
         },
       },
       Author: {

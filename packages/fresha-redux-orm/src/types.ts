@@ -346,7 +346,7 @@ export type SortIteratee<MClass extends AnyModel> = keyof Ref<MClass> | { (row: 
  */
 export type TableState<MClassType extends typeof AnyModel> = {
   meta: {
-    maxId?: number;
+    maxId?: ModelId;
     [k: string]: any;
   };
   items: ModelId[];

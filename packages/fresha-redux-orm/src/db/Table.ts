@@ -2,6 +2,7 @@ import reject from "lodash/reject";
 import filter from "lodash/filter";
 import orderBy from "lodash/orderBy";
 import sortBy from "lodash/sortBy";
+import isNaN from "lodash/isNaN";
 import ops, { SetFunc } from "immutable-ops";
 
 import { AnyModel } from "../Model";
@@ -19,27 +20,38 @@ import { castTo } from "../hacks";
 // If the id's are strings, the id must be passed explicitly every time.
 // In this case, the current max id will remain `NaN` due to `Math.max`, but that's fine.
 function idSequencer(
-  _currMax: undefined | number,
-  userPassedId: undefined | number
-): [number, ModelId] {
-  let currMax = _currMax;
-  let newMax;
-  let newId;
+  _currMax: undefined | ModelId,
+  userPassedId: undefined | number | ModelId
+): [ModelId, ModelId] {
+  let currMax: number;
+  let newMax: number;
+  let newId: number | string;
 
-  if (currMax === undefined) {
+  if (_currMax === undefined) {
     currMax = -1;
+  } else {
+    currMax = Number(_currMax);
   }
 
   if (userPassedId === undefined) {
     newMax = currMax + 1;
     newId = newMax;
+  } else if (typeof userPassedId === 'string') {
+    const num = Number(userPassedId);
+    const isValidNumber = !isNaN(num);
+    if (isValidNumber) {
+      newMax = Math.max(currMax + 1, num)
+    } else {
+      newMax = currMax;
+    }
+    newId = userPassedId;
   } else {
     newMax = Math.max(currMax + 1, userPassedId);
     newId = userPassedId;
   }
 
   return [
-    newMax, // new max id
+    String(newMax), // new max id
     String(newId), // id to use for row creation
   ];
 }
@@ -88,7 +100,7 @@ export default class Table<MClassType extends typeof AnyModel> {
     return this.getMeta(branch, "maxId");
   }
 
-  setMaxId(tx: Transaction, branch: TableState<MClassType>, newMaxId: number) {
+  setMaxId(tx: Transaction, branch: TableState<MClassType>, newMaxId: ModelId) {
     return this.setMeta(tx, branch, "maxId", newMaxId);
   }
 
@@ -197,10 +209,14 @@ export default class Table<MClassType extends typeof AnyModel> {
       entry[this.idAttribute]
     );
     workingState = this.setMaxId(tx, branch, newMaxId);
-
-    const finalEntry = hasId
-      ? entry
-      : ops.batch.set(batchToken, this.idAttribute, id, entry) as Ref<InstanceType<MClassType>>;
+    
+    let finalEntry: Ref<InstanceType<MClassType>>;
+    if (hasId) {
+      finalEntry = entry;
+      (finalEntry as { id: ModelId }).id = id;
+    } else {
+      finalEntry = ops.batch.set(batchToken, this.idAttribute, id, entry) as Ref<InstanceType<MClassType>>;
+    }
 
     if (withMutations) {
       ops.mutable.push(id, workingState.items);
