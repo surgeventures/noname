@@ -1,7 +1,7 @@
 import deepFreeze from "deep-freeze";
 import { BatchToken } from "immutable-ops";
 
-import Table from "../../db/Table";
+import Table, { idSequencer } from "../../db/Table";
 import { getBatchToken } from "../../utils";
 import { FILTER, EXCLUDE, ORDER_BY } from "../../constants";
 import { ModelId, QueryClause, Ref, TableState, Transaction } from "../../types";
@@ -221,3 +221,45 @@ describe("Table", () => {
     });
   });
 });
+
+describe('idSequencer', () => {
+  it('null as passed id', () => {
+    const nullWithCurrMax = idSequencer("1", null);
+    const nullWithoutCurrMax = idSequencer(undefined, null);
+
+    expect(nullWithCurrMax).toEqual(["1", null]);
+    expect(nullWithoutCurrMax).toEqual(["-1", null]);
+  });
+  it('undefined as passed id', () => {
+    const undefinedWithCurrMax = idSequencer("1", undefined);
+    const undefinedWithoutCurrMax = idSequencer(undefined, undefined);
+
+    expect(undefinedWithCurrMax).toEqual(["2", "2"]);
+    expect(undefinedWithoutCurrMax).toEqual(["0", "0"]);
+  });
+  it('number as passed id', () => {
+    const numberWithLowerCurrMax = idSequencer("1", 2);
+    const numberWithoutCurrMax = idSequencer(undefined, 2);
+    const numberWithEqualCurrMax = idSequencer("1", 1);
+
+    expect(numberWithLowerCurrMax).toEqual(["2", "2"]);
+    expect(numberWithoutCurrMax).toEqual(["2", "2"]);
+    expect(numberWithEqualCurrMax).toEqual(["1", "1"]);
+  });
+  it('numeric string as passed id', () => {
+    const numericStrWithLowerCurrMax = idSequencer("1", "2");
+    const numericStrWithoutCurrMax = idSequencer(undefined, "2");
+    const numericStrWithEqualCurrMax = idSequencer("1", "1");
+
+    expect(numericStrWithLowerCurrMax).toEqual(["2", "2"]);
+    expect(numericStrWithoutCurrMax).toEqual(["2", "2"]);
+    expect(numericStrWithEqualCurrMax).toEqual(["1", "1"]);
+  });
+  it('random string as passed id', () => {
+    const strWithCurrMax = idSequencer("1", "asd");
+    const strWithoutCurrMax = idSequencer(undefined, "asd");
+
+    expect(strWithCurrMax).toEqual(["1", "asd"]);
+    expect(strWithoutCurrMax).toEqual(["-1", "asd"]);
+  });
+})

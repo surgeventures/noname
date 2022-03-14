@@ -19,13 +19,13 @@ import { castTo } from "../hacks";
 // Return value is the new max id and the id to use to create the new row.
 // If the id's are strings, the id must be passed explicitly every time.
 // In this case, the current max id will remain `NaN` due to `Math.max`, but that's fine.
-function idSequencer(
+export function idSequencer(
   _currMax: undefined | ModelId,
-  userPassedId: undefined | number | ModelId
-): [ModelId, ModelId] {
+  userPassedId: undefined | null | number | ModelId
+): [ModelId, ModelId | null] {
   let currMax: number;
   let newMax: number;
-  let newId: number | string;
+  let newId: number | string | null;
 
   if (_currMax === undefined) {
     currMax = -1;
@@ -33,26 +33,36 @@ function idSequencer(
     currMax = Number(_currMax);
   }
 
+  // no id passed, use the sequence
   if (userPassedId === undefined) {
     newMax = currMax + 1;
     newId = newMax;
   } else if (typeof userPassedId === 'string') {
+    // converting to number to see if we have a numeric string
     const num = Number(userPassedId);
     const isValidNumber = !isNaN(num);
-    if (isValidNumber) {
-      newMax = Math.max(currMax + 1, num)
+    if (isValidNumber && currMax < num) {
+      newMax = num;
+    } else {
+      newMax = currMax;
+    }
+    newId = userPassedId;
+  } else if (typeof userPassedId === 'number') {
+    if (currMax < userPassedId) {
+      newMax = userPassedId;
     } else {
       newMax = currMax;
     }
     newId = userPassedId;
   } else {
-    newMax = Math.max(currMax + 1, userPassedId);
+    // handles null
+    newMax = currMax;
     newId = userPassedId;
   }
 
   return [
     String(newMax), // new max id
-    String(newId), // id to use for row creation
+    typeof newId === 'number' ? String(newId) : newId, // id to use for row creation
   ];
 }
 
@@ -202,25 +212,28 @@ export default class Table<MClassType extends typeof AnyModel> {
     const hasId = castTo<any>(entry).hasOwnProperty(this.idAttribute);
 
     let workingState = branch;
+    let newMaxId = this.getMaxId(branch);
+    let id = entry[this.idAttribute] as ModelId | undefined | null;
 
-    // This will not affect string id's.
-    const [newMaxId, id] = idSequencer(
-      this.getMaxId(branch),
-      entry[this.idAttribute]
-    );
+    if (!hasId || id !== undefined) {
+      ([newMaxId, id] = idSequencer(
+        newMaxId,
+        id
+      ));
+    }
     workingState = this.setMaxId(tx, branch, newMaxId);
     
     let finalEntry: Ref<InstanceType<MClassType>>;
     if (hasId) {
       finalEntry = entry;
-      (finalEntry as { id: ModelId }).id = id;
+      (finalEntry as { id: ModelId | undefined | null }).id = id;
     } else {
       finalEntry = ops.batch.set(batchToken, this.idAttribute, id, entry) as Ref<InstanceType<MClassType>>;
     }
 
     if (withMutations) {
       ops.mutable.push(id, workingState.items);
-      ops.mutable.set(id, finalEntry, workingState.itemsById);
+      ops.mutable.set(id as string, finalEntry, workingState.itemsById);
       return {
         state: workingState,
         created: finalEntry,
@@ -233,7 +246,7 @@ export default class Table<MClassType extends typeof AnyModel> {
         items: ops.batch.push(batchToken, id, workingState.items),
         itemsById: ops.batch.merge(
           batchToken,
-          { [id]: finalEntry },
+          { [id as string]: finalEntry },
           workingState.itemsById
         ),
       },
