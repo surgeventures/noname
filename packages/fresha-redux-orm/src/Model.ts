@@ -268,7 +268,11 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
       if (!(field instanceof ManyToMany)) {
         if (valuePassed) {
           const value = userProps[key as keyof RefWithFields<InstanceType<MClassType>>];
-          props[key] = normalizeEntity(value);
+          if (typeof value === 'number' && (field instanceof ForeignKey || field instanceof OneToOne)) {
+            props[key] = String(value);
+          } else {
+            props[key] = normalizeEntity(value);
+          }
         } else if ((field as Attribute).getDefault) {
           props[key] = (field as any).getDefault();
         }
@@ -570,8 +574,12 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
         const field = descriptors[mergeKey];
 
         if (field instanceof ForeignKey || field instanceof OneToOne) {
-          // update one-one/fk relations
-          mergeObj[mergeKey] = normalizeEntity(mergeObj[mergeKey] as M) as any;
+          if (typeof mergeObj[mergeKey] === 'number') {
+            mergeObj[mergeKey] = String(mergeObj[mergeKey]) as any;
+          } else {
+            // update one-one/fk relations
+            mergeObj[mergeKey] = normalizeEntity(mergeObj[mergeKey] as M) as any;
+          }
         } else if (field instanceof ManyToMany) {
           // field is forward relation
           m2mRelations[mergeKey] = mergeObj[mergeKey] as ModelId[];
@@ -681,7 +689,12 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
         );
       }
 
-      const normalizedNewIds = values.map(normalizeEntity);
+      const normalizedNewIds = values.map(val => {
+        if (typeof val === 'number') {
+          return String(val);
+        }
+        return normalizeEntity(val);
+      });
       const uniqueIds = [...new Set(normalizedNewIds)];
 
       if (normalizedNewIds.length !== uniqueIds.length) {
