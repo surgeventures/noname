@@ -4,7 +4,7 @@ import { BatchToken } from "immutable-ops";
 import Table, { idSequencer } from "../../db/Table";
 import { getBatchToken } from "../../utils";
 import { FILTER, EXCLUDE, ORDER_BY } from "../../constants";
-import { ModelId, QueryClause, Ref, TableState, Transaction } from "../../types";
+import { ModelId, QueryClause, Ref, RefFromFields, TableState, Transaction } from "../../types";
 import Model from "../../Model";
 
 describe("Table", () => {
@@ -89,9 +89,80 @@ describe("Table", () => {
       });
     });
 
+    it("correctly inserts an entry with null as id", () => {
+      const entry = { id: null, data: "newdata!" } as unknown as RefFromFields<TestDescriptors>;
+      const { state: newState, created } = table.insert(txInfo, state, entry);
+
+      expect(created).toBe<Ref<Test>>(entry);
+
+      expect(newState).not.toBe<TableState<typeof Test>>(state);
+      expect(newState.items).toEqual(["0", "1", "2", null]);
+      expect(newState.itemsById).toEqual<TableState<typeof Test>['itemsById']>({
+        0: {
+          id: "0",
+          data: "cooldata",
+        },
+        1: {
+          id: "1",
+          data: "verycooldata!",
+        },
+        2: {
+          id: "2",
+          data: "awesomedata",
+        },
+        null: {
+          id: null as unknown as string,
+          data: "newdata!",
+        },
+      });
+    });
+
+    it("correctly inserts an entry with undefined as id", () => {
+      const entry = { id: undefined, data: "newdata!" } as unknown as RefFromFields<TestDescriptors>;
+      const { state: newState, created } = table.insert(txInfo, state, entry);
+
+      expect(created).toBe<Ref<Test>>(entry);
+
+      expect(newState).not.toBe<TableState<typeof Test>>(state);
+      expect(newState.items).toEqual(["0", "1", "2", undefined]);
+      expect(newState.itemsById).toEqual<TableState<typeof Test>['itemsById']>({
+        0: {
+          id: "0",
+          data: "cooldata",
+        },
+        1: {
+          id: "1",
+          data: "verycooldata!",
+        },
+        2: {
+          id: "2",
+          data: "awesomedata",
+        },
+        undefined: {
+          id: undefined as unknown as string,
+          data: "newdata!",
+        },
+      });
+    });
+
     it("correctly updates entries with a merging object", () => {
+      const extendedState = deepFreeze({
+        ...state,
+        items: state.items.concat([null, undefined] as unknown as string[]),
+        itemsById: {
+          ...state.itemsById,
+          null: {
+            id: null as unknown as string,
+            data: "newdata!",
+          },
+          undefined: {
+            id: undefined,
+            data: "newdata!",
+          },
+        }
+      });
       const toMergeObj: Ref<Test> = { data: "modifiedData" };
-      const rowsToUpdate: TableState<typeof Test>['itemsById'][number][] = [state.itemsById[1], state.itemsById[2]];
+      const rowsToUpdate = [extendedState.itemsById[1], extendedState.itemsById[2], extendedState.itemsById['null'], extendedState.itemsById['undefined']] as RefFromFields<TestDescriptors>[];
       const newState = table.update(txInfo, state, rowsToUpdate, toMergeObj);
 
       expect(newState).not.toBe<TableState<typeof Test>>(state);
@@ -109,12 +180,35 @@ describe("Table", () => {
           id: "2",
           data: "modifiedData",
         },
+        null: {
+          id: null as unknown as string,
+          data: "modifiedData",
+        },
+        undefined: {
+          id: undefined,
+          data: "modifiedData",
+        },
       });
     });
 
     it("correctly deletes entries", () => {
-      const rowsToDelete: TableState<typeof Test>['itemsById'][number][] = [state.itemsById[1], state.itemsById[2]];
-      const newState = table.delete(txInfo, state, rowsToDelete);
+      const extendedState = deepFreeze({
+        ...state,
+        items: state.items.concat([null, undefined] as unknown as string[]),
+        itemsById: {
+          ...state.itemsById,
+          null: {
+            id: null as unknown as string,
+            data: "newdata!",
+          },
+          undefined: {
+            id: undefined,
+            data: "newdata!",
+          },
+        }
+      });
+      const rowsToDelete = [extendedState.itemsById[1], extendedState.itemsById[2], extendedState.itemsById['null'], extendedState.itemsById['undefined']] as RefFromFields<TestDescriptors>[];
+      const newState = table.delete(txInfo, extendedState, rowsToDelete);
       const expectedItemsById = {
         0: {
           id: "0",
@@ -128,8 +222,23 @@ describe("Table", () => {
     });
 
     it("filter works correctly with object argument", () => {
+      const extendedState = deepFreeze({
+        ...state,
+        items: state.items.concat([null, undefined] as unknown as string[]),
+        itemsById: {
+          ...state.itemsById,
+          null: {
+            id: null as unknown as string,
+            data: "newdata!",
+          },
+          undefined: {
+            id: undefined,
+            data: "newdata!",
+          },
+        }
+      });
       const clauses: QueryClause<{ data: string }>[] = [{ type: FILTER, payload: { data: "verycooldata!" } }];
-      const result = table.query(state, clauses);
+      const result = table.query(extendedState, clauses);
       expect(result).toHaveLength(1);
       expect(result[0]).toBe<TableState<typeof Test>['itemsById'][number]>(state.itemsById[1]);
     });
@@ -171,11 +280,28 @@ describe("Table", () => {
     });
 
     it("orderBy works correctly with prop argument", () => {
+      const extendedState = deepFreeze({
+        ...state,
+        items: state.items.concat([null, undefined] as unknown as string[]),
+        itemsById: {
+          ...state.itemsById,
+          null: {
+            id: null as unknown as string,
+            data: "newdata!",
+          },
+          undefined: {
+            id: undefined,
+            data: "newdata!",
+          },
+        }
+      });
       const clauses: QueryClause<[string[], string[]]>[] = [{ type: ORDER_BY, payload: [["data"], ["inc"]] }];
-      const result = table.query(state, clauses);
+      const result = table.query(extendedState, clauses);
       expect(result.map((row) => row.data)).toEqual<Ref<Test>['data'][]>([
         "awesomedata",
         "cooldata",
+        "newdata!",
+        "newdata!",
         "verycooldata!",
       ]);
     });
@@ -193,10 +319,25 @@ describe("Table", () => {
     });
 
     it("exclude works correctly with object argument", () => {
+      const extendedState = deepFreeze({
+        ...state,
+        items: state.items.concat([null, undefined] as unknown as string[]),
+        itemsById: {
+          ...state.itemsById,
+          null: {
+            id: null as unknown as string,
+            data: "newdata!",
+          },
+          undefined: {
+            id: undefined,
+            data: "newdata!",
+          },
+        }
+      });
       const clauses: QueryClause<{ data: string }>[] = [{ type: EXCLUDE, payload: { data: "verycooldata!" } }];
-      const result = table.query(state, clauses);
-      expect(result).toHaveLength(2);
-      expect(result.map((row) => row.id)).toEqual<Ref<Test>['id'][]>(["0", "2"]);
+      const result = table.query(extendedState, clauses);
+      expect(result).toHaveLength(4);
+      expect(result.map((row) => row.id)).toEqual(["0", "2", null, undefined]);
     });
 
     it("query works with multiple clauses", () => {
@@ -212,11 +353,26 @@ describe("Table", () => {
     });
 
     it("query works with an id filter for a row which is not in the current result set", () => {
+      const extendedState = deepFreeze({
+        ...state,
+        items: state.items.concat([null, undefined] as unknown as string[]),
+        itemsById: {
+          ...state.itemsById,
+          null: {
+            id: null as unknown as string,
+            data: "newdata!",
+          },
+          undefined: {
+            id: undefined,
+            data: "newdata!",
+          },
+        }
+      });
       const clauses: (QueryClause<(row: Ref<Test>) => boolean> | QueryClause<Ref<Test>>)[] = [
         { type: FILTER, payload: row => row.id !== "1" },
         { type: FILTER, payload: { id: "1" } },
       ];
-      const result = table.query(state, clauses);
+      const result = table.query(extendedState, clauses);
       expect(result).toHaveLength(0);
     });
   });
