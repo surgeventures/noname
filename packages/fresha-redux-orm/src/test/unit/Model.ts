@@ -85,7 +85,7 @@ describe("Model", () => {
 
     it("markAccessed correctly proxies to Session", () => {
       Test.connect(sessionMock);
-      Test.markAccessed([1, 3]);
+      Test.markAccessed(["1", "3"]);
       expect(sessionMock.accessedModelInstances).toEqual<Record<keyof Schema, Record<ModelId, boolean>>>({
         UnitTestModel: {
           1: true,
@@ -102,7 +102,7 @@ describe("Model", () => {
 
     it("should throw a custom error when user try to interact with database without a session", () => {
       const attributes = {
-        id: 0,
+        id: "0",
         name: "Tommi",
         number: 123,
         boolean: false,
@@ -116,7 +116,7 @@ describe("Model", () => {
       expect(() => Test.exists(attributes)).toThrow(
         'Tried to check if a UnitTestModel model instance exists without a session. Create a session using `session = orm.session()` and call `session["UnitTestModel"].exists` instead.'
       );
-      expect(() => Test.withId(0)).toThrow(
+      expect(() => Test.withId("0")).toThrow(
         'Tried to get the UnitTestModel model\'s id attribute without a session. Create a session using `session = orm.session()` and access `session["UnitTestModel"].idAttribute` instead.'
       );
       expect(() => new Test({}).update(attributes)).toThrow(
@@ -176,7 +176,7 @@ describe("Model", () => {
 
     it("getClass works correctly", () => {
       const instance = new Test({
-        id: 0,
+        id: "0",
         name: "Tommi",
         array: [],
         object: {},
@@ -188,20 +188,20 @@ describe("Model", () => {
 
     it("equals compares primitive types correctly", () => {
       const instance1 = new Test({
-        id: 0,
+        id: "0",
         name: "Tommi",
         number: 123,
         boolean: true,
       });
       const instance2 = new Test({
-        id: 0,
+        id: "0",
         name: "Tommi",
         number: 123,
         boolean: true,
       });
       expect(instance1.equals(instance2)).toBeTruthy();
       const instance3 = new Test({
-        id: 0,
+        id: "0",
         name: "Tommi",
         number: 123,
         boolean: false,
@@ -210,14 +210,14 @@ describe("Model", () => {
     });
 
     it("equals does not deeply compare array fields", () => {
-      const instance1 = new Test({ id: 0, array: [] });
-      const instance2 = new Test({ id: 0, array: [] });
+      const instance1 = new Test({ id: "0", array: [] });
+      const instance2 = new Test({ id: "0", array: [] });
       expect(instance1.equals(instance2)).toBeFalsy();
     });
 
     it("equals does not deeply compare object fields", () => {
-      const instance1 = new Test({ id: 0, object: {} });
-      const instance2 = new Test({ id: 0, object: {} });
+      const instance1 = new Test({ id: "0", object: {} });
+      const instance2 = new Test({ id: "0", object: {} });
       expect(instance1.equals(instance2)).toBeFalsy();
     });
 
@@ -290,8 +290,8 @@ describe("Model", () => {
       const bookName = 'book';
       const authorName = "author";
 
-      session.Author.create({ id: 1, name: authorName });
-      session.Book.create({ id: 2, name: bookName, authors: [session.Author.first()!]});
+      session.Author.create({ id: "1", name: authorName });
+      session.Book.create({ id: "2", name: bookName, authors: [session.Author.first()!]});
 
       const book = session.Book.first()!;
 

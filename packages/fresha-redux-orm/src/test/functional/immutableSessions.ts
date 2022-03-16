@@ -75,8 +75,8 @@ describe("Immutable session", () => {
   it("Models correctly indicate if id exists", () => {
     const { Book } = session;
 
-    expect(Book.idExists(0)).toBe(true);
-    expect(Book.idExists(92384)).toBe(false);
+    expect(Book.idExists("0")).toBe(true);
+    expect(Book.idExists("92384")).toBe(false);
     expect(Book.idExists()).toBe(false);
   });
 
@@ -84,9 +84,9 @@ describe("Immutable session", () => {
     const { Book } = session;
     const book = Book.create({
       name: "New Book",
-      author: 0,
+      author: "0",
       releaseYear: 2015,
-      publisher: 0,
+      publisher: "0",
     });
     expect(session.Book.count()).toBe(4);
     expect(session.Book.last()!.ref).toBe<Ref<InstanceType<Schema['Book']>>>(book.ref);
@@ -94,8 +94,8 @@ describe("Immutable session", () => {
 
   it("Model.getId works", () => {
     const { Book } = session;
-    expect(Book.withId(0)!.getId()).toBe(0);
-    expect(Book.withId(1)!.getId()).toBe(1);
+    expect(Book.withId("0")!.getId()).toBe("0");
+    expect(Book.withId("1")!.getId()).toBe("1");
   });
 
   it("Model.create throws if passing duplicate ids to many-to-many field", () => {
@@ -103,35 +103,35 @@ describe("Immutable session", () => {
 
     expect(() => Book.create({
       name: "New Book",
-      author: 0,
+      author: "0",
       releaseYear: 2015,
-      genres: [0, 0],
-      publisher: 0,
+      genres: ["0", "0"],
+      publisher: "0",
     })).toThrow("Book.genres");
   });
 
   it("Models are correctly deleted", () => {
     const { Book } = session;
     expect(Book.count()).toBe(3);
-    Book.withId(0)!.delete();
+    Book.withId("0")!.delete();
     expect(session.Book.count()).toBe(2);
-    expect(session.Book.idExists(0)).toBe(false);
+    expect(session.Book.idExists("0")).toBe(false);
   });
 
   it("Models with backwards virtual (1-to-n) key fields are correctly deleted", () => {
     const { Author } = session;
     expect(Author.count()).toBe(3);
-    Author.withId(0)!.delete();
+    Author.withId("0")!.delete();
     expect(session.Author.count()).toBe(2);
-    expect(session.Author.idExists(0)).toBe(false);
+    expect(session.Author.idExists("0")).toBe(false);
   });
 
   it("Models with backwards virtual 1-to-1 key fields are correctly deleted", () => {
     const { Cover } = session;
     expect(Cover.count()).toBe(3);
-    Cover.withId(0)!.delete();
+    Cover.withId("0")!.delete();
     expect(session.Cover.count()).toBe(2);
-    expect(session.Cover.idExists(0)).toBe(false);
+    expect(session.Cover.idExists("0")).toBe(false);
   });
 
   it("Models correctly update when setting properties", () => {
@@ -153,7 +153,7 @@ describe("Immutable session", () => {
 
   it("withId returns null if model instance not found", () => {
     const { Book } = session;
-    expect(Book.withId(9043290)).toBe(null);
+    expect(Book.withId("9043290")).toBe(null);
   });
 
   it("get returns null if model instance not found", () => {
@@ -187,9 +187,9 @@ describe("Immutable session", () => {
     const { Book } = session;
     const book = Book.upsert({
       name: "New Book",
-      author: 0,
+      author: "0",
       releaseYear: 2015,
-      publisher: 0,
+      publisher: "0",
     });
     expect(session.Book.count()).toBe(4);
     expect(session.Book.last()!.ref).toBe<Ref<InstanceType<Schema['Book']>>>(book.ref);
@@ -201,9 +201,9 @@ describe("Immutable session", () => {
     const book = Book.upsert({
       [Book.idAttribute]: 123123132,
       name: "New Book",
-      author: 0,
+      author: "0",
       releaseYear: 2015,
-      publisher: 0,
+      publisher: "0",
     });
     expect(session.Book.count()).toBe(4);
     expect(session.Book.last()!.ref).toBe<Ref<InstanceType<Schema['Book']>>>(book.ref);
@@ -214,9 +214,9 @@ describe("Immutable session", () => {
     const { Book } = session;
     const book = Book.create({
       name: "New Book",
-      author: 0,
+      author: "0",
       releaseYear: 2015,
-      publisher: 0,
+      publisher: "0",
     });
     expect(session.Book.count()).toBe(4);
     expect(session.Book.last()!.ref).toBe<Ref<InstanceType<Schema['Book']>>>(book.ref);
@@ -316,7 +316,7 @@ describe("Immutable session", () => {
   it("Model updates preserve relations if only other fields are changed", () => {
     const { Book } = session;
 
-    const genres = [1, 2];
+    const genres = ["1", "2"];
     const book = Book.create({
       name: "Book name",
       genres,
@@ -327,7 +327,7 @@ describe("Immutable session", () => {
         .all()
         .toRefArray()
         .map((genre) => genre.id)
-    ).toEqual<ModelId[]>([1, 2]);
+    ).toEqual<ModelId[]>(["1", "2"]);
     // update with same string, expect relations to be preserved
     book.update({ name: "Updated Book name" });
     expect(
@@ -335,13 +335,13 @@ describe("Immutable session", () => {
         .all()
         .toRefArray()
         .map((genre) => genre.id)
-    ).toEqual<ModelId[]>([1, 2]);
+    ).toEqual<ModelId[]>(["1", "2"]);
   });
 
   it("Model updates change relations if only relations are updated", () => {
     const { Book, Genre } = session;
 
-    const genres = [1, 2];
+    const genres = ["1", "2"];
     const book = Book.create({
       name: "New Book",
       genres,
@@ -351,10 +351,10 @@ describe("Immutable session", () => {
         .all()
         .toRefArray()
         .map((genre) => genre.id)
-    ).toEqual<ModelId[]>([1, 2]);
+    ).toEqual<ModelId[]>(["1", "2"]);
 
     // mutate array by appending element without changing reference
-    genres.push(3);
+    genres.push("3");
     // update book with field containing the same reference
     book.update({ genres });
     /**
@@ -366,10 +366,10 @@ describe("Immutable session", () => {
         .all()
         .toRefArray()
         .map(genre => genre.id)
-    ).toEqual<ModelId[]>([1, 2, 3]);
+    ).toEqual<ModelId[]>(["1", "2", "3"]);
     /* the backward relation must have been updated as well */
     expect(
-      Genre.withId(3)!
+      Genre.withId("3")!
         .books?.all()
         .toRefArray()
         .map(_book => _book.id)
@@ -426,23 +426,23 @@ describe("Immutable session", () => {
 
   it("adding related many-to-many entities works", () => {
     const { Book, Genre } = session;
-    const book = Book.withId(0)!;
+    const book = Book.withId("0")!;
     expect(book.genres?.count()).toBe(2);
-    book.genres?.add(Genre.withId(2)!);
+    book.genres?.add(Genre.withId("2")!);
     expect(book.genres?.count()).toBe(3);
   });
 
   it("trying to add existing related many-to-many entities throws", () => {
     const { Book } = session;
-    const book = Book.withId(0)!;
+    const book = Book.withId("0")!;
 
-    const existingId = 1;
+    const existingId = "1";
     expect(() => book.genres?.add(existingId)).toThrow(existingId.toString());
   });
 
   it("trying to set many-to-many fields throws", () => {
     const { Book } = session;
-    const book = Book.withId(0)!;
+    const book = Book.withId("0")!;
     expect(() => {
       book.genres = "whatever" as any;
     }).toThrow(
@@ -454,17 +454,17 @@ describe("Immutable session", () => {
     const { Genre, Author } = session;
     const tommi = Author.get({ name: "Tommi Kaikkonen" })!;
     const book = tommi.books?.first()!;
-    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
-      0,
-      1,
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual<ModelId[]>([
+      "0",
+      "1",
     ]);
 
-    const deleteGenre = Genre.withId(0);
+    const deleteGenre = Genre.withId("0");
 
-    book.update({ genres: [1, 2] });
-    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
-      1,
-      2,
+    book.update({ genres: ["1", "2"] });
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual<ModelId[]>([
+      "1",
+      "2",
     ]);
 
     expect(deleteGenre!.books?.filter({ id: book.id }).exists()).toBe(false);
@@ -474,26 +474,26 @@ describe("Immutable session", () => {
     const { Book } = session;
     const book = Book.first()!;
 
-    book.update({ genres: [0, 99] });
+    book.update({ genres: ["0", "99"] });
 
     expect(
       session.BookGenres.filter({ fromBookId: book.id })
         .toRefArray()
         .map(row => castTo<{ toGenreId: ModelId }>(row).toGenreId)
-    ).toEqual([0, 99]);
-    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
-      0,
+    ).toEqual<ModelId[]>(["0", "99"]);
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual<ModelId[]>([
+      "0",
     ]);
 
-    book!.update({ genres: [1, 98] });
+    book!.update({ genres: ["1", "98"] });
 
     expect(
       session.BookGenres.filter({ fromBookId: book!.id })
         .toRefArray()
         .map(row => castTo<{ toGenreId: ModelId }>(row).toGenreId)
-    ).toEqual([1, 98]);
-    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
-      1,
+    ).toEqual<ModelId[]>(["1", "98"]);
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual<ModelId[]>([
+      "1",
     ]);
   });
 
@@ -501,19 +501,19 @@ describe("Immutable session", () => {
     const { Genre, Author } = session;
     const tommi = Author.get({ name: "Tommi Kaikkonen" })!;
     const book = tommi.books?.first()!;
-    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
-      0,
-      1,
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual<ModelId[]>([
+      "0",
+      "1",
     ]);
 
-    const deleteGenre = Genre.withId(0)!;
-    const keepGenre = Genre.withId(1)!;
-    const addGenre = Genre.withId(2)!;
+    const deleteGenre = Genre.withId("0")!;
+    const keepGenre = Genre.withId("1")!;
+    const addGenre = Genre.withId("2")!;
 
     book.update({ genres: [addGenre, keepGenre] });
-    expect(book.genres?.toRefArray().map(row => row.id)).toEqual([
-      1,
-      2,
+    expect(book.genres?.toRefArray().map(row => row.id)).toEqual<ModelId[]>([
+      "1",
+      "2",
     ]);
 
     expect(deleteGenre.books?.filter({ id: book.id }).exists()).toBe(false);
@@ -522,7 +522,7 @@ describe("Immutable session", () => {
   it("creating models without many-to-many entities works", () => {
     const { Book } = session;
     expect(() => {
-      Book.create({ id: 457656121 });
+      Book.create({ id: "457656121" });
     }).not.toThrow();
   });
 
@@ -530,7 +530,7 @@ describe("Immutable session", () => {
     const { Book } = session;
     [null, undefined, 353, "a string"].forEach((value) => {
       expect(() => {
-        Book.create({ id: 457656121, genres: value as any });
+        Book.create({ id: "457656121", genres: value as any });
       }).toThrow(
         `Failed to resolve many-to-many relationship: Book[genres] must be an array (passed: ${value})`
       );
@@ -539,15 +539,15 @@ describe("Immutable session", () => {
 
   it("updating models without many-to-many entities works", () => {
     const { Book } = session;
-    const book = Book.create({ id: 457656121 });
+    const book = Book.create({ id: "457656121" });
     expect(() => {
-      book.update({ id: 457656121 });
+      book.update({ id: "457656121" });
     }).not.toThrow();
   });
 
   it("update throws with non-array many field", () => {
     const { Book } = session;
-    const book = Book.create({ id: 457656121 });
+    const book = Book.create({ id: "457656121" });
     [null, undefined, 353, "a string"].forEach((value) => {
       expect(() => {
         book.update({ genres: value as any });
@@ -559,33 +559,33 @@ describe("Immutable session", () => {
 
   it("removing related many-to-many entities works", () => {
     const { Book, Genre } = session;
-    const book = Book.withId(0)!;
+    const book = Book.withId("0")!;
     expect(book.genres?.count()).toBe(2);
-    book.genres?.remove(Genre.withId(0)!);
+    book.genres?.remove(Genre.withId("0")!);
 
     expect(
-      session.Book.withId(0)!.genres?.count()
+      session.Book.withId("0")!.genres?.count()
     ).toBe(1);
   });
 
   it("trying to remove unexisting related many-to-many entities throws", () => {
     const { Book } = session;
-    const book = Book.withId(0)!;
+    const book = Book.withId("0")!;
 
-    const unexistingId = 2012384;
-    expect(() => book.genres?.remove(0, unexistingId)).toThrow(
+    const unexistingId = "2012384";
+    expect(() => book.genres?.remove("0", unexistingId)).toThrow(
       unexistingId.toString()
     );
   });
 
   it("clearing related many-to-many entities works", () => {
     const { Book } = session;
-    const book = Book.withId(0)!;
+    const book = Book.withId("0")!;
     expect(book.genres?.count()).toBe(2);
     book.genres?.clear();
 
     expect(
-      session.Book.withId(0)!.genres?.count()
+      session.Book.withId("0")!.genres?.count()
     ).toBe(0);
   });
 
@@ -628,7 +628,7 @@ describe("Immutable session", () => {
     const { Book, Author, Movie, Publisher } = session;
 
     const book = Book.first()!;
-    const newAuthor = Author.withId(2)!;
+    const newAuthor = Author.withId("2")!;
 
     book.author = newAuthor;
 
@@ -637,10 +637,10 @@ describe("Immutable session", () => {
 
     // with 'as' option
     const movie = Movie.first()!;
-    const newPublisher = Publisher.withId(0)!;
+    const newPublisher = Publisher.withId("0")!;
     movie.publisher = newPublisher;
 
-    expect(movie.publisherId).toEqual(0);
+    expect(movie.publisherId).toEqual<ModelId>("0");
     expect(movie.publisher).toEqual<SessionBoundModel<InstanceType<Schema['Publisher']>>>(newPublisher);
     expect(movie.publisher.ref).toBe<Ref<InstanceType<Schema['Publisher']>>>(newPublisher.ref);
   });
@@ -688,7 +688,7 @@ describe("Immutable session", () => {
   });
 
   it("Model works with default value", () => {
-    let returnId = 1;
+    let returnId = "1";
 
     class DefaultFieldModel extends Model<typeof DefaultFieldModel, { id?: ModelId }> {
       static modelName = "DefaultFieldModel" as const;
@@ -707,10 +707,10 @@ describe("Immutable session", () => {
     const sess = _orm.session(_orm.getEmptyState());
     sess.DefaultFieldModel.create({});
 
-    expect(sess.DefaultFieldModel.idExists(1)).toBe(true);
+    expect(sess.DefaultFieldModel.idExists("1")).toBe(true);
 
-    returnId = 999;
+    returnId = "999";
     sess.DefaultFieldModel.create({});
-    expect(sess.DefaultFieldModel.idExists(999)).toBe(true);
+    expect(sess.DefaultFieldModel.idExists("999")).toBe(true);
   });
 });

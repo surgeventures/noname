@@ -20,7 +20,7 @@ import { Values } from "./utils";
 export type AnyObject = Record<string, any>;
 export type AnySchema = Record<string, typeof AnyModel>;
 
-export type ModelId = number | string;
+export type ModelId = string;
 
 /**
  * Defines possible descriptors defined on the ORM side
@@ -346,7 +346,7 @@ export type SortIteratee<MClass extends AnyModel> = keyof Ref<MClass> | { (row: 
  */
 export type TableState<MClassType extends typeof AnyModel> = {
   meta: {
-    maxId?: number;
+    maxId?: ModelId;
     [k: string]: any;
   };
   items: ModelId[];

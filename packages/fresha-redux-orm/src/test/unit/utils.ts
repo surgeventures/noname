@@ -11,40 +11,40 @@ import {
 } from "../../utils";
 import { FILTER } from "../../constants";
 import { Model } from "../../index";
-import { QueryClause } from "../../types";
+import { ModelId, QueryClause } from "../../types";
 
 describe("Utils", () => {
   describe("arrayDiffActions", () => {
     it("normal case", () => {
-      const target = [2, 3];
-      const source = [1, 2, 4];
+      const target = ["2", "3"];
+      const source = ["1", "2", "4"];
 
       const actions = arrayDiffActions(source, target);
-      expect(actions?.add).toEqual<ArrayDiffActionsResult['add']>([3]);
-      expect(actions?.delete).toEqual<ArrayDiffActionsResult['delete']>([1, 4]);
+      expect(actions?.add).toEqual<ArrayDiffActionsResult['add']>(["3"]);
+      expect(actions?.delete).toEqual<ArrayDiffActionsResult['delete']>(["1", "4"]);
     });
 
     it("only add", () => {
-      const target = [2, 3];
-      const source = [2];
+      const target = ["2", "3"];
+      const source = ["2"];
 
       const actions = arrayDiffActions(source, target);
-      expect(actions?.add).toEqual<ArrayDiffActionsResult['add']>([3]);
+      expect(actions?.add).toEqual<ArrayDiffActionsResult['add']>(["3"]);
       expect(actions?.delete).toEqual<ArrayDiffActionsResult['delete']>([]);
     });
 
     it("only remove", () => {
-      const target = [2, 3];
-      const source = [2, 3, 4];
+      const target = ["2", "3"];
+      const source = ["2", "3", "4"];
 
       const actions = arrayDiffActions(source, target);
       expect(actions?.add).toEqual<ArrayDiffActionsResult['add']>([]);
-      expect(actions?.delete).toEqual<ArrayDiffActionsResult['delete']>([4]);
+      expect(actions?.delete).toEqual<ArrayDiffActionsResult['delete']>(["4"]);
     });
 
     it("identical", () => {
-      const target = [2, 3];
-      const source = [2, 3];
+      const target = ["2", "3"];
+      const source = ["2", "3"];
 
       const actions = arrayDiffActions(source, target);
       expect(actions).toBe<ReturnType<typeof arrayDiffActions>>(null);
@@ -102,7 +102,7 @@ describe("Utils", () => {
     it("does not modify other values", () => {
       expect(normalizeEntity(null)).toBe(null);
       expect(normalizeEntity(undefined)).toBe(undefined);
-      expect(normalizeEntity(123)).toBe(123);
+      expect(normalizeEntity("123")).toBe<ModelId>("123");
       expect(normalizeEntity("some string")).toBe("some string");
       expect(normalizeEntity({})).toEqual({});
       expect(normalizeEntity([])).toEqual([]);

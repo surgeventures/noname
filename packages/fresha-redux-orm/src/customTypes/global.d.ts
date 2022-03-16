@@ -95,6 +95,12 @@ declare module "lodash/orderBy" {
   export default orderBy;
 }
 
+declare module "lodash/isNaN" {
+  function isNaN(value?: any): boolean;
+
+  export default isNaN;
+}
+
 declare module "lodash/sortBy" {
   export type SortByPredicate<T> = {
     (arg: T): number;

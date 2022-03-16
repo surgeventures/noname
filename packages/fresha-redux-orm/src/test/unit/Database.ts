@@ -79,7 +79,7 @@ describe("createDatabase", () => {
   });
 
   it("insert row with id specified", () => {
-    const props = { id: 0, name: "Example Book" };
+    const props = { id: "0", name: "Example Book" };
     const updateSpec: UpdateSpec<Schema, typeof props> = {
       action: CREATE,
       payload: props,
@@ -92,12 +92,12 @@ describe("createDatabase", () => {
     expect(state).not.toBe<OrmState<Schema>>(emptyState);
     expect(state).toEqual<OrmState<Schema>>({
       Book: {
-        items: [0],
+        items: ["0"],
         itemsById: {
-          0: props,
+          "0": props,
         },
         meta: {
-          maxId: 0,
+          maxId: "0",
         },
       },
       Author: {
@@ -118,19 +118,19 @@ describe("createDatabase", () => {
     const tx = { batchToken: getBatchToken(), withMutations: false };
     const { status, state, payload } = db.update<typeof props>(updateSpec, tx, emptyState);
     expect(status).toBe<UpdateStatus>(SUCCESS);
-    expect(payload).toEqual<typeof props & { id: ModelId }>({ id: 0, name: "Example Book" });
+    expect(payload).toEqual<typeof props & { id: ModelId }>({ id: "0", name: "Example Book" });
     expect(state).not.toBe<OrmState<Schema>>(emptyState);
     expect(state).toEqual<OrmState<Schema>>({
       Book: {
-        items: [0],
+        items: ["0"],
         itemsById: {
-          0: {
-            id: 0,
+          "0": {
+            id: "0",
             name: "Example Book",
           },
         },
         meta: {
-          maxId: 0,
+          maxId: "0",
         },
       },
       Author: {
@@ -155,23 +155,23 @@ describe("createDatabase", () => {
     );
 
     expect(status2).toBe<UpdateStatus>(SUCCESS);
-    expect(payload2).toEqual<typeof props & { id: ModelId }>({ id: 1, name: "Example Book Two" });
+    expect(payload2).toEqual<typeof props & { id: ModelId }>({ id: "1", name: "Example Book Two" });
     expect(state2).toBe<OrmState<Schema>>(state);
     expect(state2).toEqual<OrmState<Schema>>({
       Book: {
-        items: [0, 1],
+        items: ["0", "1"],
         itemsById: {
-          0: {
-            id: 0,
+          "0": {
+            id: "0",
             name: "Example Book",
           },
-          1: {
-            id: 1,
+          "1": {
+            id: "1",
             name: "Example Book Two",
           },
         },
         meta: {
-          maxId: 1,
+          maxId: "1",
         },
       },
       Author: {
@@ -185,15 +185,15 @@ describe("createDatabase", () => {
   it("update row", () => {
     const startState: OrmState<Schema> = {
       Book: {
-        items: [0],
+        items: ["0"],
         itemsById: {
-          0: {
-            id: 0,
+          "0": {
+            id: "0",
             name: "Example Book",
           },
         },
         meta: {
-          maxId: 0,
+          maxId: "0",
         },
       },
       Author: {
@@ -225,15 +225,15 @@ describe("createDatabase", () => {
   it("delete row", () => {
     const startState: OrmState<Schema> = {
       Book: {
-        items: [0],
+        items: ["0"],
         itemsById: {
-          0: {
-            id: 0,
+          "0": {
+            id: "0",
             name: "Example Book",
           },
         },
         meta: {
-          maxId: 0,
+          maxId: "0",
         },
       },
       Author: {
@@ -248,7 +248,7 @@ describe("createDatabase", () => {
       table: "Book",
       query: {
         table: "Book",
-        clauses: [{ type: FILTER, payload: { id: 0 } }],
+        clauses: [{ type: FILTER, payload: { id: "0" } }],
       },
     };
     const tx = { batchToken: getBatchToken(), withMutations: false };
