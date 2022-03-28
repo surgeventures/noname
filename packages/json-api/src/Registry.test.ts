@@ -20,7 +20,7 @@ describe("Registry.format", () => {
     registry = new Registry();
 
     registry.define("existing", {
-      attributes: ["attr"]
+      attributes: ["attr"],
     });
   });
 
@@ -30,9 +30,9 @@ describe("Registry.format", () => {
         type: "existing",
         id: "1",
         attributes: {
-          attr: "A"
-        }
-      }
+          attr: "A",
+        },
+      },
     });
   });
 
@@ -50,32 +50,32 @@ describe("Registry.parse", () => {
     registry = new Registry({ keyTransform: KeyTransforms.Kebab });
 
     registry.define("survey-resource-type", {
-      attributes: ["title", "startDate", "endDate"]
+      attributes: ["title", "startDate", "endDate"],
     });
 
     registry.define("parent", {
       relationships: {
-        children: "children"
-      }
+        children: "children",
+      },
     });
 
     registry.define("children", {
       relationships: {
         parent: "parent",
-        children: "grandchildren"
-      }
+        children: "grandchildren",
+      },
     });
 
     registry.define("grandchildren", {
       relationships: {
-        parent: "children"
-      }
+        parent: "children",
+      },
     });
 
     registry.define("terminals", {
       relationships: {
-        parent: "terminals"
-      }
+        parent: "terminals",
+      },
     });
   });
 
@@ -88,15 +88,15 @@ describe("Registry.parse", () => {
           attributes: {
             title: "First survey",
             "start-date": "2020-01-01",
-            "end-date": "2020-01-31"
-          }
-        }
+            "end-date": "2020-01-31",
+          },
+        },
       })
     ).toEqual({
       id: "12",
       title: "First survey",
       startDate: "2020-01-01",
-      endDate: "2020-01-31"
+      endDate: "2020-01-31",
     });
   });
 
@@ -108,21 +108,21 @@ describe("Registry.parse", () => {
             type: "survey-resource-type",
             id: "12",
             attributes: {
-              title: "First"
-            }
+              title: "First",
+            },
           },
           {
             type: "survey-resource-type",
             id: "34",
             attributes: {
-              title: "Second"
-            }
-          }
-        ]
+              title: "Second",
+            },
+          },
+        ],
       })
     ).toEqual([
       { id: "12", title: "First" },
-      { id: "34", title: "Second" }
+      { id: "34", title: "Second" },
     ]);
   });
 
@@ -134,14 +134,14 @@ describe("Registry.parse", () => {
           id: "12",
           relationships: {
             children: {
-              data: null
-            }
-          }
-        }
+              data: null,
+            },
+          },
+        },
       })
     ).toEqual({
       id: "12",
-      children: null
+      children: null,
     });
   });
 
@@ -155,15 +155,15 @@ describe("Registry.parse", () => {
             children: {
               data: {
                 type: "children",
-                id: "123"
-              }
-            }
-          }
-        }
+                id: "123",
+              },
+            },
+          },
+        },
       })
     ).toEqual({
       id: "12",
-      children: "123"
+      children: "123",
     });
   });
 
@@ -177,21 +177,21 @@ describe("Registry.parse", () => {
             children: {
               data: {
                 type: "children",
-                id: "123"
-              }
-            }
-          }
+                id: "123",
+              },
+            },
+          },
         },
         included: [
           {
             type: "children",
-            id: "123"
-          }
-        ]
+            id: "123",
+          },
+        ],
       })
     ).toEqual({
       id: "12",
-      children: { id: "123" }
+      children: { id: "123" },
     });
   });
 
@@ -205,15 +205,15 @@ describe("Registry.parse", () => {
             children: {
               data: {
                 type: "children",
-                id: "123"
-              }
-            }
-          }
+                id: "123",
+              },
+            },
+          },
         },
         included: [
           {
             type: "children",
-            id: "123"
+            id: "123",
           },
           {
             type: "terminals",
@@ -222,12 +222,12 @@ describe("Registry.parse", () => {
               location: {
                 data: {
                   id: "12",
-                  type: "locations"
-                }
-              }
-            }
-          }
-        ]
+                  type: "locations",
+                },
+              },
+            },
+          },
+        ],
       },
       { includedInResponse: true }
     );
@@ -235,13 +235,13 @@ describe("Registry.parse", () => {
     expect(response).toEqual([
       {
         id: "12",
-        children: { id: "123" }
+        children: { id: "123" },
       },
       { id: "123" },
       {
         id: "1234",
-        location: "12"
-      }
+        location: "12",
+      },
     ]);
   });
 
@@ -255,15 +255,15 @@ describe("Registry.parse", () => {
             children: {
               data: {
                 type: "children",
-                id: "123"
-              }
-            }
-          }
+                id: "123",
+              },
+            },
+          },
         },
         included: [
           {
             type: "children",
-            id: "123"
+            id: "123",
           },
           {
             type: "terminals",
@@ -272,12 +272,12 @@ describe("Registry.parse", () => {
               location: {
                 data: {
                   id: "12",
-                  type: "locations"
-                }
-              }
-            }
-          }
-        ]
+                  type: "locations",
+                },
+              },
+            },
+          },
+        ],
       },
       { includedInResponse: true, typeAttr: "type_" }
     );
@@ -286,14 +286,14 @@ describe("Registry.parse", () => {
       {
         id: "12",
         type_: "parent",
-        children: { id: "123", type_: "children" }
+        children: { id: "123", type_: "children" },
       },
       { id: "123", type_: "children" },
       {
         id: "1234",
         location: "12",
-        type_: "terminals"
-      }
+        type_: "terminals",
+      },
     ]);
   });
 
@@ -308,24 +308,24 @@ describe("Registry.parse", () => {
               data: [
                 {
                   type: "children",
-                  id: "123"
+                  id: "123",
                 },
                 {
                   type: "children",
-                  id: "125"
+                  id: "125",
                 },
                 {
                   type: "children",
-                  id: "127"
-                }
-              ]
-            }
-          }
-        }
+                  id: "127",
+                },
+              ],
+            },
+          },
+        },
       })
     ).toEqual({
       id: "12",
-      children: ["123", "125", "127"]
+      children: ["123", "125", "127"],
     });
   });
 
@@ -340,38 +340,38 @@ describe("Registry.parse", () => {
               data: [
                 {
                   type: "children",
-                  id: "123"
+                  id: "123",
                 },
                 {
                   type: "children",
-                  id: "125"
+                  id: "125",
                 },
                 {
                   type: "children",
-                  id: "127"
-                }
-              ]
-            }
-          }
+                  id: "127",
+                },
+              ],
+            },
+          },
         },
         included: [
           {
             type: "children",
-            id: "123"
+            id: "123",
           },
           {
             type: "children",
-            id: "125"
+            id: "125",
           },
           {
             type: "children",
-            id: "127"
-          }
-        ]
+            id: "127",
+          },
+        ],
       })
     ).toEqual({
       id: "12",
-      children: [{ id: "123" }, { id: "125" }, { id: "127" }]
+      children: [{ id: "123" }, { id: "125" }, { id: "127" }],
     });
   });
 
@@ -385,10 +385,10 @@ describe("Registry.parse", () => {
             children: {
               data: {
                 type: "children",
-                id: "123"
-              }
-            }
-          }
+                id: "123",
+              },
+            },
+          },
         },
         included: [
           {
@@ -398,16 +398,16 @@ describe("Registry.parse", () => {
               parent: {
                 data: {
                   type: "parent",
-                  id: "12"
-                }
+                  id: "12",
+                },
               },
               children: {
                 data: {
                   type: "grandchildren",
-                  id: "456"
-                }
-              }
-            }
+                  id: "456",
+                },
+              },
+            },
           },
           {
             type: "grandchildren",
@@ -416,16 +416,16 @@ describe("Registry.parse", () => {
               parent: {
                 data: {
                   type: "children",
-                  id: "123"
-                }
-              }
-            }
-          }
-        ]
+                  id: "123",
+                },
+              },
+            },
+          },
+        ],
       })
     ).toEqual({
       id: "12",
-      children: { id: "123", parent: "12", children: "456" }
+      children: { id: "123", parent: "12", children: "456" },
     });
   });
 });

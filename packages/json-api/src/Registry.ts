@@ -5,7 +5,7 @@ import {
   identity,
   kebabCaseDeep,
   camelCaseDeep,
-  TransformFunc
+  TransformFunc,
 } from "@fresha/noname-core";
 import {
   IncludesMap,
@@ -13,14 +13,14 @@ import {
   Registry,
   Resource,
   ResourceParseOptions,
-  ResourceSpec
+  ResourceSpec,
 } from "./types";
 import ResourceImpl from "./Resource";
 import DuplicateResourceError from "./DuplicateResourceError";
 
 export enum KeyTransforms {
   Kebab = "kebab",
-  Default = "default"
+  Default = "default",
 }
 
 type RegistryCreateOptions = {
@@ -29,12 +29,12 @@ type RegistryCreateOptions = {
 
 const keyTransformMapping = {
   [KeyTransforms.Kebab]: kebabCaseDeep,
-  [KeyTransforms.Default]: identity
+  [KeyTransforms.Default]: identity,
 };
 
 const keyParseMapping = {
   [KeyTransforms.Kebab]: camelCaseDeep,
-  [KeyTransforms.Default]: identity
+  [KeyTransforms.Default]: identity,
 };
 
 export default class RegistryImpl implements Registry {
@@ -98,18 +98,18 @@ export default class RegistryImpl implements Registry {
           const resource = parseResource(res);
           return {
             ...accum,
-            [`${res.type}:${resource.id as string}`]: resource
+            [`${res.type}:${resource.id as string}`]: resource,
           };
         }, {})
       : undefined;
 
     const includedResources =
       document.included && options?.includedInResponse
-        ? document.included.map(elem => parseResource(elem, includesMap))
+        ? document.included.map((elem) => parseResource(elem, includesMap))
         : null;
     if (Array.isArray(document.data)) {
-      const primaryResources = (document.data as JSONAPIResource[]).map(elem =>
-        parseResource(elem, includesMap)
+      const primaryResources = (document.data as JSONAPIResource[]).map(
+        (elem) => parseResource(elem, includesMap)
       );
       return includedResources != null
         ? [...primaryResources, ...includedResources]
