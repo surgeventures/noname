@@ -1,0 +1,25 @@
+# Ignore the .env file
+/.env
+
+# webpack build target folder
+/build
+
+# test coverage
+/coverage
+
+# Ignore all logfiles and tempfiles.
+*.log
+/.tmp
+/tmp
+*.swp
+*.swo
+*.un~
+*~
+
+.DS_Store
+
+node_modules
+.idea
+.project
+.vscode/
+.eslintcache

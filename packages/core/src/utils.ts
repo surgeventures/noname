@@ -38,3 +38,13 @@ export const camelCase: KeyTransformFunc = (str) => {
 };
 
 export const camelCaseDeep: TransformFunc = (obj) => transformKeysDeep(obj, camelCase);
+
+export const snakeCase: KeyTransformFunc = (str) => {
+  return str
+    .split(RE_WORD_SEPARATOR)
+    .filter(Boolean)
+    .map((substr) => substr.toLowerCase())
+    .join('_');
+};
+
+export const snakeCaseDeep: TransformFunc = (obj) => transformKeysDeep(obj, snakeCase);
