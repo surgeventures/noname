@@ -1,11 +1,16 @@
-import type { paramsType, APIOperationParams, APIEntryConfig, APIOperationConfigOverrides } from "./types";
-import { kebabCase, JSONObject, kebabCaseDeep } from "@fresha/noname-core";
+import type {
+  paramsType,
+  APIOperationParams,
+  APIEntryConfig,
+  APIOperationConfigOverrides,
+} from './types';
+import { kebabCase, JSONObject, kebabCaseDeep, JSONValue } from '@fresha/noname-core';
 
 export function formatQueryString(
   params: paramsType,
   operationConfig: APIOperationParams,
   options = { transformKeys: kebabCase },
-) {
+): string {
   const allowedParams = operationConfig?.queryParams || [];
   let paramValues: JSONObject = {};
   if (Array.isArray(params)) {
@@ -38,7 +43,7 @@ export function formatQueryString(
   return urlSearchParams.toString();
 }
 
-export function formatRequestBody(params: paramsType, operationConfig: APIEntryConfig) {
+export function formatRequestBody(params: paramsType, operationConfig: APIEntryConfig): JSONValue {
   if (!operationConfig?.operations) {
     return {};
   }

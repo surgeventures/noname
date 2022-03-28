@@ -63,7 +63,7 @@ export interface APICreateOperationTemplateParams extends APIOperationTemplatePa
 export interface APIReadOperationTemplateParams extends APIOperationTemplateParams {
   actionName: (entryKey: string) => `read_${typeof entryKey}`;
   startActionPayload: null;
-  endActionPayload: (id: string, attr: JSONValue[]) => { id: string, attr: JSONValue[] };
+  endActionPayload: (id: string, attr: JSONValue[]) => { id: string; attr: JSONValue[] };
   httpMethod: 'get';
   makeApiParams: () => APIMakeParamsResult;
 }

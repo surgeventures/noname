@@ -1,11 +1,6 @@
 import assert from 'assert';
 
-import {
-  APICaller,
-  APICallerParams,
-  APICallerResponse,
-  APICommonConfig,
-} from './types';
+import { APICaller, APICallerParams, APICallerResponse, APICommonConfig } from './types';
 
 const METHODS_WITH_BODY = /^(post|put|patch)$/i;
 const METHODS_WITH_CONTENT_TYPE = /^(post|put|patch|delete)$/i;
@@ -29,7 +24,7 @@ export function superagentCall(
     credentials: withCredentials ? 'include' : undefined,
     headers,
     body: bodyAllowed && body != null ? String(body) : undefined,
-  }).then(response => {
+  }).then((response) => {
     if (!response.ok) {
       return Promise.reject();
     }
@@ -65,7 +60,11 @@ const jsonApiCall: APICaller = (url, params) => {
   return superagentCall(url, { ...params, headers });
 };
 
-export default function createApiCaller({ adapter }: { adapter: APICommonConfig['adapter'] }) {
+export const createApiCaller = ({
+  adapter,
+}: {
+  adapter: APICommonConfig['adapter'];
+}): APICaller | APICommonConfig['adapter'] => {
   switch (adapter) {
     case 'raw':
       return rawApiCall;
@@ -74,4 +73,4 @@ export default function createApiCaller({ adapter }: { adapter: APICommonConfig[
     default:
       return adapter;
   }
-}
+};

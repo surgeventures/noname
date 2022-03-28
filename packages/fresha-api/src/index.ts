@@ -22,7 +22,7 @@ import type {
   APIAction,
 } from './types';
 
-import createApiCaller from './call';
+import { createApiCaller } from './call';
 import parseOperation from './operations';
 
 const RAW_API_ORM_UPDATE = 'RAW_API_ORM_UPDATE';
@@ -53,16 +53,20 @@ let requestPromise: Promise<void | APICallerResponse> | null = null;
 
 export type OfflineHandlerFunc = () => void;
 
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const noop: () => void = () => {};
+
 let apiBasePath = '';
 let eventBus: EventEmitter;
-let offlineHandler: OfflineHandlerFunc = () => {};
+let offlineHandler: OfflineHandlerFunc = noop;
 let logoutAction: () => AnyAction;
 
 export function init(
   { API_URL }: APIEnvironmentOptions,
   AppContextEventBus: EventEmitter,
   offlineHandlerFn: OfflineHandlerFunc,
-  logoutActionFn: () => AnyAction): void {
+  logoutActionFn: () => AnyAction,
+): void {
   apiBasePath = `${API_URL}/session`;
   eventBus = AppContextEventBus;
   offlineHandler = offlineHandlerFn;
@@ -100,9 +104,9 @@ function redirectToSignInIfUnauthorized(
 function clearCache(entryCache: APICache, keys: string[]): void {
   const cacheKeyList = keys.includes('*') ? Object.keys(entryCache) : keys;
 
-  cacheKeyList.forEach(k => {
+  cacheKeyList.forEach((k) => {
     // entryCache[k] is a list of caches for `read`, `list` and `single-read` operations
-    entryCache[k].forEach(c => c.clear());
+    entryCache[k].forEach((c) => c.clear());
   });
 }
 
@@ -157,7 +161,7 @@ export function configureActions(
         // const apiUrl = operation.makeUrl(params, operation, entryConfig, commonConfig); // TODO: Bring back after gloo migration
         const apiUrl = operation.makeUrl(params, operation, entryConfig, commonConfig);
         const apiParams = operation.makeApiParams(params, entryConfig);
-        const paramsObject = params.find(param => typeof param === 'object') as JSONValue;
+        const paramsObject = params.find((param) => typeof param === 'object') as JSONValue;
         const shouldUpdateStore = (paramsObject as { updateStore?: boolean })?.updateStore || true;
         let cacheKey: string | null = null;
         if (actionCache) {
@@ -186,14 +190,14 @@ export function configureActions(
             };
 
             apiPromise
-              .then(response => {
+              .then((response) => {
                 if (operation.expireCache) {
                   clearCache(entryCache, invalidateCacheKeys);
                 } else if (cacheKey !== null) {
                   actionCache?.set(cacheKey, {
                     promise: null,
                     response,
-                    timestamp: Date.now() + 1000 * operation.cache!.expirationTime,
+                    timestamp: Date.now() + 1000 * (operation.cache?.expirationTime || 0),
                   });
                 }
 
@@ -209,13 +213,13 @@ export function configureActions(
 
                 resolve({
                   ...response,
-                  _actionOptions: (operation as unknown) as JSONValue,
+                  _actionOptions: operation as unknown as JSONValue,
                   _actionParams: params,
                 });
               })
               .catch((error: Response) => {
                 if (cacheKey !== null) {
-                  actionCache!.delete(cacheKey);
+                  actionCache?.delete(cacheKey);
                 }
 
                 handleOffline(error, operation.ignoreOffline);
@@ -230,7 +234,7 @@ export function configureActions(
             if (onCancel) {
               onCancel(() => {
                 if (cacheKey !== null) {
-                  actionCache!.delete(cacheKey);
+                  actionCache?.delete(cacheKey);
                 }
 
                 apiPromise.cancel();
@@ -240,11 +244,11 @@ export function configureActions(
         );
 
         if (cacheKey !== null) {
-          if (actionCache!.size >= operation.cache!.size) {
-            actionCache!.delete(actionCache!.keys().next().value);
+          if ((actionCache?.size || 0) >= (operation.cache?.size || 0)) {
+            actionCache?.delete(actionCache?.keys().next().value);
           }
 
-          actionCache!.set(cacheKey, {
+          actionCache?.set(cacheKey, {
             promise,
             response: undefined,
           });
@@ -265,7 +269,9 @@ export function configureActions(
   return result as ConfigureAPIActionMap;
 }
 
-export default function configureApi(apiConfig: APIConfig[]) {
+export default function configureApi(
+  apiConfig: APIConfig[],
+): ReturnType<typeof configureApiEntries>['actions'] {
   const { actions } = configureApiEntries(apiConfig);
 
   return actions;
@@ -278,10 +284,12 @@ function configureApiEntries(apiConfig: APIConfig[]) {
   }>(
     (memo, [configEntries, commonConfig]) => {
       const apiCaller = createApiCaller({
-        adapter: Array.isArray(commonConfig.adapter) ? commonConfig.adapter[0] : commonConfig.adapter,
+        adapter: Array.isArray(commonConfig.adapter)
+          ? commonConfig.adapter[0]
+          : commonConfig.adapter,
       }) as APICaller;
 
-      Object.keys(configEntries).forEach(entryKey => {
+      Object.keys(configEntries).forEach((entryKey) => {
         const entryConfig = configEntries[entryKey];
         const entryActions = configureActions(entryKey, entryConfig, commonConfig, {
           apiCaller,
@@ -290,7 +298,7 @@ function configureApiEntries(apiConfig: APIConfig[]) {
 
         memo.entryCache[entryKey] = entryActions.actionCacheList;
 
-        Object.keys(entryActions).forEach(key => {
+        Object.keys(entryActions).forEach((key) => {
           assert(memo.actions[key] == null, `Duplicate action ${key}`);
           memo.actions[key] = entryActions[key];
         });
