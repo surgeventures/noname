@@ -1,5 +1,5 @@
 import { registerDescriptor } from "../../../decorators/utils";
-import { Attribute, ManyToMany, AttributeOptions, RelationalFieldOpts } from "../../../fields";
+import { Attribute, ManyToMany, AttributeOptions, RelationalFieldOpts, RelationalField } from "../../../fields";
 import Model, { AnyModel } from "../../../Model";
 import { ModelDescriptorsRegistry } from "../../../modelDescriptorsRegistry";
 
@@ -20,7 +20,7 @@ describe("utils", () => {
 
 		class TestRelationalFieldDescriptor extends ManyToMany {}
 		
-		const relationalFieldDescriptorFnMock = jest.fn((modelName: string, relatedName?: string) => new TestRelationalFieldDescriptor(modelName, relatedName));
+		const relationalFieldDescriptorFnMock = jest.fn((modelName: string, relatedName?: string, opts?: { onDelete?: 'CASCADE' }) => new TestRelationalFieldDescriptor(modelName, relatedName, opts));
 		const relationalFieldDescriptorFnWithOptsMock = jest.fn((opts: RelationalFieldOpts) => new TestRelationalFieldDescriptor(opts));
 		
 		afterEach(() =>{
@@ -54,27 +54,39 @@ describe("utils", () => {
 		});
 
 		it("decorator registers the relational field descriptor using passed strings", () => {
-			const decorator = registerDescriptor<AnyModel, any, TestRelationalFieldDescriptor>(relationalFieldDescriptorFnMock(modelName, fieldName));
+			const onDeleteMethod = 'CASCADE';
+			const opts = {
+				onDelete: onDeleteMethod
+			} as const;
+			const decorator = registerDescriptor<AnyModel, any, TestRelationalFieldDescriptor>(relationalFieldDescriptorFnMock(modelName, fieldName, opts));
 	
 			decorator(new Test({}), fieldName);
 
+			const descriptor = registry.getDescriptors(modelName)[fieldName] as RelationalField;
+
 			expect(relationalFieldDescriptorFnMock).toHaveBeenCalledTimes(1);
 			expect(relationalFieldDescriptorFnMock).toHaveBeenCalledWith(modelName, fieldName);
-			expect(registry.getDescriptors(modelName)[fieldName]).toBeInstanceOf(TestRelationalFieldDescriptor);
+			expect(descriptor).toBeInstanceOf(TestRelationalFieldDescriptor);
+			expect(descriptor.onDelete).toEqual(onDeleteMethod);
 		});
 
 		it("decorator registers the relational field descriptor using options", () => {
+			const onDeleteMethod = 'CASCADE';
 			const opts: RelationalFieldOpts = {
 				to: 'modelName',
-				relatedName: 'foreignKey' 
+				relatedName: 'foreignKey',
+				onDelete: onDeleteMethod
 			};
 			const decorator = registerDescriptor<AnyModel, any, TestRelationalFieldDescriptor>(relationalFieldDescriptorFnWithOptsMock(opts));
 	
 			decorator(new Test({}), fieldName);
 
+			const descriptor = registry.getDescriptors(modelName)[fieldName] as RelationalField;
+
 			expect(relationalFieldDescriptorFnWithOptsMock).toHaveBeenCalledTimes(1);
 			expect(relationalFieldDescriptorFnWithOptsMock).toHaveBeenCalledWith(opts);
 			expect(registry.getDescriptors(modelName)[fieldName]).toBeInstanceOf(TestRelationalFieldDescriptor);
+			expect(descriptor.onDelete).toEqual(onDeleteMethod);
 		});
 	})
 });
