@@ -1,4 +1,4 @@
-import { ORM, Model, QuerySet, attr, many, TargetRelationship, Relations, SourceRelationship } from "../..";
+import { ORM, Model, QuerySet, TargetRelationship, Relations, SourceRelationship, OneToOne, ManyToMany, ForeignKey, attr, many } from "../..";
 import { castTo } from "../../hacks";
 import { ModelId, SessionWithBoundModels, ValidateSchema } from "../../types";
 import { Attribute } from "../../decorators";
@@ -298,5 +298,216 @@ describe("Model", () => {
       expect(book.ref.name).toBe(bookName);
       expect(book.authors?.first()!.ref.name).toBe(authorName);
     })
+  });
+
+  describe('cascading delete', () => {
+    const getModelClasses = () => {
+      type YellowDescriptors = {
+        id: ModelId;
+        name?: string;
+        blue?: TargetRelationship<Blue, Relations.ForeignKey>
+      }
+      class Yellow extends Model<typeof Yellow, YellowDescriptors> {
+        static modelName = "Yellow" as const;
+
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;
+
+        @ForeignKey<Yellow>('Blue', 'yellows', { onDelete: 'CASCADE' })
+        public blue: TargetRelationship<Blue, Relations.ForeignKey>
+      }
+
+      type BlueDescriptors = {
+        id: ModelId;
+        name?: string;
+        yellows?: SourceRelationship<typeof Yellow, Relations.ForeignKey>;
+        greens?: SourceRelationship<typeof Green, Relations.ManyToMany>;
+      }
+      class Blue extends Model<typeof Blue, BlueDescriptors> {
+        static modelName = "Blue" as const;
+
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;
+
+        public yellows: SourceRelationship<typeof Yellow, Relations.ForeignKey>;
+        public greens: SourceRelationship<typeof Green, Relations.ManyToMany>;
+      }
+
+      type GreenDescriptors = {
+        id: ModelId;
+        name?: string;
+        primaryRed?: TargetRelationship<Red, Relations.OneToOne>;
+        secondaryRed?: TargetRelationship<Red, Relations.OneToOne>;
+        blues?: TargetRelationship<Blue, Relations.ManyToMany>;
+      }
+      class Green extends Model<typeof Green, GreenDescriptors> {
+        static modelName = "Green" as const;
+
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;
+
+        @OneToOne<Green>('Red', 'primaryGreen', { onDelete: 'CASCADE' })
+        public primaryRed: TargetRelationship<Red, Relations.OneToOne>;
+
+        @OneToOne<Green>('Red', 'secondaryGreen')
+        public secondaryRed: TargetRelationship<Red, Relations.OneToOne>;
+
+        @ManyToMany<Green>('Blue', 'greens', { onDelete: 'CASCADE' })
+        public blues: TargetRelationship<Blue, Relations.ManyToMany>;
+      }
+
+      type RedDescriptors = {
+        id: ModelId;
+        name?: string;
+        cascadeTargetReds?: TargetRelationship<Red, Relations.ManyToMany>;
+        cascadeSourceReds?: SourceRelationship<typeof Red, Relations.ManyToMany>;
+        targetReds?: TargetRelationship<Red, Relations.ManyToMany>;
+        sourceReds?: SourceRelationship<typeof Red, Relations.ManyToMany>;
+        primaryGreen?: SourceRelationship<typeof Green, Relations.OneToOne>;
+        secondaryGreen?: SourceRelationship<typeof Green, Relations.OneToOne>;
+      }
+      class Red extends Model<typeof Red, RedDescriptors> {
+        static modelName = "Red" as const;
+
+        @Attribute()
+        public id: ModelId;
+
+        @Attribute()
+        public name: string;
+
+        @ManyToMany<Red>('Red', 'sourceReds')
+        public targetReds: TargetRelationship<Red, Relations.ManyToMany>;
+
+        @ManyToMany<Red>('Red', 'cascadeSourceReds', { onDelete: 'CASCADE' })
+        public cascadeTargetReds: TargetRelationship<Red, Relations.ManyToMany>;
+
+        public cascadeSourceReds: SourceRelationship<typeof Red, Relations.ManyToMany>;
+        public sourceReds: SourceRelationship<typeof Red, Relations.ManyToMany>;
+        public primaryGreen: SourceRelationship<typeof Green, Relations.OneToOne>;
+        public secondaryGreen: SourceRelationship<typeof Green, Relations.OneToOne>;
+      }
+      
+      return { Yellow, Blue, Green, Red };
+    };
+    type Schema = ValidateSchema<{
+      Yellow: ReturnType<typeof getModelClasses>['Yellow'];
+      Blue: ReturnType<typeof getModelClasses>['Blue'];
+      Red: ReturnType<typeof getModelClasses>['Red'];
+      Green: ReturnType<typeof getModelClasses>['Green'];
+    }>;
+    
+    let session: SessionWithBoundModels<Schema>;
+
+    beforeEach(() => {
+      registry.clear();
+      const { Yellow, Blue, Red, Green } = getModelClasses();
+      const orm = new ORM<Schema>();
+      orm.register(Yellow, Blue, Red, Green);
+      session = orm.session();
+    }); 
+
+    it("does not remove referenced entities in self-referencing relationship if not using cascade delete", () => {
+      const redName = "red";
+
+      const red1 = session.Red.create({ id: "1", name: redName });
+      const red2 = session.Red.create({ id: "2", name: redName, targetReds: [red1] });
+
+      red2.delete();
+
+      expect(session.Red.withId("1")).not.toBe(null);
+      expect(session.Red.withId("2")).toBe(null);
+    });
+
+    it("removes referenced entities in self-referencing relationship if using cascade delete", () => {
+      const redName = "red";
+
+      const red1 = session.Red.create({ id: "1", name: redName });
+      const red2 = session.Red.create({ id: "2", name: redName, cascadeTargetReds: [red1] });
+
+      red2.delete();
+
+      expect(session.Red.count()).toBe(0);
+    });
+
+    it("removes referenced entities in self-referencing relationship if the entity has a foreign key using cascade delete and the default delete mode", () => {
+      const redName = "red";
+
+      const red1 = session.Red.create({ id: "1", name: redName });
+      const red2 = session.Red.create({ id: "2", name: redName, targetReds: [red1] });
+      session.Red.create({ id: "3", name: redName, cascadeTargetReds: [red1] });
+
+      red2.delete();
+
+      expect(session.Red.count()).toBe(2);
+    });
+
+    it("removes referenced entities using N-M relation and others that have cascade delete option on", () => {
+      const red1 = session.Red.create({ id: "1", name: 'red' });
+      const blue1 = session.Blue.create({ id: "3" });
+      const blue2 = session.Blue.create({ id: "4" });
+      // secondaryRed has cascade disabled
+      const green1 = session.Green.create({ id: "1", name: 'greenName', secondaryRed: red1, blues: [blue1, blue2] });
+
+      green1.delete();
+
+      expect(session.Red.count()).toBe(1);
+      expect(session.Blue.count()).toBe(0);
+      expect(session.Green.count()).toBe(0);
+    });
+
+    it("skips cascading removing entities that are not linked", () => {
+      const yellow = session.Yellow.create({ id: "1" });
+      const blue = session.Blue.create({ id: "2" });
+      const green = session.Green.create({ id: "3" });
+      const red1 = session.Red.create({ id: "4" });
+      const red2 = session.Red.create({ id: "5" });
+      
+      yellow.delete();
+
+      expect(session.Yellow.count()).toBe(0);
+      expect(session.Blue.count()).toBe(1);
+      expect(session.Green.count()).toBe(1);
+      expect(session.Red.count()).toBe(2);
+
+      blue.delete();
+
+      expect(session.Blue.count()).toBe(0);
+      expect(session.Green.count()).toBe(1);
+      expect(session.Red.count()).toBe(2);
+
+      green.delete();
+
+      expect(session.Green.count()).toBe(0);
+      expect(session.Red.count()).toBe(2);
+
+      red1.delete();
+
+      expect(session.Red.count()).toBe(1);
+
+      red2.delete();
+
+      expect(session.Red.count()).toBe(0);
+    });
+
+    it("removes referenced entities using 1-N relation that have cascade delete option on", () => {
+      const blue = session.Blue.create({ id: "1" });
+      const yellow = session.Yellow.create({ id: "2", blue });
+      session.Green.create({ id: "3", blues: [blue] });
+
+      yellow.delete();
+
+      expect(session.Yellow.count()).toBe(0);
+      expect(session.Blue.count()).toBe(0);
+      expect(session.Green.count()).toBe(1);
+    });
   })
 });

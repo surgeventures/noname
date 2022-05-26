@@ -739,18 +739,47 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     });
   }
 
+  cascadeDelete(modelName: string): void {
+    const registry = ModelDescriptorsRegistry.getInstance();
+    const descriptors = registry.getDescriptors(modelName);
+
+    const shouldCascadeDelete = (desc: RelationalField) => desc?.onDelete === 'CASCADE';
+
+    for (const key in descriptors) {
+      const descriptor = descriptors[key] as RelationalField;
+
+      if (!shouldCascadeDelete(descriptor) || !(this as AnyObject)[key]) continue;
+
+      if (descriptor instanceof ForeignKey || descriptor instanceof OneToOne) {
+        const field = (this as AnyObject)[key] as SessionBoundModel;
+        field.delete();
+      }
+    } 
+  }
+
   /**
    * @return {undefined}
    * @private
    */
   _onDelete(): void {
-    const { virtualFields } = this.getClass();
+    const { virtualFields, modelName } = this.getClass();
+    
+    if (Object.keys(virtualFields).length === 0) {
+      return this.cascadeDelete(modelName);
+    }
+  
     for (const key in virtualFields) {
       // eslint-disable-line
       const field = virtualFields[key];
       if (field instanceof ManyToMany) {
+        const registry = ModelDescriptorsRegistry.getInstance();
+        const descriptors = (registry.getDescriptors(modelName)[key] || {}) as ManyToMany;
+        const qs = (this as AnyObject)[key] as QuerySet;
+        if (descriptors.onDelete === 'CASCADE') {
+          qs.delete();
+        }
         // Delete any many-to-many rows the entity is included in.
-        (this as AnyObject)[key].clear();
+        qs.clear();
       } else if (field instanceof ForeignKey) {
         const relatedQs = (this as AnyObject)[key];
         if (relatedQs.exists()) {

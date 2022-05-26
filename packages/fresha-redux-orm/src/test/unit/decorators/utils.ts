@@ -65,7 +65,7 @@ describe("utils", () => {
 			const descriptor = registry.getDescriptors(modelName)[fieldName] as RelationalField;
 
 			expect(relationalFieldDescriptorFnMock).toHaveBeenCalledTimes(1);
-			expect(relationalFieldDescriptorFnMock).toHaveBeenCalledWith(modelName, fieldName);
+			expect(relationalFieldDescriptorFnMock).toHaveBeenCalledWith(modelName, fieldName, opts);
 			expect(descriptor).toBeInstanceOf(TestRelationalFieldDescriptor);
 			expect(descriptor.onDelete).toEqual(onDeleteMethod);
 		});
