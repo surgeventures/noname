@@ -1,4 +1,4 @@
-import { ORM, Model, QuerySet, attr, many, TargetRelationship, Relations, SourceRelationship } from "../..";
+import { ORM, Model, QuerySet, TargetRelationship, Relations, SourceRelationship, attr, many } from "../..";
 import { castTo } from "../../hacks";
 import { ModelId, SessionWithBoundModels, ValidateSchema } from "../../types";
 import { Attribute } from "../../decorators";
@@ -298,5 +298,5 @@ describe("Model", () => {
       expect(book.ref.name).toBe(bookName);
       expect(book.authors?.first()!.ref.name).toBe(authorName);
     })
-  })
+  });
 });

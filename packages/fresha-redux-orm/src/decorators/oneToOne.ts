@@ -1,5 +1,5 @@
 import { oneToOne } from "..";
-import type { OneToOne as OneToOneClass } from "../fields";
+import type { OneToOne as OneToOneClass, RelationalFieldOpts } from "../fields";
 import { AnyModel } from "../Model";
 import { ModelClassTypeFromModelFields, ModelName, PossibleFieldKeys } from "../types";
 import { registerDescriptor } from "./utils";
@@ -16,9 +16,10 @@ import { registerDescriptor } from "./utils";
  */
 export function OneToOne<MClass extends AnyModel>(
 	toModelName: ModelName<ModelClassTypeFromModelFields<MClass>>, 
-	relatedName?: PossibleFieldKeys<MClass, ModelClassTypeFromModelFields<MClass>>
+	relatedName?: PossibleFieldKeys<MClass, ModelClassTypeFromModelFields<MClass>>,
+	opts?: Pick<RelationalFieldOpts, 'onDelete'>
 ) {
-	const descriptor = oneToOne(toModelName, relatedName as string);
+	const descriptor = oneToOne(toModelName, relatedName as string, opts);
 	
 	return registerDescriptor<MClass, AnyModel, OneToOneClass>(descriptor);
 }

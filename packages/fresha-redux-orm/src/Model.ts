@@ -739,26 +739,46 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     });
   }
 
+  shouldCascadeDelete(field: RelationalField) {
+    return field?.onDelete === 'CASCADE';
+  }
+
+  cascadeDelete(key: string): void {
+    const field = (this as AnyObject)[key] as SessionBoundModel | QuerySet | null;
+    field?.delete();
+  }
+
   /**
    * @return {undefined}
    * @private
    */
   _onDelete(): void {
     const { virtualFields } = this.getClass();
+  
     for (const key in virtualFields) {
       // eslint-disable-line
       const field = virtualFields[key];
       if (field instanceof ManyToMany) {
+        const qs = (this as AnyObject)[key] as QuerySet;
+        if (this.shouldCascadeDelete(field)) {
+          this.cascadeDelete(key);
+        }
         // Delete any many-to-many rows the entity is included in.
-        (this as AnyObject)[key].clear();
+        qs.clear();
       } else if (field instanceof ForeignKey) {
         const relatedQs = (this as AnyObject)[key];
         if (relatedQs.exists()) {
+          if (this.shouldCascadeDelete(field)) {
+            this.cascadeDelete(key);
+          }
           relatedQs.update({ [field.relatedName!]: null });
         }
       } else if (field instanceof OneToOne) {
         // Set null to any foreign keys or one to ones pointed to
         // this instance.
+        if (this.shouldCascadeDelete(field)) {
+          this.cascadeDelete(key);
+        }
         if ((this as AnyObject)[key] !== null) {
           (this as AnyObject)[key][field.relatedName!] = null;
         }

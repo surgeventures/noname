@@ -1,5 +1,5 @@
 import { many } from "..";
-import type { ManyToMany as ManyToManyClass } from "../fields";
+import type { ManyToMany as ManyToManyClass, RelationalFieldOpts } from "../fields";
 import { AnyModel } from "../Model";
 import QuerySet from "../QuerySet";
 import { ModelClassTypeFromModelFields, ModelName, PossibleFieldKeys } from "../types";
@@ -23,9 +23,10 @@ import { registerDescriptor } from "./utils";
  */
 export function ManyToMany<MClass extends AnyModel>(
 	toModelName: ModelName<ModelClassTypeFromModelFields<MClass>>, 
-	relatedName?: PossibleFieldKeys<MClass, ModelClassTypeFromModelFields<MClass>>
+	relatedName?: PossibleFieldKeys<MClass, ModelClassTypeFromModelFields<MClass>>,
+	opts?: Pick<RelationalFieldOpts, 'onDelete'>
 ) {
-	const descriptor = many(toModelName, relatedName as string);
+	const descriptor = many(toModelName, relatedName as string, opts);
 	
 	return registerDescriptor<MClass, QuerySet, ManyToManyClass>(descriptor);
 }

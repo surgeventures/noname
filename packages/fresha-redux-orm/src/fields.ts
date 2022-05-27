@@ -296,16 +296,19 @@ export class Attribute extends Field {
   }
 }
 
+type OnDeleteOptions = 'CASCADE';
+
 export type RelationalFieldOpts = {
   to: string;
   relatedName?: string;
   through?: string;
   throughFields?: { from: string; to: string } | [string, string];
   as?: string;
+  onDelete?: OnDeleteOptions;
 };
 
 export type RelationalFieldConstructor = {
-  new (arg1: RelationalFieldOpts | string, arg2?: string): RelationalField;
+  new (arg1: RelationalFieldOpts | string, arg2?: string, arg3?: Pick<RelationalFieldOpts, 'onDelete'>): RelationalField;
 };
 
 /**
@@ -318,8 +321,9 @@ export abstract class RelationalField extends Field {
   throughFields?: { from: string; to: string } | [string, string];
   as?: string;
   toModel: typeof AnyModel;
+  onDelete?: OnDeleteOptions;
 
-  constructor(arg1: RelationalFieldOpts | string, arg2?: string) {
+  constructor(arg1: RelationalFieldOpts | string, arg2?: string, arg3?: Pick<RelationalFieldOpts, 'onDelete'>) {
     super();
     if (typeof arg1 === "object" && arg2 == null) {
       const opts = arg1;
@@ -328,9 +332,11 @@ export abstract class RelationalField extends Field {
       this.through = opts.through;
       this.throughFields = opts.throughFields;
       this.as = opts.as;
+      this.onDelete = opts.onDelete;
     } else {
       this.toModelName = arg1 as string;
       this.relatedName = arg2;
+      this.onDelete = arg3?.onDelete;
     }
   }
 
@@ -356,7 +362,7 @@ export abstract class RelationalField extends Field {
     _throughModel: typeof AnyModel
   ) {
     const ThisField = this.getClass();
-    return new ThisField(model.modelName, fieldName);
+    return new ThisField(model.modelName, fieldName, { onDelete: this.onDelete });
   }
 
   get installsBackwardsVirtualField() {
@@ -479,6 +485,7 @@ export class ManyToMany extends RelationalField {
         toModel,
         throughModel
       ),
+      onDelete: this.onDelete
     });
   }
 
@@ -662,14 +669,15 @@ export function attr(opts?: AttributeOptions) {
  *                                 from the target model.
  * @return {ForeignKey}
  */
-export function fk(toModelName: string, relatedName?: string): ForeignKey;
+export function fk(toModelName: string, relatedName?: string, opts?: Pick<RelationalFieldOpts, 'onDelete'>): ForeignKey;
 export function fk(opts: RelationalFieldOpts): ForeignKey;
 
 export function fk(
   arg1: string | RelationalFieldOpts,
-  arg2?: string
+  arg2?: string,
+  arg3?: Pick<RelationalFieldOpts, 'onDelete'>
 ): ForeignKey {
-  return new ForeignKey(arg1, arg2);
+  return new ForeignKey(arg1, arg2, arg3);
 }
 
 /**
@@ -744,11 +752,11 @@ export function fk(
  *                                          of source Models from target Model.
  * @return {ManyToMany}
  */
-export function many(toModelName: string, relatedName?: string): ManyToMany;
+export function many(toModelName: string, relatedName?: string, opts?: Pick<RelationalFieldOpts, 'onDelete'>): ManyToMany;
 export function many(opts: RelationalFieldOpts): ManyToMany;
 
-export function many(arg1: RelationalFieldOpts | string, arg2?: string) {
-  return new ManyToMany(arg1, arg2);
+export function many(arg1: RelationalFieldOpts | string, arg2?: string, arg3?: Pick<RelationalFieldOpts, 'onDelete'>) {
+  return new ManyToMany(arg1, arg2, arg3);
 }
 
 /**
@@ -771,9 +779,9 @@ export function many(arg1: RelationalFieldOpts | string, arg2?: string) {
  *                                 from the target Model.
  * @return {OneToOne}
  */
-export function oneToOne(toModelName: string, relatedName?: string): OneToOne;
+export function oneToOne(toModelName: string, relatedName?: string, opts?: Pick<RelationalFieldOpts, 'onDelete'>): OneToOne;
 export function oneToOne(opts: RelationalFieldOpts): OneToOne;
 
-export function oneToOne(arg1: string | RelationalFieldOpts, arg2?: string) {
-  return new OneToOne(arg1, arg2);
+export function oneToOne(arg1: string | RelationalFieldOpts, arg2?: string, arg3?: Pick<RelationalFieldOpts, 'onDelete'>) {
+  return new OneToOne(arg1, arg2, arg3);
 }
