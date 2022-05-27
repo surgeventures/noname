@@ -362,7 +362,7 @@ export abstract class RelationalField extends Field {
     _throughModel: typeof AnyModel
   ) {
     const ThisField = this.getClass();
-    return new ThisField(model.modelName, fieldName);
+    return new ThisField(model.modelName, fieldName, { onDelete: this.onDelete });
   }
 
   get installsBackwardsVirtualField() {
@@ -485,6 +485,7 @@ export class ManyToMany extends RelationalField {
         toModel,
         throughModel
       ),
+      onDelete: this.onDelete
     });
   }
 

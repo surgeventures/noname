@@ -739,22 +739,13 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
     });
   }
 
-  cascadeDelete(modelName: string): void {
-    const registry = ModelDescriptorsRegistry.getInstance();
-    const descriptors = registry.getDescriptors(modelName);
+  shouldCascadeDelete(field: RelationalField) {
+    return field?.onDelete === 'CASCADE';
+  }
 
-    const shouldCascadeDelete = (desc: RelationalField) => desc?.onDelete === 'CASCADE';
-
-    for (const key in descriptors) {
-      const descriptor = descriptors[key] as RelationalField;
-
-      if (!shouldCascadeDelete(descriptor) || !(this as AnyObject)[key]) continue;
-
-      if (descriptor instanceof ForeignKey || descriptor instanceof OneToOne) {
-        const field = (this as AnyObject)[key] as SessionBoundModel;
-        field.delete();
-      }
-    } 
+  cascadeDelete(key: string): void {
+    const field = (this as AnyObject)[key] as SessionBoundModel | QuerySet | null;
+    field?.delete();
   }
 
   /**
@@ -762,32 +753,32 @@ export default class Model<MClassType extends typeof AnyModel = typeof AnyModel,
    * @private
    */
   _onDelete(): void {
-    const { virtualFields, modelName } = this.getClass();
-    
-    if (Object.keys(virtualFields).length === 0) {
-      return this.cascadeDelete(modelName);
-    }
+    const { virtualFields } = this.getClass();
   
     for (const key in virtualFields) {
       // eslint-disable-line
       const field = virtualFields[key];
       if (field instanceof ManyToMany) {
-        const registry = ModelDescriptorsRegistry.getInstance();
-        const descriptors = (registry.getDescriptors(modelName)[key] || {}) as ManyToMany;
         const qs = (this as AnyObject)[key] as QuerySet;
-        if (descriptors.onDelete === 'CASCADE') {
-          qs.delete();
+        if (this.shouldCascadeDelete(field)) {
+          this.cascadeDelete(key);
         }
         // Delete any many-to-many rows the entity is included in.
         qs.clear();
       } else if (field instanceof ForeignKey) {
         const relatedQs = (this as AnyObject)[key];
         if (relatedQs.exists()) {
+          if (this.shouldCascadeDelete(field)) {
+            this.cascadeDelete(key);
+          }
           relatedQs.update({ [field.relatedName!]: null });
         }
       } else if (field instanceof OneToOne) {
         // Set null to any foreign keys or one to ones pointed to
         // this instance.
+        if (this.shouldCascadeDelete(field)) {
+          this.cascadeDelete(key);
+        }
         if ((this as AnyObject)[key] !== null) {
           (this as AnyObject)[key][field.relatedName!] = null;
         }
