@@ -1,0 +1,36 @@
+{
+  "env": {
+    "browser": true,
+    "node": true,
+    "jest": true
+  },
+  "extends": [
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+  "plugins": ["@typescript-eslint", "prettier", "jest"],
+  "rules": {
+    "prettier/prettier": ["error", {
+      "trailingComma": "all",
+      "singleQuote": true,
+      "printWidth": 100
+    }],
+    // see https://github.com/typescript-eslint/typescript-eslint/issues/2484
+    "no-shadow": "off",
+    "@typescript-eslint/no-explicit-any": 0,
+    "@typescript-eslint/no-shadow": ["error"],
+    "@typescript-eslint/no-use-before-define": ["error", { "functions": false }]
+  },
+  "settings": {
+    "import/resolver": {
+      // see https://github.com/benmosher/eslint-plugin-import/issues/1396#issuecomment-511007063
+      "node": {},
+      "typescript": {}
+    }
+  }
+}

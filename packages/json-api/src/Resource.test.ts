@@ -1,7 +1,7 @@
 import {
   JSONAPIDocument,
   JSONAPIResource,
-  JSONAPIResourceAttributes
+  JSONAPIResourceAttributes,
 } from "@fresha/noname-core";
 import Registry, { KeyTransforms } from "./Registry";
 import { Resource } from "./types";
@@ -22,14 +22,14 @@ describe("Resource", () => {
     it("properly formats resource ID", () => {
       expect(author.id(12)).toEqual({
         type: "author",
-        id: "12"
+        id: "12",
       });
     });
 
     it("does not include undefined IDs", () => {
       expect(author.resource({})).toEqual({
         type: "author",
-        attributes: {}
+        attributes: {},
       });
     });
 
@@ -42,9 +42,9 @@ describe("Resource", () => {
           },
           parse(resourceObj) {
             return resourceObj.id;
-          }
+          },
         },
-        attributes: ["name"]
+        attributes: ["name"],
       });
 
       expect(
@@ -54,9 +54,9 @@ describe("Resource", () => {
           type: "country",
           id: "PL",
           attributes: {
-            name: "Poland"
-          }
-        }
+            name: "Poland",
+          },
+        },
       });
 
       expect(
@@ -65,13 +65,13 @@ describe("Resource", () => {
             type: "country",
             id: "UA",
             attributes: {
-              name: "Ukraine"
-            }
-          }
+              name: "Ukraine",
+            },
+          },
         })
       ).toEqual({
         code: "UA",
-        name: "Ukraine"
+        name: "Ukraine",
       });
     });
   });
@@ -82,38 +82,38 @@ describe("Resource", () => {
         attributes: {
           age: { formatter: Number },
           skipIfNegative: {
-            formatter: x => (typeof x === "number" && x < 0 ? undefined : x)
-          }
-        }
+            formatter: (x) => (typeof x === "number" && x < 0 ? undefined : x),
+          },
+        },
       });
 
       expect(
         custom.resource({
           id: 89,
           age: "282",
-          skipIfNegative: 10
+          skipIfNegative: 10,
         })
       ).toEqual({
         type: "custom",
         id: "89",
         attributes: {
           age: 282,
-          skipIfNegative: 10
-        }
+          skipIfNegative: 10,
+        },
       });
 
       expect(
         custom.resource({
           id: 89,
           age: "282",
-          skipIfNegative: -10
+          skipIfNegative: -10,
         })
       ).toEqual({
         type: "custom",
         id: "89",
         attributes: {
-          age: 282
-        }
+          age: 282,
+        },
       });
     });
 
@@ -121,23 +121,23 @@ describe("Resource", () => {
       const custom = registry.define("custom", {
         attributes: {
           phoneNumber: {
-            getter: data => data.mobilePhone
-          }
-        }
+            getter: (data) => data.mobilePhone,
+          },
+        },
       });
 
       expect(
         custom.resource({
           id: 12,
           phoneNumber: "736 272 273",
-          mobilePhone: "894 999 333"
+          mobilePhone: "894 999 333",
         })
       ).toEqual({
         type: "custom",
         id: "12",
         attributes: {
-          phoneNumber: "894 999 333"
-        }
+          phoneNumber: "894 999 333",
+        },
       });
     });
   });
@@ -151,27 +151,27 @@ describe("Resource", () => {
       registry.define("author", {
         attributes: ["name", "email"],
         relationships: {
-          articles: "article"
-        }
+          articles: "article",
+        },
       });
 
       article = registry.define("article", {
         attributes: ["title", "content"],
         relationships: {
           author: "author",
-          comments: "comment"
-        }
+          comments: "comment",
+        },
       });
 
       createArticle = registry.define("create-article", {
-        attributes: ["title", "content"]
+        attributes: ["title", "content"],
       });
 
       comment = registry.define("comment", {
         attributes: ["content"],
         relationships: {
-          article: "article"
-        }
+          article: "article",
+        },
       });
     });
 
@@ -179,14 +179,14 @@ describe("Resource", () => {
       expect(
         createArticle.resource({
           title: "New article",
-          content: "Article content ..."
+          content: "Article content ...",
         })
       ).toEqual({
         type: "create-article",
         attributes: {
           title: "New article",
-          content: "Article content ..."
-        }
+          content: "Article content ...",
+        },
       });
     });
 
@@ -196,17 +196,17 @@ describe("Resource", () => {
           id: 99,
           content: "comment !",
           article: null,
-          author: 1245
+          author: 1245,
         })
       ).toEqual({
         type: "comment",
         id: "99",
         attributes: {
-          content: "comment !"
+          content: "comment !",
         },
         relationships: {
-          article: { data: null }
-        }
+          article: { data: null },
+        },
       });
     });
 
@@ -215,22 +215,22 @@ describe("Resource", () => {
         comment.resource({
           id: 99,
           content: "task",
-          article: 12
+          article: 12,
         })
       ).toEqual({
         type: "comment",
         id: "99",
         attributes: {
-          content: "task"
+          content: "task",
         },
         relationships: {
           article: {
             data: {
               type: "article",
-              id: "12"
-            }
-          }
-        }
+              id: "12",
+            },
+          },
+        },
       });
     });
 
@@ -238,7 +238,7 @@ describe("Resource", () => {
       expect(
         article.document({
           id: 12,
-          comments: []
+          comments: [],
         })
       ).toEqual({
         data: {
@@ -247,9 +247,9 @@ describe("Resource", () => {
           attributes: {},
           relationships: {
             author: { data: null },
-            comments: { data: [] }
-          }
-        }
+            comments: { data: [] },
+          },
+        },
       });
     });
 
@@ -257,7 +257,7 @@ describe("Resource", () => {
       expect(
         article.document({
           id: 12,
-          comments: [1, 5, 9]
+          comments: [1, 5, 9],
         })
       ).toEqual({
         data: {
@@ -270,11 +270,11 @@ describe("Resource", () => {
               data: [
                 { type: "comment", id: "1" },
                 { type: "comment", id: "5" },
-                { type: "comment", id: "9" }
-              ]
-            }
-          }
-        }
+                { type: "comment", id: "9" },
+              ],
+            },
+          },
+        },
       });
     });
   });
@@ -284,7 +284,7 @@ describe("Resource.parse", () => {
   let registry: Registry;
   const buildRelatedIncludeResource = ({
     id,
-    attributes
+    attributes,
   }: {
     id: string;
     attributes: JSONAPIResourceAttributes;
@@ -294,9 +294,9 @@ describe("Resource.parse", () => {
     attributes,
     relationships: {
       children: {
-        data: { type: "child-type", id: "11" }
-      }
-    }
+        data: { type: "child-type", id: "11" },
+      },
+    },
   });
 
   const testDataIncludes: JSONAPIResource[] = [
@@ -305,10 +305,10 @@ describe("Resource.parse", () => {
       id: "11",
       relationships: {
         parent: {
-          data: { type: "parent-type", id: "1" }
-        }
-      }
-    }
+          data: { type: "parent-type", id: "1" },
+        },
+      },
+    },
   ];
   const testData: JSONAPIDocument = {
     data: {
@@ -316,11 +316,11 @@ describe("Resource.parse", () => {
       id: "1",
       relationships: {
         children: {
-          data: [{ type: "child-type", id: "11" }]
-        }
-      }
+          data: [{ type: "child-type", id: "11" }],
+        },
+      },
     },
-    included: testDataIncludes
+    included: testDataIncludes,
   };
 
   beforeEach(() => {
@@ -328,21 +328,21 @@ describe("Resource.parse", () => {
     registry.define("parent-type", {
       attributes: [],
       relationships: {
-        children: "child-type"
-      }
+        children: "child-type",
+      },
     });
     registry.define("child-type", {
       attributes: [],
       relationships: {
-        parent: "parent-type"
-      }
+        parent: "parent-type",
+      },
     });
 
     registry.define("nested-child-type", {
       attributes: ["some-attr"],
       relationships: {
-        children: "child-type"
-      }
+        children: "child-type",
+      },
     });
   });
 
@@ -352,9 +352,9 @@ describe("Resource.parse", () => {
       children: [
         {
           id: "11",
-          parent: "1"
-        }
-      ]
+          parent: "1",
+        },
+      ],
     });
   });
 
@@ -366,9 +366,9 @@ describe("Resource.parse", () => {
         {
           type_: "child-type",
           id: "11",
-          parent: "1"
-        }
-      ]
+          parent: "1",
+        },
+      ],
     });
   });
 
@@ -382,10 +382,10 @@ describe("Resource.parse", () => {
           buildRelatedIncludeResource({
             id: "122",
             attributes: {
-              "some-attr": "some attr value 1"
-            }
-          })
-        ]
+              "some-attr": "some attr value 1",
+            },
+          }),
+        ],
       },
       parserOptions
     );
@@ -401,10 +401,10 @@ describe("Resource.parse", () => {
             type_: "nested-child-type",
             children: "11",
             id: "122",
-            someAttr: "some attr value 1"
-          }
-        }
-      ]
+            someAttr: "some attr value 1",
+          },
+        },
+      ],
     };
     expect(parsed).toEqual(expected);
   });
@@ -419,16 +419,16 @@ describe("Resource.parse", () => {
           buildRelatedIncludeResource({
             id: "122",
             attributes: {
-              "some-attr": "some attr value 1"
-            }
+              "some-attr": "some attr value 1",
+            },
           }),
           buildRelatedIncludeResource({
             id: "123",
             attributes: {
-              "some-attr": "some attr value 2"
-            }
-          })
-        ]
+              "some-attr": "some attr value 2",
+            },
+          }),
+        ],
       },
       parserOptions
     );
@@ -445,17 +445,17 @@ describe("Resource.parse", () => {
               type_: "nested-child-type",
               children: "11",
               id: "122",
-              someAttr: "some attr value 1"
+              someAttr: "some attr value 1",
             },
             {
               type_: "nested-child-type",
               children: "11",
               id: "123",
-              someAttr: "some attr value 2"
-            }
-          ]
-        }
-      ]
+              someAttr: "some attr value 2",
+            },
+          ],
+        },
+      ],
     };
     expect(parsed).toEqual(expected);
   });
@@ -468,22 +468,22 @@ describe("Resource.parse", () => {
         buildRelatedIncludeResource({
           id: "122",
           attributes: {
-            "some-attr": "some attr value 1"
-          }
+            "some-attr": "some attr value 1",
+          },
         }),
         buildRelatedIncludeResource({
           id: "123",
           attributes: {
-            "some-attr": "some attr value 2"
-          }
+            "some-attr": "some attr value 2",
+          },
         }),
         buildRelatedIncludeResource({
           id: "124",
           attributes: {
-            "some-attr": "some attr value 3"
-          }
-        })
-      ]
+            "some-attr": "some attr value 3",
+          },
+        }),
+      ],
     });
     const expected = {
       id: "1",
@@ -495,21 +495,21 @@ describe("Resource.parse", () => {
             {
               children: "11",
               id: "122",
-              someAttr: "some attr value 1"
+              someAttr: "some attr value 1",
             },
             {
               children: "11",
               id: "123",
-              someAttr: "some attr value 2"
+              someAttr: "some attr value 2",
             },
             {
               children: "11",
               id: "124",
-              someAttr: "some attr value 3"
-            }
-          ]
-        }
-      ]
+              someAttr: "some attr value 3",
+            },
+          ],
+        },
+      ],
     };
     expect(parsed).toEqual(expected);
   });
@@ -517,11 +517,11 @@ describe("Resource.parse", () => {
   it("properly resolve missing resources", () => {
     const parsed = registry.parse({
       ...testData,
-      included: []
+      included: [],
     });
     const expected = {
       id: "1",
-      children: ["11"]
+      children: ["11"],
     };
     expect(parsed).toEqual(expected);
   });
@@ -530,7 +530,7 @@ describe("Resource.parse", () => {
 describe("Resource.resource", () => {
   it("handles embedding resources", () => {
     const registry = new Registry({
-      keyTransform: KeyTransforms.Kebab
+      keyTransform: KeyTransforms.Kebab,
     });
 
     const author3 = registry.define("author", {
@@ -538,13 +538,13 @@ describe("Resource.resource", () => {
       relationships: {
         articles: {
           type: "article",
-          _embed: true
-        }
-      }
+          _embed: true,
+        },
+      },
     });
 
     registry.define("article", {
-      attributes: ["title"]
+      attributes: ["title"],
     });
 
     expect(
@@ -553,25 +553,25 @@ describe("Resource.resource", () => {
         name: "author",
         articles: [
           { id: 1, title: "first" },
-          { id: 2, title: "second" }
-        ]
+          { id: 2, title: "second" },
+        ],
       })
     ).toEqual({
       data: {
         type: "author",
         id: "1",
         attributes: {
-          name: "author"
+          name: "author",
         },
         relationships: {
           articles: {
             data: [
               { type: "article", id: "1", attributes: { title: "first" } },
-              { type: "article", id: "2", attributes: { title: "second" } }
-            ]
-          }
-        }
-      }
+              { type: "article", id: "2", attributes: { title: "second" } },
+            ],
+          },
+        },
+      },
     });
   });
 });
@@ -579,29 +579,29 @@ describe("Resource.resource", () => {
 describe("Resource.document", () => {
   it("handles transform=kebab option properly", () => {
     const registry = new Registry({
-      keyTransform: KeyTransforms.Kebab
+      keyTransform: KeyTransforms.Kebab,
     });
 
     registry.define("author", {
       attributes: ["firstName", "email"],
       relationships: {
-        articles: "article"
-      }
+        articles: "article",
+      },
     });
 
     const article = registry.define("article", {
       attributes: ["title", "fullContent"],
       relationships: {
         author: "author",
-        commentList: "comment"
-      }
+        commentList: "comment",
+      },
     });
 
     registry.define("comment", {
       attributes: ["textContent", "formattedContent"],
       relationships: {
-        article: "article"
-      }
+        article: "article",
+      },
     });
 
     expect(
@@ -609,7 +609,7 @@ describe("Resource.document", () => {
         id: 12,
         title: "Article title",
         fullContent: "Lorem ipsum ... no i tak dalej",
-        commentList: [1, 5, 9]
+        commentList: [1, 5, 9],
       })
     ).toEqual({
       data: {
@@ -617,7 +617,7 @@ describe("Resource.document", () => {
         id: "12",
         attributes: {
           title: "Article title",
-          "full-content": "Lorem ipsum ... no i tak dalej"
+          "full-content": "Lorem ipsum ... no i tak dalej",
         },
         relationships: {
           author: { data: null },
@@ -625,11 +625,11 @@ describe("Resource.document", () => {
             data: [
               { type: "comment", id: "1" },
               { type: "comment", id: "5" },
-              { type: "comment", id: "9" }
-            ]
-          }
-        }
-      }
+              { type: "comment", id: "9" },
+            ],
+          },
+        },
+      },
     });
   });
 });

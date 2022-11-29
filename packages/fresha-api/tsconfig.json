@@ -1,0 +1,51 @@
+/* Visit https://aka.ms/tsconfig.json to read more about this file */
+{
+  "compilerOptions": {
+    /* Basic Options */
+    "target": "ES2018",
+    "module": "ESNEXT",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable",
+    ],
+    "jsx": "react",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    /* Strict Type-Checking Options */
+    "strict": true,
+
+    /* Additional Checks */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "strictNullChecks": true,
+
+    /* Module Resolution Options */
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+
+    /* Advanced Options */
+    "skipLibCheck": true,
+    "noErrorTruncation": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "outDir": "./build",
+    "rootDir": "./src",
+    "strictPropertyInitialization": false,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": true,
+    "allowJs": true // to allow working with models in JS folder
+  },
+  "include": [
+    "./src"
+  ],
+  "exclude": [
+    "**/*.story.tsx",
+    "**/*.test.ts?(x)"
+  ]
+}

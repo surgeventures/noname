@@ -6,7 +6,7 @@ import {
   JSONAPIResourceRelationship,
   JSONAPIResourceId,
   isJSONObject,
-  isJSONValueArray
+  isJSONValueArray,
 } from "@fresha/noname-core";
 import {
   IncludesMap,
@@ -16,7 +16,7 @@ import {
   ResourceAttributesSpec,
   ResourceParseOptions,
   ResourceRelationshipsSpec,
-  ResourceSpec
+  ResourceSpec,
 } from "./types";
 
 type ResourceIdMapper = {
@@ -45,12 +45,12 @@ const defaultIdMapper: ResourceIdMapper = {
       return String(resourceObj.id);
     }
     return null;
-  }
+  },
 };
 
 const defaultAttributeMapper: ResourceAttributeMapper = {
   getter: (data: JSONObject, key: string) => data[key] as JSONObject,
-  formatter: (value: JSONValue) => value
+  formatter: (value: JSONValue) => value,
 };
 
 type ResourceRelationshipMapper = (
@@ -64,7 +64,7 @@ function normalizeAttributes(
   specs?: ResourceAttributesSpec
 ): ResourceAttributeHelpers {
   if (Array.isArray(specs)) {
-    return specs.map(spec => {
+    return specs.map((spec) => {
       if (typeof spec === "string") {
         return [spec, defaultAttributeMapper];
       }
@@ -74,7 +74,7 @@ function normalizeAttributes(
   if (specs != null) {
     return Object.entries(specs).map(([key, value]) => [
       key,
-      { ...defaultAttributeMapper, ...value }
+      { ...defaultAttributeMapper, ...value },
     ]);
   }
   return [];
@@ -115,16 +115,16 @@ function normalizeRelationships(
         const raw = data[dataKey];
         if (Array.isArray(raw)) {
           return {
-            data: raw.map(formatRelationship)
+            data: raw.map(formatRelationship),
           };
         }
         if (raw != null) {
           return {
-            data: formatRelationship(raw as JSONObject)
+            data: formatRelationship(raw as JSONObject),
           };
         }
         return {
-          data: null
+          data: null,
         };
       };
 
@@ -192,20 +192,20 @@ export default class ResourceImpl implements Resource {
   id(value: JSONValue): { type: string; id: string | null | undefined } {
     return {
       type: this.type,
-      id: this.idSpec.format(value)
+      id: this.idSpec.format(value),
     };
   }
 
   link(value: JSONObject): JSONAPIResourceId {
     return {
       type: this.type,
-      id: this.idSpec.format(value) as string
+      id: this.idSpec.format(value) as string,
     };
   }
 
   resource(data: JSONObject): JSONAPIResource {
     const result: MapObject<any> = {
-      type: this.type
+      type: this.type,
     };
 
     const id = this.idSpec.format(data[this.idSpec.attr]);
@@ -239,8 +239,8 @@ export default class ResourceImpl implements Resource {
   document(data: JSONObject): JSONAPIDocument {
     return {
       data: {
-        ...this.resource(data)
-      }
+        ...this.resource(data),
+      },
     };
   }
 
